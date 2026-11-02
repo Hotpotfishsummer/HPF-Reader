@@ -1,0 +1,58 @@
+[build] C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\sync\e2e.ts -> C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\sync\.build\e2e.mjs
+[build] done in 114ms
+PASS  C-01  HLC 定长 31 且格式合法  :: 0018bcfe56800-00000000-11111111 / 0018bcfe56800-00000001-11111111
+PASS  C-02  同一毫秒内计数器递增（字典序 == 时间序）  :: 0018bcfe56800-00000000-11111111 < 0018bcfe56800-00000001-11111111
+PASS  C-03  observe 远程 HLC 后本地时钟严格更大  :: 0192a3f4c1b0a-0000000b-11111111 > 0192a3f4c1b0a-0000000a-7f3c9d21
+PASS  C-11  非法 HLC（12 位时间戳）被拒绝且不影响本地时钟  :: 0192a3f4c1b0a-0000000b-11111111
+PASS  C-12  uuidv7 合法且严格递增（8-4-4-4-12，版本位 7）  :: 01a19d23-4714-7000-8b4a-0bfcd0144775 01a19d23-4715-7000-89ab-499c9e5db392 01a19d23-4715-7001-be6b-fe44ecca9663
+PASS  C-04  设备前缀规整为 8 位小写字母数字  :: 11111111
+PASS  C-05  指数退避 1s→2s→4s…封顶 30s  :: [1000,2000,4000,8000,16000,30000,30000]
+PASS  C-06  离线时 outbox 保留待发变更  :: pending=1
+PASS  C-07  outbox 进程重启不丢（storage 往返）  :: size=1
+PASS  C-08  ack 后出队
+PASS  C-09  apply 后最远进度只增不减（本地投影不倒退）  :: {"total":0.2,"furthest":0.6}
+PASS  C-10  游标由服务端 nextCursor 推进  :: cursor=11
+PASS  E-00  服务端存活探针 /healthz  :: ok
+PASS  E-01  注册成功并拿到 access/refresh（含 user.id）  :: expiresIn=900
+PASS  E-02  Bearer 认证可用（GET /v1/me）  :: spike-a-mvzhkopb@example.com
+PASS  E-03  伪造 token 被拒（401）  :: 伪造 token: 实际 401 unauthorized invalid or expired token
+PASS  E-04  refresh 轮换：返回新的令牌对
+PASS  E-05  旧 refresh 重用被拒（轮换 + 重用检测）  :: 旧 refresh 重用: 实际 401 unauthorized refresh token already used; session revoked
+PASS  E-06  重用检测吊销整个 family（新 refresh 也失效）  :: family 吊销后新 refresh: 实际 401 unauthorized refresh token already used; session revoked
+PASS  E-07  创建书籍记录（带 contentHash）  :: b73e1887-d3f6-466f-bdb5-cc02081dc1df size=294175
+PASS  E-08  上传真实 EPUB：201 表示写入新 blob，200 表示命中已有 blob（内容寻址去重语义自洽）  :: {"status":201,"body":{"contentHash":"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","deduplicated":false,"sizeBytes":294175}}
+PASS  E-09  同一文件二次上传 → 200 且 deduplicated=true（内容寻址去重）  :: {"status":200,"body":{"contentHash":"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","deduplicated":true,"sizeBytes":294175}}
+PASS  E-10  新书：声明哈希与上传字节不符被拒（400）  :: contentHash 与字节不符: 实际 400 invalid_request contentHash does not match uploaded bytes
+PASS  E-10b  同一本书换不同文件被拒（409 conflict）  :: 同一本书换文件: 实际 409 conflict book already has a different file
+PASS  E-11  书库列表包含新书  :: items=2
+PASS  E-12  单书详情可读（GET /v1/books/{id}）  :: ["id","title","author","language","format","contentHash","sizeBytes","readingState","createdAt","updatedAt"]
+PASS  E-13  设备 B 用同一账号登录成功（独立令牌）  :: user=spike-a-mvzhkopb@example.com
+PASS  E-14  设备列表包含 A 与 B（服务端登记设备）  :: [{"id":"a1a1a1a1-0000-7000-8000-2c7865a02922","name":"","platform":"android","lastSeenAt":"2026-11-02T16:41:37Z"},{"id":"a1a1a1a1-0000-7000-8000-304578645d67","name":"","platform":"windows","lastSeenAt":"2026-11-02T16:41:37Z"}]
+PASS  F-01  缺陷取证：deviceId 已被其它用户占用时 register 返回 404 not_found（语义应为 409）  :: 跨用户复用 deviceId 注册: 实际 404 not_found resource not found
+PASS  F-02  缺陷取证：非法 UUID 的 opId 触发 500（SQLSTATE 22P02，语义应为 400）  :: 非法 opId: 实际 500 internal_error sync push failed
+PASS  E-15  引擎自动生成的 deviceId 被服务端接受（合法 UUID）  :: 01a19d23-48bb-7000-878e-c715609800a2
+PASS  S-01  设备 A 推送进度：服务端 applied 且分配游标  :: {"pushed":1,"applied":1,"rejected":0,"appliedChanges":1,"cursor":1,"errors":[]}
+PASS  S-02  设备 B 首同步（snapshot）拿到 A 的进度 0.42  :: {"applied":3,"progress":0.42,"cursor":1}
+PASS  S-03  设备 B 增量 pull（cursor 断点续传）看到 0.50  :: {"cursorBefore":1,"pull":{"changes":1,"appliedChanges":1,"pages":1,"cursor":2},"progress":0.5}
+PASS  S-04  同一副本的陈旧写入被忽略（reason=older_hlc，服务端位置不变）  :: {"reasons":["older_hlc"],"cursor":0,"server":0.5}
+PASS  S-05  被忽略的 op 不产生变更行：服务端游标不动，其它设备 pull 拉不到  :: {"serverPushCursor":2,"serverCursorBefore":2,"bChanges":0,"bCursor":2,"forwardSnapshot":0.5}
+PASS  S-06  跨副本前进被接纳（位置 0.8，最远 0.8）  :: {"cursor":3,"server":{"bookId":"b73e1887-d3f6-466f-bdb5-cc02081dc1df","contentHash":"sha256:abababababababababababababababababababababababababababababababab","deviceId":"a1a1a1a1-0000-7000-8000-304578645d67","explicitRewind":false,"furthestLocator":{"href":"OEBPS/chapter-20.xhtml","type":"application/xhtml+xml","title":"chapter-20","locations":{"progression":0.8,"totalProgression":0.8}},"furthestProgression":0.8,"hlc":"001a19d234a48-00000000-a1a1a1a1","locator":{"href":"OEBPS/chapter-20.xhtml","type":"application/xhtml+xml","title":"chapter-20","locations":{"progression":0.8,"totalProgression":0.8}},"totalProgression":0.8,"updatedAt":"2026-11-03T00:41:38.128335+08:00"}}
+PASS  S-07  跨副本回退未声明 explicitRewind 被拒（reason=stale_no_rewind，位置/最远仍 0.8）  :: {"reasons":["stale_no_rewind"],"server":0.8,"furthest":0.8}
+PASS  S-07b  同副本较新 HLC 允许回退（位置 0.55），最远保持 0.8  :: {"reasons":[],"position":0.55,"furthest":0.8}
+PASS  S-08  显式回退生效（位置 0.1），但最远进度保持 0.8（只增不减）  :: {"hlc":"001a19d234ac3-00000000-a1a1a1a1","server":{"bookId":"b73e1887-d3f6-466f-bdb5-cc02081dc1df","contentHash":"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","deviceId":"a1a1a1a1-0000-7000-8000-304578645d67","explicitRewind":true,"furthestLocator":{"href":"OEBPS/chapter-20.xhtml","type":"application/xhtml+xml","title":"chapter-20","locations":{"progression":0.8,"totalProgression":0.8}},"furthestProgression":0.8,"hlc":"001a19d234ac3-00000000-a1a1a1a1","locator":{"href":"OEBPS/chapter-03.xhtml","type":"application/xhtml+xml","title":"chapter-03","locations":{"progression":0.1,"totalProgression":0.1}},"totalProgression":0.1,"updatedAt":"2026-11-03T00:41:38.250592+08:00"}}
+PASS  S-09  同 opId 重放：reason=duplicate 且游标不动  :: {"item":{"opId":"01a19d23-4af0-7000-b53d-f548b7b82a69","status":"applied","reason":"duplicate"},"cursor":6,"before":6}
+PASS  S-10  设备 B 最终收敛到服务端权威状态（位置 0.6 / 最远 0.8）  :: {"changes":4,"progress":{"bookId":"b73e1887-d3f6-466f-bdb5-cc02081dc1df","locator":{"href":"OEBPS/chapter-07.xhtml","type":"application/xhtml+xml","title":"chapter-07","locations":{"progression":0.6,"totalProgression":0.6}},"totalProgression":0.6,"furthestLocator":{"href":"OEBPS/chapter-20.xhtml","type":"application/xhtml+xml","title":"chapter-20","locations":{"progression":0.8,"totalProgression":0.8}},"furthestProgression":0.8,"explicitRewind":false,"contentHash":"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","hlc":"001a19d234af0-00000000-a1a1a1a1","deviceId":"a1a1a1a1-0000-7000-8000-304578645d67","updatedAt":""}}
+PASS  A-01  设备 A 推送标注：服务端 applied 且本地投影可见  :: {"applied":1,"id":"01a19d23-4b2c-7000-b580-f5d56d61a69b"}
+PASS  A-02  设备 B pull 到 A 新建的标注
+PASS  A-03  删除走墓碑：B 拉取后本地不再有该标注
+PASS  A-04  墓碑不可复活（remove-wins）：陈旧 upsert 未生效  :: {"reasons":["tombstone_wins"],"stillGone":true}
+PASS  A-05  服务端 REST 创建的标注被客户端 pull 到（游标只由服务端分配）  :: id=90f133f8-3d43-4af7-bfa8-304a95fa3561
+PASS  I-01  用户 C 的书库为空（看不到 A 的书）  :: items=0
+PASS  I-02  用户 C 直接读 A 的 bookId 被拒（404）  :: C 读 A 的书: 实际 404 not_found resource not found
+PASS  I-03  用户 C 的同步快照为空（无书/无进度/无标注）  :: {"books":0,"progress":0,"annotations":0}
+PASS  I-04  用户 C 从 cursor=0 拉取：拿不到 A 的任何变更  :: changes=0
+PASS  I-05  C 写入同一 bookId 只影响 C 自己的行（A 的位置不变）  :: {"aBefore":0.6,"aAfter":0.6,"c":0.01}
+
+=== 证据 ===
+HTTP 往返条数: 66 → C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\sync\evidence\http-trace.jsonl
+断言: 52/52 通过 → C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\sync\evidence\checks.json

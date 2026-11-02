@@ -1,0 +1,20 @@
+=== locator buttons ===
+[{"tag":"BUTTON","txt":"←","x":15,"y":13},{"tag":"BUTTON","txt":"☰","x":43,"y":14},{"tag":"BUTTON","txt":"◐","x":258,"y":13},{"tag":"BUTTON","txt":"‹","x":283,"y":14},{"tag":"BUTTON","txt":"›","x":303,"y":14}]
+=== progress BEFORE ===
+←☰第一章 · 客户端骨架36% ◐‹›
+=== content container styles ===
+[{"tag":"HTML","cls":"","w":412,"h":843},{"tag":"BODY","cls":"","w":412,"h":843},{"tag":"DIV","cls":"","w":412,"h":843},{"tag":"DIV","cls":"absolute inset-0 overflow-hidden bg-[var","w":412,"h":1507},{"tag":"DIV","cls":"relative flex h-full w-full overflow-hid","w":412,"h":1507},{"tag":"DIV","cls":"flex min-h-0 w-full flex-1 pt-12","w":412,"h":1482},{"tag":"DIV","cls":"relative min-h-0 min-w-0 flex-1","w":412,"h":1482},{"tag":"FOLIATE-VIEW","cls":"","w":412,"h":1482}]
+=== viewport metrics ===
+{"innerH":843,"innerW":412,"visualH":843.047607421875,"visualScale":1,"docClientH":843,"bodyScrollH":1507,"scrollY":0,"dpr":2.625}
+=== tap next (303,14) ===
+{
+  "tapped": [
+    303,
+    14
+  ]
+}
+=== progress AFTER tap 1 ===
+←☰第二章 · 内容隔离69% ◐‹›
+=== progress AFTER tap 2 ===
+←☰第二章 · 内容隔离69% ◐‹›
+=== screencap ===

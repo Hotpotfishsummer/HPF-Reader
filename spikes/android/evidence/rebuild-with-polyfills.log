@@ -1,0 +1,105 @@
+=== STEP 1: frontend build (apps/client/frontend) ===
+$ vue-tsc --noEmit && vite build --mode production
+vite v8.3.5 building client environment for production...
+transforming...
+[plugin builtin:vite-import-glob] Invalid glob pattern: `vendor/pdfjs/*` in file 'src\vendor\foliate-js\pdf.js'. Glob patterns must start with:
+  • '/' for absolute paths from project root
+  • './' or '../' for relative paths
+  • '**/' for recursive matching from project root
+  • '#' for subpath imports (with '*' wildcard)
+✓ 191 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    0.98 kB │ gzip:   0.44 kB
+dist/assets/index-CmEeRt5R.css                    25.52 kB │ gzip:   5.62 kB
+dist/assets/desktop-B9oRns8p.js                    0.06 kB │ gzip:   0.07 kB
+dist/assets/dist-CA0d7Z1a.js                       0.07 kB │ gzip:   0.08 kB
+dist/assets/rolldown-runtime-DK3Fl9T5.js           0.15 kB │ gzip:   0.15 kB
+dist/assets/mobile-Dxz1Po8J.js                     0.26 kB │ gzip:   0.22 kB
+dist/assets/useApi-CUWMwLLw-Bz-hoMMH.js            0.86 kB │ gzip:   0.47 kB
+dist/assets/settings-DWwpQvW8.js                   0.90 kB │ gzip:   0.52 kB
+dist/assets/comic-book-Bc_1EzdL.js                 1.11 kB │ gzip:   0.68 kB
+dist/assets/preload-helper-BLdHbfdN.js             1.51 kB │ gzip:   0.79 kB
+dist/assets/search-DdQcuAdo.js                     2.31 kB │ gzip:   1.07 kB
+dist/assets/i18n-DCBKrsjr.js                       3.27 kB │ gzip:   1.79 kB
+dist/assets/fflate-CIG33RrD.js                     3.82 kB │ gzip:   2.05 kB
+dist/assets/tts-DN-woJA-.js                        4.51 kB │ gzip:   1.82 kB
+dist/assets/epubcfi-BzOeE4Vd.js                    4.72 kB │ gzip:   2.04 kB
+dist/assets/fixed-layout-neXwLekV.js               5.59 kB │ gzip:   2.32 kB
+dist/assets/progressStore-BW2FW0WV.js              6.21 kB │ gzip:   2.99 kB
+dist/assets/fb2-DgH9Jg0u.js                        6.90 kB │ gzip:   2.86 kB
+dist/assets/LibraryView-oXc_08iT.js                7.25 kB │ gzip:   2.80 kB
+dist/assets/runtime-dom.esm-bundler-BOybfUxl.js    8.00 kB │ gzip:   3.62 kB
+dist/assets/desktop-BxQDml7v.js                   10.55 kB │ gzip:   3.94 kB
+dist/assets/dist-DXUMBP2b.js                      16.11 kB │ gzip:   5.99 kB
+dist/assets/view-UcWaFJgn.js                      19.12 kB │ gzip:   6.70 kB
+dist/assets/ReaderView-CkZTqXLc.js                20.65 kB │ gzip:   8.01 kB
+dist/assets/paginator-DeLvVQvW.js                 21.04 kB │ gzip:   7.07 kB
+dist/assets/SettingsView-C5vzkiAp.js              21.44 kB │ gzip:   7.22 kB
+dist/assets/epub-BXFDM7TN.js                      21.69 kB │ gzip:   8.17 kB
+dist/assets/mobi-8lpad5do.js                      22.00 kB │ gzip:   8.31 kB
+dist/assets/vue-router-C8bnKvyG.js                22.78 kB │ gzip:   9.12 kB
+dist/assets/zip-3VNA5258.js                       35.58 kB │ gzip:  14.10 kB
+dist/assets/index-CsYHy0L6.js                     37.45 kB │ gzip:  11.80 kB
+dist/assets/platform-B5PSDNiE.js                 125.05 kB │ gzip:  45.38 kB
+dist/assets/pdf-imrYNTHN.js                      401.66 kB │ gzip: 119.59 kB
+
+✓ built in 932ms
+frontend exit=0
+=== STEP 2: relink libwails.so ===
+go build exit=0
+
+Length : 16293600
+
+
+=== STEP 3: gradlew assembleDebug ===
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:compileDebugKotlin NO-SOURCE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:mergeDebugNativeLibs
+> Task :app:stripDebugDebugSymbols
+
+> Task :app:packageDebug
+There are no .so files available to package in the APK for arm64-v8a.
+
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 6s
+35 actionable tasks: 4 executed, 31 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html
+gradle exit=0

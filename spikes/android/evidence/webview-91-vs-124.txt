@@ -1,0 +1,10 @@
+=== API-35 / WebView 124.0.6367.219 ===
+=== reader text ===
+← | ☰ | 第一章 · 客户端骨架 | 36% | ◐ | ‹ | ›
+=== ES2024 builtin availability ===
+{"groupBy":"function","mapGroupBy":"function","arrayAt":"function","structuredClone":"function","withResolvers":"function"}
+=== DecompressionStream formats ===
+{"gzip":"OK","deflate":"OK","deflate-raw":"OK"}
+{"w":412,"h":867}
+=== logcat errors on api35 ===
+11-02 17:08:25.465 D/WailsActivity( 3401): [WebView] LOG: [polyfill] 已补齐运行时内置对象：Promise.try, Uint8Array.prototype.toBase64, Uint8Array.fromBase64 (https://wails.localhost/assets/index-BeAGVLB0.js:2)

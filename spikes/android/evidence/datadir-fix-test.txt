@@ -1,0 +1,20 @@
+=== install APK-D ===
+Performing Streamed Install
+Success
+
+pid=6448
+=== open sample, go to page 2 ===
+progress now: 
+←☰第二章 · 内容隔离69% ◐‹› |  | 已从上次位置继续（约 69%）
+=== progress-file on disk (app private dir) ===
+/data/data/com.wails.app/files/profileInstalled
+
+cat: /data/data/com.wails.app/files/HPFReader/progress.json: No such file or directory
+
+=== logcat progress lines ===
+11-02 16:58:04.013 D/PhoneStartingWindowTypeAlgorithm(  758): preferredStartingWindowType newTask:true taskSwitch:true processRunning:false allowTaskSnapshot:true activityCreated:false useEmptySplashScreen:true legacySplashScreen:false topIsHome:false
+11-02 16:58:04.985 D/WailsPathHandler( 6448): Handling path: assets/progressStore-BW2FW0WV.js
+11-02 16:58:04.986 D/WailsBridge( 6448): Serving asset: assets/progressStore-BW2FW0WV.js
+11-02 16:58:04.986 I/Wails   ( 6448): 4:58PM [AssetFileServerFS] Handling request url=/assets/progressStore-BW2FW0WV.js file=assets/progressStore-BW2FW0WV.js
+11-02 16:58:04.986 D/WailsPathHandler( 6448): Serving assets/progressStore-BW2FW0WV.js with type application/javascript (6211 bytes)
+11-02 16:58:15.420 D/WailsActivity( 6448): [WebView] WARNING: [progress] 读取 platform 进度失败，使用本地缓存 Error: Binding call failed: Bound method returned an error: android: 无法推导应用私有目录（$HOME 与 $TMPDIR 都不可用）: neither $XDG_CONFIG_HOME nor $HOME are defined (https://wails.localhost/assets/progressStore-BW2FW0WV.js:1)

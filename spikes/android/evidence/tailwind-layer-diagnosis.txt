@@ -1,0 +1,4 @@
+=== WebView 91 (Chrome 91) ===
+{"tailwindClassPos":"static","tailwindClassInset":"auto","sheetCount":1,"readableSheets":1,"totalTopLevelRules":66,"layerBlockRules":0,"bodyBg":"rgba(0, 0, 0, 0)","bodyColor":"rgb(0, 0, 0)","bodyFont":"sans-serif","appBg":"rgba(0, 0, 0, 0)","appH":843}
+=== WebView 124 (Chrome 124) ===
+{"tailwindClassPos":"absolute","plain":"rgb(1, 2, 3)","inLayer":"rgb(4, 5, 6)","colorMix":true,"supportsLayer":false,"bodyBg":"lab(97.7061 -0.0120401 1.90749)","bodyColor":"lab(11.8026 -0.423267 -3.68721)","bodyFont":"Inter, system-ui, -apple-system, \"Segoe UI\", sans-"}

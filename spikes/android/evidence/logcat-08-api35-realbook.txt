@@ -1,0 +1,1264 @@
+--------- beginning of main
+11-02 17:11:53.413 W/JobInfo (  595): Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-02 17:11:53.418 I/.android.chrome( 2616): Background concurrent mark compact GC freed 1681KB AllocSpace bytes, 4(140KB) LOS objects, 49% free, 2489KB/4978KB, paused 2.646ms,35.540ms total 92.851ms
+11-02 17:11:53.420 E/SmsApplication( 1155): com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+11-02 17:11:53.427 I/s.nexuslauncher( 1253): Background concurrent mark compact GC freed 2311KB AllocSpace bytes, 16(1380KB) LOS objects, 49% free, 6981KB/13MB, paused 15.331ms,22.919ms total 299.272ms
+11-02 17:11:53.427 I/MediaProvider( 1544): Begin Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package: flg=0x5000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-02 17:11:53.432 E/CellBroadcastUtils( 1155): getDefaultCellBroadcastReceiverPackageName: no package found
+--------- beginning of system
+11-02 17:11:53.437 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.442 D/MediaProvider( 1544): Deleted 0 Android/media items belonging to com.wails.app on /data/user/0/com.google.android.providers.media.module/databases/external.db
+11-02 17:11:53.451 I/RanchuHwc(  421): logCompositionFallbackIfChanged: layer 7 CompositionType fallback from 2 to 1
+11-02 17:11:53.451 I/RanchuHwc(  421): logCompositionFallbackIfChanged: layer 8 CompositionType fallback from 2 to 1
+11-02 17:11:53.456 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+11-02 17:11:53.457 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SafetyHubPrebuilt/SafetyHubPrebuilt.apk' with 1 weak references
+11-02 17:11:53.460 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.461 D/MediaGrants( 1544): Removed 0 media_grants for 0 user for [com.wails.app, com.wails.app]. Reason: Package orphaned
+11-02 17:11:53.461 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Camera2/Camera2.apk' with 1 weak references
+11-02 17:11:53.462 I/android.hardware.power-service.example(  424): Power isModeSupported: 6
+11-02 17:11:53.462 I/MediaProvider( 1544): End Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package: flg=0x5000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-02 17:11:53.466 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SettingsGoogle/SettingsGoogle.apk' with 1 weak references
+11-02 17:11:53.467 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+11-02 17:11:53.467 W/s.nexuslauncher( 1253): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ABjWpTSl7UQa5oSn90sJNQ==/com.wails.app-vYKKgMaLyGx2oDcw5toeow==/base.apk' with 1 weak references
+11-02 17:11:53.469 D/nativeloader( 3983): Configuring clns-shared-7 for other apk /apex/com.android.extservices/priv-app/GoogleExtServices@350820300/GoogleExtServices.apk. target_sdk_version=35, uses_libraries=, library_path=/apex/com.android.extservices/priv-app/GoogleExtServices@350820300/lib/x86_64:/apex/com.android.extservices/priv-app/GoogleExtServices@350820300/GoogleExtServices.apk!/lib/x86_64:/system/lib64:/system_ext/lib64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.ext.services:/apex/com.android.extservices/priv-app/GoogleExtServices@350820300:/system/lib64:/system_ext/lib64
+11-02 17:11:53.470 D/nativeloader( 3983): InitApexLibraries:
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_adservices: libhpke_jni.so:libtflite_support_classifiers_native.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_appsearch: libicing.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_art: libartservice.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_btservices: libbluetooth_jni.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_conscrypt: libjavacrypto.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_mediaprovider: libpdfclient.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_nfcservices: libnfc_nci_jni.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_ondevicepersonalization: libfcp_cpp_dep_jni.so:libfcp_hpke_jni.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_os_statsd: libstats_jni.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_tethering: libandroid_net_connectivity_com_android_net_module_util_jni.so:libcrypto.so:libframework-connectivity-jni.so:libframework-connectivity-tiramisu-jni.so:libmainlinecronet.121.0.6167.71.so:libservice-connectivity.so:libservice-thread-jni.so:libssl.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_uwb: libuwb_uci_jni_rust.so
+11-02 17:11:53.470 D/nativeloader( 3983):   com_android_virt: libvirtualizationservice_jni.so:libvirtualmachine_jni.so
+11-02 17:11:53.472 W/PackageManager(  595): Cannot suspend package "com.android.dynsystem": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.473 D/ShortcutService(  595): Saving package item com.google.android.as to /data/system_ce/0/shortcut_service/launchers/com.google.android.as0.xml
+11-02 17:11:53.474 D/CompatChangeReporter( 3983): Compat change id reported: 202956589; UID 10197; state: ENABLED
+11-02 17:11:53.481 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.482 W/PackageManager(  595): Cannot suspend package "android": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.482 W/PackageManager(  595): Cannot suspend package "com.google.android.permissioncontroller": required for permissions management
+11-02 17:11:53.482 W/PackageManager(  595): Cannot suspend package "com.android.providers.settings": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.482 W/PackageManager(  595): Cannot suspend package "com.android.inputdevices": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.482 W/PackageManager(  595): Cannot suspend package "com.google.android.dialer": is the default dialer
+11-02 17:11:53.484 W/PackageManager(  595): Cannot suspend package "com.android.server.telecom": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.484 W/PackageManager(  595): Cannot suspend package "com.android.keychain": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.484 W/PackageManager(  595): Cannot suspend package "com.google.android.packageinstaller": required for package installation
+11-02 17:11:53.484 W/PackageManager(  595): Cannot suspend package "com.android.localtransport": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.484 W/PackageManager(  595): Cannot suspend package "com.google.android.apps.nexuslauncher": contains the active launcher
+11-02 17:11:53.485 W/PackageManager(  595): Cannot suspend package "com.android.DeviceAsWebcam": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.485 W/PackageManager(  595): Cannot suspend package "com.android.emulator.multidisplay": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.486 W/PackageManager(  595): Cannot suspend package "com.android.settings": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.487 W/PackageManager(  595): Cannot suspend package "com.android.location.fused": has OP_SYSTEM_EXEMPT_FROM_SUSPENSION set
+11-02 17:11:53.491 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.492 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.494 V/GraphicsEnvironment( 3983): Currently set values for:
+11-02 17:11:53.494 V/GraphicsEnvironment( 3983):   angle_gl_driver_selection_pkgs=[]
+11-02 17:11:53.494 V/GraphicsEnvironment( 3983):   angle_gl_driver_selection_values=[]
+11-02 17:11:53.494 V/GraphicsEnvironment( 3983): Global.Settings values are invalid: number of packages: 0, number of values: 0
+11-02 17:11:53.494 V/GraphicsEnvironment( 3983): Neither updatable production driver nor prerelease driver is supported.
+11-02 17:11:53.504 I/Icing   ( 1518): doRemovePackageData com.wails.app
+11-02 17:11:53.517 D/StatsLog( 1253): LAUNCHER_ALLAPPS_COUNT
+11-02 17:11:53.544 I/GsaVoiceInteractionSrv( 1569): (REDACTED) O received %s
+11-02 17:11:53.548 I/GsaVoiceInteractionSrv( 1569): (REDACTED) O received %s
+11-02 17:11:53.548 I/GsaVoiceInteractionSrv( 1569): (REDACTED) O received %s
+11-02 17:11:53.598 D/ShortcutService(  595): Saving package item com.google.android.apps.nexuslauncher to /data/system_ce/0/shortcut_service/launchers/com.google.android.apps.nexuslauncher0.xml
+11-02 17:11:53.611 D/CompatChangeReporter(  595): Compat change id reported: 311208629; UID 10197; state: ENABLED
+11-02 17:11:53.618 I/ndroid.systemui(  992): Background concurrent mark compact GC freed 7391KB AllocSpace bytes, 22(1112KB) LOS objects, 49% free, 17MB/35MB, paused 24.916ms,9.680ms total 585.258ms
+11-02 17:11:53.626 D/ShortcutService(  595): Saving package item com.android.systemui to /data/system_ce/0/shortcut_service/launchers/com.android.systemui0.xml
+11-02 17:11:53.640 D/SafetySourceDataValidat(  595): No cert check requested for package com.google.android.permissioncontroller
+11-02 17:11:53.640 E/SmsApplication( 1155): com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+11-02 17:11:53.640 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 10136, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.648 W/ActivityTaskManager(  595): callingPackage for (uid=2000, pid=4036) has no WPC
+11-02 17:11:53.651 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE
+11-02 17:11:53.651 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE
+11-02 17:11:53.651 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+11-02 17:11:53.652 E/CellBroadcastUtils( 1155): getDefaultCellBroadcastReceiverPackageName: no package found
+11-02 17:11:53.652 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.657 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.658 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.658 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.664 W/AppOpService(  595): Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+11-02 17:11:53.668 V/GrammaticalInflectionUtils(  595): AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@94b5cb1, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-02 17:11:53.670 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+11-02 17:11:53.673 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+11-02 17:11:53.686 W/SearchServiceCore( 1605): Abort, client detached.
+11-02 17:11:53.686 W/SearchServiceCore( 1605): Abort, client detached.
+11-02 17:11:53.689 W/SearchServiceCore( 1605): Abort, client detached.
+11-02 17:11:53.690 D/PersistedStoragePackageUninstalledReceiver(  993): Received android.intent.action.PACKAGE_DATA_CLEARED for com.wails.app for u0
+11-02 17:11:53.695 D/ImsResolver( 1155): maybeAddedImsService, packageName: com.wails.app
+11-02 17:11:53.697 I/ActivityTaskManager(  595): START u0 {flg=0x10000000 cmp=com.wails.app/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+11-02 17:11:53.698 V/WindowManagerShell(  992): Transition requested (#15): android.os.BinderProxy@5ad7a9e TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.wails.app/.MainActivity } baseActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} topActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} origActivity=null realActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} numActivities=1 lastActiveTime=279725 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@a6d897f} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{7c26d4c com.wails.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=2400 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 15 }
+11-02 17:11:53.698 V/GrammaticalInflectionUtils(  595): AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@94b5cb1, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-02 17:11:53.714 D/Zygote  (  395): Forked child process 4042
+11-02 17:11:53.718 D/CarrierSvcBindHelper( 1155): onHandleForceStop: [com.wails.app]
+11-02 17:11:53.718 D/CarrierSvcBindHelper( 1155): No carrier app for: 0
+11-02 17:11:53.724 I/ActivityManager(  595): Start proc 4042:com.wails.app/u0a209 for next-top-activity {com.wails.app/com.wails.app.MainActivity}
+11-02 17:11:53.727 W/ndroid.systemui(  992): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ABjWpTSl7UQa5oSn90sJNQ==/com.wails.app-vYKKgMaLyGx2oDcw5toeow==/base.apk' with 1 weak references
+11-02 17:11:53.737 D/PermissionCache(  466): checking android.permission.WAKEUP_SURFACE_FLINGER for uid=10179 => granted (11153 us)
+11-02 17:11:53.738 W/VsyncModulator(  466): setTransactionSchedule: Unexpected EarlyEnd
+11-02 17:11:53.738 I/com.wails.app( 4042): Late-enabling -Xcheck:jni
+11-02 17:11:53.743 I/resolv  (  394): GetAddrInfoHandler::run: {100 262244 100 983140 10144 0}
+11-02 17:11:53.744 I/resolv  (  394): res_nmkquery: (QUERY, IN, A)
+11-02 17:11:53.744 I/resolv  (  394): resolv_cache_lookup: FOUND IN CACHE entry=0x703366c33980
+11-02 17:11:53.744 I/resolv  (  394): doQuery: rcode=0, ancount=1, return value=48
+11-02 17:11:53.745 I/resolv  (  394): res_nmkquery: (QUERY, IN, AAAA)
+11-02 17:11:53.745 I/resolv  (  394): resolv_cache_lookup: FOUND IN CACHE entry=0x703506c2d6d0
+11-02 17:11:53.745 I/resolv  (  394): doQuery: rcode=0, ancount=0, return value=105
+11-02 17:11:53.760 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:53.761 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:53.763 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:53.763 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:53.764 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:53.764 W/SplitSelectStateCtor( 1253): Missing session instanceIds
+11-02 17:11:53.764 D/StatsLog( 1253): LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+11-02 17:11:53.765 D/SplashScreenView(  992): Build android.window.SplashScreenView{97cbdba V.E...... ......ID 0,0-0,0}
+11-02 17:11:53.765 D/SplashScreenView(  992): Icon: view: android.widget.ImageView{3c7a46b V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@5dbcbc8 size: 420
+11-02 17:11:53.765 D/SplashScreenView(  992): Branding: view: android.view.View{b5ce461 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-02 17:11:53.766 D/WindowManagerShell(  992): setLauncherKeepClearAreaHeight: visible=false, height=527
+11-02 17:11:53.768 D/CoreBackPreview(  595): Window{75b6006 u0 Splash Screen com.wails.app}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@811741d, mPriority=0, mIsAnimationCallback=false}
+11-02 17:11:53.769 I/TopTaskTracker( 1253): onTaskMovedToFront: (moved taskInfo to front) taskId=9, baseIntent=Intent { flg=0x10000000 cmp=com.wails.app/.MainActivity }
+11-02 17:11:53.809 I/com.wails.app( 4042): Using CollectorTypeCMC GC.
+11-02 17:11:53.809 W/com.wails.app( 4042): Unexpected CPU variant for x86: x86_64.
+11-02 17:11:53.809 W/com.wails.app( 4042): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+11-02 17:11:53.819 I/adbd    (  476): jdwp connection from 4042
+11-02 17:11:53.824 I/netd    (  394): tetherGetStats() -> {[]} <0.39ms>
+11-02 17:11:53.834 I/Auth    ( 1518): [SupervisedAccountIntentOperation] onHandleIntent(): android.intent.action.PACKAGE_ADDED
+11-02 17:11:53.834 I/Auth    ( 1518): [SupervisedAccountIntentOperation] This operation is disabled
+11-02 17:11:53.839 I/Fitness ( 1343): FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_DATA_CLEARED [CONTEXT service_id=17 ]
+11-02 17:11:53.840 V/Backup  ( 1518): [PhotosPackagedAddedIO] Flag is disabled.
+11-02 17:11:53.843 D/BoundBrokerSvc( 1518): onBind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+11-02 17:11:53.844 D/BoundBrokerSvc( 1518): Loading bound service for intent: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+11-02 17:11:53.860 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.866 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.873 W/SQLiteLog( 1518): (28) double-quoted string literal: "com.wails.app"
+11-02 17:11:53.880 D/nativeloader( 4042): Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+11-02 17:11:53.881 D/SsBaseTemplateCard( 1253): No text view can be set up
+11-02 17:11:53.881 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:11:53.881 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:11:53.881 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:11:53.881 I/SsBaseTemplateCard( 1253): Secondary card pane is null
+11-02 17:11:53.883 V/WindowManagerShell(  992): Transition animation finished (aborted=false), notifying core (#14) android.os.BinderProxy@3906525@0
+11-02 17:11:53.883 V/WindowManagerShell(  992): onTransitionReady(transaction=2555505541619)
+11-02 17:11:53.886 V/WindowManager(  595): Sent Transition (#15) createdAt=11-02 17:11:53.685 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.wails.app/.MainActivity } baseActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} topActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} origActivity=null realActivity=ComponentInfo{com.wails.app/com.wails.app.MainActivity} numActivities=1 lastActiveTime=279725 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{6b80fb7 Task{e770fa9 #9 type=standard A=10209:com.wails.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{fb2a324 com.wails.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=2400 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 15 }
+11-02 17:11:53.886 V/WindowManager(  595):     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+11-02 17:11:53.886 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+--------- beginning of kernel
+11-02 17:11:53.865 I/binder  (    0): 1875:595 cannot find target node
+11-02 17:11:53.866 I/binder  (    0): 595:1875 transaction async to 0:0 failed 212502/29189/-22, size 64-0 line 3344
+11-02 17:11:53.887 E/IPCThreadState(  595): Binder transaction failure. id: 212502, BR_*: 29189, error: -22 (Invalid argument)
+11-02 17:11:53.887 W/ActivityManager(  595): pid 595 system sent binder code 7 with flags 1 to frozen apps and got error -32
+11-02 17:11:53.888 D/ActivityManager(  595): Too many transaction errors, throttling freezer binder callback.
+11-02 17:11:53.888 V/WindowManager(  595):     info={id=15 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+11-02 17:11:53.888 V/WindowManager(  595):         {WCT{RemoteToken{6b80fb7 Task{e770fa9 #9 type=standard A=10209:com.wails.app}}} m=OPEN f=NONE leash=Surface(name=Task=9)/@0x4906e51 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1},
+11-02 17:11:53.888 V/WindowManager(  595):         {WCT{RemoteToken{91d0829 Task{b985fdf #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x5f42595 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1}
+11-02 17:11:53.888 V/WindowManager(  595):     ]}
+11-02 17:11:53.888 V/WindowManager(  595): Finish Transition (#14): created at 11-02 17:11:52.808 collect-started=0.316ms request-sent=0.819ms started=149.232ms ready=305.599ms sent=315.28ms finished=1075.689ms
+11-02 17:11:53.893 W/WindowManager(  595): Exception thrown during dispatchAppVisibility Window{19694c3 u0 com.wails.app/com.wails.app.MainActivity EXITING}
+11-02 17:11:53.893 W/WindowManager(  595): android.os.DeadObjectException
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.os.BinderProxy.transactNative(Native Method)
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.os.BinderProxy.transact(BinderProxy.java:586)
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.view.IWindow$Stub$Proxy.dispatchAppVisibility(IWindow.java:553)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.WindowState.sendAppVisibilityToClients(WindowState.java:3253)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.WindowContainer.sendAppVisibilityToClients(WindowContainer.java:1289)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.WindowToken.setClientVisible(WindowToken.java:403)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.ActivityRecord.setClientVisible(ActivityRecord.java:7166)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.ActivityRecord.postApplyAnimation(ActivityRecord.java:5881)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.ActivityRecord.commitVisibility(ActivityRecord.java:5823)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.Transition.finishTransition(Transition.java:1286)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.TransitionController.finishTransition(TransitionController.java:937)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.WindowOrganizerController.finishTransition(WindowOrganizerController.java:494)
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.window.IWindowOrganizerController$Stub.onTransact(IWindowOrganizerController.java:289)
+11-02 17:11:53.893 W/WindowManager(  595): 	at com.android.server.wm.WindowOrganizerController.onTransact(WindowOrganizerController.java:204)
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.os.Binder.execTransactInternal(Binder.java:1505)
+11-02 17:11:53.893 W/WindowManager(  595): 	at android.os.Binder.execTransact(Binder.java:1444)
+11-02 17:11:53.894 W/Process (  595): Unable to open /proc/3401/status
+11-02 17:11:53.902 V/WindowManagerShell(  992): Track 0 became idle
+11-02 17:11:53.902 V/WindowManagerShell(  992): onTransitionReady (#15) android.os.BinderProxy@5ad7a9e: {id=15 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@7cc460c} m=OPEN f=NONE leash=Surface(name=Task=9)/@0x89e4be0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@899ab55} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x5c4be99 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1}]}
+11-02 17:11:53.904 V/WindowManagerShell(  992): Playing animation for (#15) android.os.BinderProxy@5ad7a9e@0
+11-02 17:11:53.904 V/WindowManagerShell(  992):  try handler com.android.wm.shell.transition.DefaultMixedHandler@9d3d6e7
+11-02 17:11:53.904 V/WindowManagerShell(  992):  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@8571294
+11-02 17:11:53.904 V/WindowManagerShell(  992):  try handler com.android.wm.shell.pip.PipTransition@734313d
+11-02 17:11:53.904 V/WindowManagerShell(  992):  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@a67bd32
+11-02 17:11:53.905 V/WindowManagerShell(  992):  try handler com.android.wm.shell.recents.RecentsTransitionHandler@7cfa83
+11-02 17:11:53.906 V/ShellRecents(  992): RecentsTransitionHandler.startAnimation: no controller found
+11-02 17:11:53.906 V/WindowManagerShell(  992):  try handler com.android.wm.shell.splitscreen.StageCoordinator@ddcc400
+11-02 17:11:53.906 V/WindowManagerShell(  992):  try handler com.android.wm.shell.transition.RemoteTransitionHandler@2b7a439
+11-02 17:11:53.906 V/WindowManagerShell(  992): Transition doesn't have explicit remote, search filters for match for {id=15 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@7cc460c} m=OPEN f=NONE leash=Surface(name=Task=9)/@0x89e4be0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@899ab55} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x5c4be99 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1}]}
+11-02 17:11:53.906 V/WindowManagerShell(  992):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[OPEN,TO_FRONT] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@231e715, appThread = android.app.IApplicationThread$Stub$Proxy@2e5fa2a, debugName = OverlaySwipeBack }}
+11-02 17:11:53.906 V/WindowManagerShell(  992):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@f4a202c, appThread = android.app.IApplicationThread$Stub$Proxy@6654af5, debugName = LauncherToDream }}
+11-02 17:11:53.906 V/WindowManagerShell(  992):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@475c08a, appThread = android.app.IApplicationThread$Stub$Proxy@b8936fb, debugName = QuickstepLaunchHome }}
+11-02 17:11:53.906 V/WindowManagerShell(  992):  Delegate animation for (#15) to null
+11-02 17:11:53.906 V/WindowManagerShell(  992):  try handler com.android.wm.shell.transition.DefaultTransitionHandler@94f1318
+11-02 17:11:53.906 V/WindowManagerShell(  992): start default transition animation, info = {id=15 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@7cc460c} m=OPEN f=NONE leash=Surface(name=Task=9)/@0x89e4be0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@899ab55} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x5c4be99 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 taskParent=-1}]}
+11-02 17:11:53.912 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.913 V/WindowManagerShell(  992): loadAnimation: anim=android.view.animation.AnimationSet@1be7e5b animAttr=0x13 type=OPEN isEntrance=false
+11-02 17:11:53.916 V/WindowManagerShell(  992): loadAnimation: anim=android.view.animation.AnimationSet@4dca537 animAttr=0x12 type=OPEN isEntrance=true
+11-02 17:11:53.918 V/WindowManagerShell(  992):  animated by com.android.wm.shell.transition.DefaultTransitionHandler@94f1318
+11-02 17:11:53.926 I/FontLog ( 1343): Package com.wails.app has no metadata [CONTEXT service_id=132 ]
+11-02 17:11:53.928 I/Fitness ( 1343): FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_REMOVED [CONTEXT service_id=17 ]
+11-02 17:11:53.930 W/UserManagerService(  595): Requested status bar icon for non-badged user 0
+11-02 17:11:53.932 W/UserManagerService(  595): Requested status bar icon for non-badged user 0
+11-02 17:11:53.934 I/TopTaskTracker( 1253): onTaskRemoved: taskId=8
+11-02 17:11:53.934 I/TopTaskTracker( 1253): onTaskRemoved: taskId=8
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed App frame:UNKNOWN: 76, 13711, 0, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed SF frame:UNKNOWN: 76, 13711, 0, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missing HWUI jank callback for vsyncId: 13711, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed App frame:UNKNOWN: 88, 13803, 0, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed SF frame:UNKNOWN: 88, 13803, 0, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missing HWUI jank callback for vsyncId: 13803, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed SF frame:UNKNOWN: 80, 13820, 233870586, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed App frame:UNKNOWN: 88, 13873, 151187564, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed SF frame:UNKNOWN: 88, 13873, 151187564, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed App frame:UNKNOWN: 88, 13890, 122706854, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.935 W/FrameTracker( 1253): Missed SF frame:UNKNOWN: 88, 13890, 122706854, CUJ=J<LAUNCHER_APP_CLOSE_TO_HOME>
+11-02 17:11:53.936 V/PerfettoTrigger( 1253): Not triggering com.android.telemetry.interaction-jank-monitor-9 - not enough time since last trigger
+11-02 17:11:53.949 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.950 E/BpTransactionCompletedListener(  466): Failed to transact (-32)
+11-02 17:11:53.957 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.959 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.963 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.964 W/UserManagerService(  595): Requested status bar icon for non-badged user 0
+11-02 17:11:53.965 I/AiAiTextClassifier( 1542): [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+11-02 17:11:53.975 I/system_server(  595): Background concurrent mark compact GC freed 11MB AllocSpace bytes, 54(1200KB) LOS objects, 47% free, 26MB/50MB, paused 9.676ms,6.492ms total 743.077ms
+11-02 17:11:53.975 I/Icing   ( 1518): IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+11-02 17:11:53.980 D/BoundBrokerSvc( 1518): onBind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:11:53.980 D/BoundBrokerSvc( 1518): Loading bound service for intent: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:11:53.995 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ABjWpTSl7UQa5oSn90sJNQ==/com.wails.app-vYKKgMaLyGx2oDcw5toeow==/base.apk' with 1 weak references
+11-02 17:11:54.001 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/InputDevices/InputDevices.apk' with 1 weak references
+11-02 17:11:54.003 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk' with 1 weak references
+11-02 17:11:54.004 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AccessibilityMenu/AccessibilityMenu.apk' with 1 weak references
+11-02 17:11:54.004 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '/product/overlay/AccessibilityMenu__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+11-02 17:11:54.005 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/talkback/talkback.apk' with 1 weak references
+11-02 17:11:54.005 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '/vendor/overlay/EmulatorTalkBackOverlay/EmulatorTalkBackOverlay.apk' with 1 weak references
+11-02 17:11:54.005 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+11-02 17:11:54.006 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltGmsCore/PrebuiltGmsCore.apk' with 1 weak references
+11-02 17:11:54.006 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+11-02 17:11:54.007 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+11-02 17:11:54.007 W/system_server(  595): ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+11-02 17:11:54.018 I/DropBoxManagerService(  595): add tag=system_server_strictmode isTagEnabled=true flags=0x2
+11-02 17:11:54.037 I/Icing   ( 1518): Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+11-02 17:11:54.039 I/Icing   ( 1518): IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+11-02 17:11:54.045 W/ziparchive( 4042): Unable to open '/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.dm': No such file or directory
+11-02 17:11:54.045 W/ziparchive( 4042): Unable to open '/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.dm': No such file or directory
+11-02 17:11:54.048 I/hbox:interactor( 1569): JIT allocated 54KB for compiled code of java.lang.Object com.google.android.apps.gsa.binaries.velvet.app.arq.r()
+11-02 17:11:54.048 I/hbox:interactor( 1569): Compiler allocated 5666KB to compile java.lang.Object com.google.android.apps.gsa.binaries.velvet.app.arq.r()
+11-02 17:11:54.060 I/Icing   ( 1518): Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+11-02 17:11:54.164 D/nativeloader( 4042): Configuring clns-7 for other apk /data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/lib/x86_64:/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.wails.app
+11-02 17:11:54.186 V/GraphicsEnvironment( 4042): Currently set values for:
+11-02 17:11:54.186 V/GraphicsEnvironment( 4042):   angle_gl_driver_selection_pkgs=[]
+11-02 17:11:54.186 V/GraphicsEnvironment( 4042):   angle_gl_driver_selection_values=[]
+11-02 17:11:54.186 V/GraphicsEnvironment( 4042): Global.Settings values are invalid: number of packages: 0, number of values: 0
+11-02 17:11:54.186 V/GraphicsEnvironment( 4042): Neither updatable production driver nor prerelease driver is supported.
+11-02 17:11:54.218 W/OptProp (  595): Cannot read opt property android.window.PROPERTY_COMPAT_ENABLE_FAKE_FOCUS
+11-02 17:11:54.221 V/WindowManagerShell(  992): Transition animation finished (aborted=false), notifying core (#15) android.os.BinderProxy@5ad7a9e@0
+11-02 17:11:54.222 V/WindowManager(  595): Finish Transition (#15): created at 11-02 17:11:53.685 collect-started=0.023ms request-sent=11.803ms started=13.69ms ready=195.854ms sent=197.99ms finished=536.927ms
+11-02 17:11:54.223 V/WindowManagerShell(  992): Track 0 became idle
+11-02 17:11:54.223 V/WindowManagerShell(  992): All active transition animations finished
+11-02 17:11:54.223 D/VRI[NexusLauncherActivity]( 1253): visibilityChanged oldVisibility=true newVisibility=false
+11-02 17:11:54.227 W/UserManagerService(  595): Requested status bar icon for non-badged user 0
+11-02 17:11:54.227 W/UserManagerService(  595): Requested status bar icon for non-badged user 0
+11-02 17:11:54.235 D/NexusLauncherModelDelegate( 1253): notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+11-02 17:11:54.236 I/EGL_emulation(  595): Opening libGLESv1_CM_emulation.so
+11-02 17:11:54.249 I/EGL_emulation(  595): Opening libGLESv2_emulation.so
+11-02 17:11:54.271 D/AppCompatDelegate( 4042): Checking for metadata for AppLocalesMetadataHolderService : Service not found
+11-02 17:11:54.280 W/HWUI    (  595): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-02 17:11:54.307 D/EGL_emulation( 1253): app_time_stats: avg=29.01ms min=0.99ms max=215.51ms count=28
+11-02 17:11:54.366 W/com.wails.app( 4042): Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (unsupported, reflection, allowed)
+11-02 17:11:54.366 W/com.wails.app( 4042): Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+11-02 17:11:54.380 I/WebViewFactory( 4042): Loading com.google.android.webview version 124.0.6367.219 (code 636771938)
+11-02 17:11:54.389 V/ResourcesManager( 4042): The following library key has been added: ResourcesKey{ mHash=5b853de6 mResDir=null mSplitDirs=[] mOverlayDirs=[/product/overlay/NavigationBarModeGestural/NavigationBarModeGesturalOverlay.apk,/data/resource-cache/com.android.systemui-neutral-gOgU.frro,/data/resource-cache/com.android.systemui-accent-vi6H.frro,/data/resource-cache/com.android.systemui-dynamic-K3jD.frro] mLibDirs=[/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk,/data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.apk,/system_ext/framework/androidx.window.extensions.jar] mDisplayId=0 mOverrideConfig=v35 mCompatInfo={420dpi always-compat} mLoaders=[]}
+11-02 17:11:54.391 W/ziparchive( 4042): Unable to open '/data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.dm': No such file or directory
+11-02 17:11:54.391 W/ziparchive( 4042): Unable to open '/data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.dm': No such file or directory
+11-02 17:11:54.392 W/com.wails.app( 4042): Entry not found
+11-02 17:11:54.394 D/nativeloader( 4042): Configuring clns-8 for other apk /data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/lib/x86_64:/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+11-02 17:11:54.397 D/ApplicationLoaders( 4042): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+11-02 17:11:54.401 D/nativeloader( 4042): Configuring clns-9 for other apk /data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/lib/x86_64:/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{f13fc0f com.android.cts.priv.ctsshim/10190} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4e9149c com.google.android.youtube/10167} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{82d7ea5 com.android.internal.display.cutout.emulation.corner/10000} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{93627a com.android.internal.display.cutout.emulation.double/10082} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b1e4a2b com.google.android.googlequicksearchbox/10144} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ec0de88 com.google.android.onetimeinitializer/10128} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{11c6021 com.google.android.ext.shared/10117} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{8e52c46 com.android.virtualmachine.res/10193} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{1355e07 com.android.managedprovisioning.auto_generated_rro_product__/10022} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6c95b34 com.android.carrierconfig.auto_generated_rro_vendor__/10089} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{bbddd5d com.google.android.server.deviceconfig.resources/10201} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{c37c6d2 com.android.systemui.emulation.pixel_3_xl/10043} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{abfd3a3 com.android.systemui.emulation.pixel_4_xl/10068} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{93af6a0 com.android.systemui.emulation.pixel_fold/10021} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4fff259 com.android.providers.telephony.auto_generated_characteristics_rro/10020} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6a77e1e com.android.simappdialog.auto_generated_rro_product__/10015} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6f206ff com.android.htmlviewer/10116} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b68dccc com.google.android.health.connect.backuprestore/10205} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b45b15 com.android.systemui.auto_generated_rro_product__/10046} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7c95e2a com.google.android.apps.messaging/10136} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9ea141b com.google.android.soundpicker/10163} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{2acf9b8 com.google.android.marvin.talkbackoverlay/10085} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{40c9391 com.google.android.configupdater/10135} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{17732f6 com.android.internal.emulation.pixel_3a_xl/10024} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{18bd6f7 com.android.internal.emulation.pixel_6_pro/10067} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e13f964 com.android.internal.emulation.pixel_7_pro/10074} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{bd5d7cd com.android.internal.emulation.pixel_8_pro/10049} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{75b8882 com.android.internal.emulation.pixel_9_pro/10012} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{c1ceb93 com.android.internal.emulation.pixel_3a/10010} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ec947d0 com.android.internal.emulation.pixel_4a/10042} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{a7523c9 com.android.internal.emulation.pixel_6a/10078} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b3daace com.android.internal.emulation.pixel_7a/10073} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ca0adef com.android.internal.emulation.pixel_8a/10007} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b4310fc com.google.android.overlay.googlewebview/10050} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9a33385 com.google.android.apps.safetyhub/10129} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{20da5da com.google.android.hotspot2.osulogin/10207} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{8f43a0b com.android.simappdialog/10120} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{92e40e8 com.android.internal.display.cutout.emulation.hole/10052} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{be88301 com.android.internal.display.cutout.emulation.tall/10009} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{db045a6 com.android.internal.systemui.navbar.threebutton/10064} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{daa6be7 com.android.internal.ranchu.commonoverlay/10054} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{a1a8394 com.android.systemui.auto_generated_rro_vendor__/10088} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9d94e3d com.google.android.deskclock/10148} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{78b1632 com.android.internal.systemui.navbar.twobutton/10003} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{3a7df83 com.google.android.as/10137} BLOCKED
+11-02 17:11:54.401 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6e64500 com.google.android.gm/10164} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7119139 com.android.compos.payload/10184} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7d0637e com.android.systemui.emulation.pixel_3/10029} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{37ef0df com.android.systemui.emulation.pixel_4/10035} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5eab12c com.android.systemui.emulation.pixel_5/10071} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{af107f5 com.android.systemui.emulation.pixel_6/10041} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{58b398a com.android.systemui.emulation.pixel_7/10036} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{28bbbfb com.android.systemui.emulation.pixel_8/10055} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7e7b418 com.android.systemui.emulation.pixel_9/10037} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9172e71 com.android.printspooler/10126} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b6b6456 com.google.android.connectivity.resources.goldfish.overlay/10090} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5d01cd7 com.android.dreams.basic/10112} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7aff9c4 com.google.android.networkstack.tethering.emulator/10033} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{59f40ad com.android.providers.settings.auto_generated_rro_product__/10080} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{d516fe2 com.google.android.as.oss/10130} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{68faf73 com.android.traceur.auto_generated_rro_product__/10032} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{894ee30 com.android.internal.emulation.pixel_9_pro_fold/10056} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{11c3aa9 com.google.android.devicelockcontroller/10195} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{a9aa82e com.google.android.dialer/10131} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4abcfcf com.android.internal.emulation.pixel_3/10016} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{f92bd5c com.android.internal.emulation.pixel_4/10058} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{854d865 com.android.internal.emulation.pixel_5/10061} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{92d193a com.android.internal.emulation.pixel_6/10025} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{2bf99eb com.android.internal.emulation.pixel_7/10018} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{33c5348 com.android.internal.emulation.pixel_8/10031} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{3bf95e1 com.android.internal.emulation.pixel_9/10059} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5438f06 com.google.android.captiveportallogin/10119} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7fbe9c7 android.auto_generated_characteristics_rro/10053} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e675bf4 com.google.android.appsearch.apk/10196} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{2beaf1d com.android.musicfx/10094} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{1f99592 com.google.android.apps.docs/10158} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5b33845 com.google.android.apps.maps/10151} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{3c35b63 com.google.android.markup/10150} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{1984360 com.google.android.rkpdapp/10189} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e9c2019 com.google.android.contacts/10162} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{69778de com.android.server.telecom.auto_generated_rro_product__/10039} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{f064abf com.android.phone.auto_generated_characteristics_rro/10019} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{f2e358c com.google.android.overlay.googleconfig/10079} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{145a4d5 com.android.chrome/10145} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{49e44ea com.android.bips.auto_generated_rro_product__/10048} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{75ed3db com.google.android.apps.customization.pixel/10149} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e4f1e78 com.google.android.tag/10098} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{bc8b951 com.google.android.overlay.permissioncontroller/10057} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{293c5b6 com.google.android.partnersetup/10133} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{fecd2b7 com.google.android.apps.wallpaper.nexus/10159} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{93aa24 com.google.android.apps.nexuslauncher/10179} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{88e998d com.android.theme.font.notoserifsource/10047} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{78e8742 com.google.android.safetycenter.resources/10187} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{3f1e353 com.android.internal.display.cutout.emulation.waterfall/10028} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6734490 com.android.internal.systemui.navbar.transparent/10069} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5584189 com.google.android.connectivity.resources/10200} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{381d58e com.android.providers.contacts.auto_generated_rro_product__/10008} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{72d61af com.google.android.feedback/10173} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e7019bc com.google.android.printservice.recommendation/10118} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{fa6d45 com.google.android.apps.photos/10168} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{98a5c89 com.google.android.calendar/10161} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{49bc9a com.google.android.documentsui/10096} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ff869cb com.android.systemui.emulation.pixel_3a_xl/10081} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b0315a8 com.android.systemui.emulation.pixel_6_pro/10038} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{8d998c1 com.android.systemui.emulation.pixel_7_pro/10063} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{7770866 com.android.systemui.emulation.pixel_8_pro/10075} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{721d7a7 com.android.systemui.emulation.pixel_9_pro/10026} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{b47e454 com.android.carrierconfig.auto_generated_rro_product__/10006} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{225fffd com.android.devicediagnostics.auto_generated_rro_product__/10065} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{8db44f2 com.android.providers.partnerbookmarks/10114} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{98a4743 com.android.wallpaper.livepicker/10097} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{268f1c0 com.android.providers.telephony.auto_generated_rro_product__/10034} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ad79ef9 com.android.phone.auto_generated_rro_vendor__/10087} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{dd4be3e com.android.imsserviceentitlement/10138} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{780149f com.android.internal.emulation.pixel_9_pro_xl/10013} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9cb69ec com.google.android.healthconnect.controller/10204} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e6a31b5 com.android.internal.emulation.pixel_2_xl/10001} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{55a804a com.android.internal.emulation.pixel_3_xl/10083} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{ddb5bbb com.android.internal.emulation.pixel_4_xl/10040} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{9fb38d8 com.android.internal.emulation.pixel_fold/10017} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{a593431 com.android.bookmarkprovider/10113} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4c85716 com.google.android.overlay.pixelconfigcommon/10004} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4d9f897 com.android.systemui.accessibility.accessibilitymenu.auto_generated_rro_product__/10044} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6570a84 com.android.systemui.emulation.pixel_3a/10077} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e5be26d com.android.systemui.emulation.pixel_4a/10045} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{96acea2 com.android.systemui.emulation.pixel_6a/10076} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{bb8733 com.android.systemui.emulation.pixel_7a/10084} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{77c4af0 com.android.systemui.emulation.pixel_8a/10072} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4613869 com.google.android.settings.intelligence/10140} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5bcd369 com.google.android.projection.gearhead/10134} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6cb32ee com.google.android.uwb.resources/10198} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{60631ee com.android.cts.ctsshim/10191} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{1d638f com.google.android.wifi.resources/10206} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{73261c com.google.android.wifi.dialog/10208} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{c4bf225 com.android.wallpaper/10176} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{af0c623 com.android.microdroid.empty_payload/10194} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{dbb8ffa com.google.android.apps.wallpaper/10177} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{416a9ab com.google.android.odad/10132} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{a9a8808 com.android.settings.auto_generated_rro_product__/10062} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{76e8ba1 com.android.systemui.emulation.pixel_9_pro_xl/10030} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{822b1c6 com.android.companiondevicemanager.auto_generated_characteristics_rro/10060} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e143587 com.android.internal.systemui.navbar.gestural/10014} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{4541cb4 com.google.android.apps.youtube.music/10157} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{fc740dd com.android.bluetoothmidiservice/10115} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{5882452 com.android.storagemanager.auto_generated_rro_product__/10023} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{f74a323 com.google.android.cellbroadcastreceiver/10199} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{e705020 com.android.phone.auto_generated_rro_product__/10011} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6fc0dd9 com.android.systemui.emulation.pixel_9_pro_fold/10027} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{460339e android.auto_generated_rro_product__/10005} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{6e44e7f com.google.android.inputmethod.latin/10154} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{45a4e4c android.auto_generated_rro_vendor__/10086} BLOCKED
+11-02 17:11:54.402 I/AppsFilter(  595): interaction: PackageSetting{96d5dd0 com.wails.app/10209} -> PackageSetting{916ae95 com.google.android.apps.restore/10139} BLOCKED
+11-02 17:11:54.475 I/cr_WVCFactoryProvider( 4042): Loaded version=124.0.6367.219 minSdkVersion=29 isBundle=false multiprocess=true packageId=2
+11-02 17:11:54.492 D/nativeloader( 4042): Load /data/app/~~9Mi4g5U2kgEdAqFmGqWaRQ==/com.google.android.trichromelibrary_636771938-LnVZxiU0c1PJBk_DSsQLjw==/TrichromeLibrary.apk!/lib/x86_64/libmonochrome_64.so using ns clns-9 from class loader (caller=/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk): ok
+11-02 17:11:54.496 D/nativeloader( 4042): Load /system/lib64/libwebviewchromium_plat_support.so using ns clns-9 from class loader (caller=/data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk): ok
+11-02 17:11:54.509 I/chromium( 4042): [1102/171154.504628:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-02 17:11:54.509 I/cr_VariationsUtils( 4042): Failed reading seed file "/data/user/0/com.wails.app/app_webview/variations_seed_new"
+11-02 17:11:54.509 I/chromium( 4042): [INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-02 17:11:54.509 I/cr_VariationsUtils( 4042): Failed reading seed file "/data/user/0/com.wails.app/app_webview/variations_seed"
+11-02 17:11:54.514 I/cr_LibraryLoader( 4042): Successfully loaded native library
+11-02 17:11:54.515 I/cr_CachingUmaRecorder( 4042): Flushed 6 samples from 6 histograms, 0 samples were dropped.
+11-02 17:11:54.515 I/cr_VariationsUtils( 4042): Requesting new seed from IVariationsSeedServer
+11-02 17:11:54.520 I/cr_CombinedPProvider( 4042): #registerProvider() provider:WV.V7@f0f6b1c isPolicyCacheEnabled:false policyProvidersSize:0
+11-02 17:11:54.536 D/ActivityManager(  595): sync unfroze 2838 com.google.android.webview:webview_service for 6
+11-02 17:11:54.537 D/ActivityThread( 2838): Package [com.wails.app] reported as REPLACED, but missing application info. Assuming REMOVED.
+11-02 17:11:54.538 I/cr_PolicyProvider( 4042): #setManagerAndSource() 0
+11-02 17:11:54.538 V/GrammaticalInflectionUtils(  595): AttributionSource: AttributionSource { uid = 99002, packageName = null, attributionTag = null, token = android.os.Binder@94b5cb1, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-02 17:11:54.554 D/Zygote  ( 1059): Forked child process 4088
+11-02 17:11:54.559 I/ocessService0:0( 4088): Using CollectorTypeCMC GC.
+11-02 17:11:54.561 I/ActivityManager(  595): Start proc 4088:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i2 for  {com.wails.app/org.chromium.content.app.SandboxedProcessService0:0}
+11-02 17:11:54.561 W/ocessService0:0( 4088): Unexpected CPU variant for x86: x86_64.
+11-02 17:11:54.561 W/ocessService0:0( 4088): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+11-02 17:11:54.564 D/BoundBrokerSvc( 1518): onBind: Intent { act=com.google.android.gms.safetynet.service.START pkg=com.google.android.gms }
+11-02 17:11:54.564 D/BoundBrokerSvc( 1518): Loading bound service for intent: Intent { act=com.google.android.gms.safetynet.service.START pkg=com.google.android.gms }
+11-02 17:11:54.564 E/ocessService0:0( 4088): Not starting debugger since process cannot load the jdwp agent.
+11-02 17:11:54.566 I/cr_CombinedPProvider( 4042): #linkNativeInternal() 1
+11-02 17:11:54.567 I/cr_AppResProvider( 4042): #getApplicationRestrictionsFromUserManager() Bundle[EMPTY_PARCEL]
+11-02 17:11:54.567 I/cr_PolicyProvider( 4042): #notifySettingsAvailable() 0
+11-02 17:11:54.567 I/cr_CombinedPProvider( 4042): #onSettingsAvailable() 0
+11-02 17:11:54.567 I/cr_CombinedPProvider( 4042): #flushPolicies()
+11-02 17:11:54.568 D/nativeloader( 4088): Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+11-02 17:11:54.575 D/CompatChangeReporter( 4088): Compat change id reported: 242716250; UID 99002; state: ENABLED
+11-02 17:11:54.582 D/ApplicationLoaders( 4088): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+11-02 17:11:54.561 W/servicemanager(    0): Isolated app with UID 99002 requested 'network_management', but the service is not allowed for isolated apps.
+11-02 17:11:54.588 I/LoadedApk( 4088): No resource references to update in package com.google.android.trichromelibrary
+11-02 17:11:54.588 I/cr_WebViewApkApp( 4088): Launched version=124.0.6367.219 minSdkVersion=29 isBundle=false processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+11-02 17:11:54.567 W/servicemanager(    0): Isolated app with UID 99002 requested 'connectivity', but the service is not allowed for isolated apps.
+11-02 17:11:54.573 W/servicemanager(    0): Isolated app with UID 99002 requested 'content_capture', but the service is not allowed for isolated apps.
+11-02 17:11:54.595 I/cr_ChildProcessService( 4088): Creating new ChildProcessService pid=4088
+11-02 17:11:54.717 D/ConnectivityService(  595): requestNetwork for uid/pid:10209/4042 activeRequest: null callbackRequest: 131 [NetworkRequest [ REQUEST id=132, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false
+11-02 17:11:54.718 D/OemPaidWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=132, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.719 D/MultiInternetWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=132, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.719 D/WifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=132, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.719 D/UntrustedWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=132, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.720 D/ConnectivityService(  595): NetReassign [132 : null → 100] [c 0] [a 0] [i 3]
+11-02 17:11:54.721 D/ConnectivityService(  595): NetReassign [no changes] [c 1] [a 0] [i 0]
+11-02 17:11:54.771 D/nativeloader( 4042): Load /data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/lib/x86_64/libwails.so using ns clns-7 from class loader (caller=/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.apk!classes3.dex): ok
+11-02 17:11:54.797 I/WailsBridge( 4042): Wails bridge initialized
+11-02 17:11:54.801 D/Wails   ( 4042): Platform: Android
+11-02 17:11:54.802 I/Wails   ( 4042): 5:11PM Build Info: Wails=v3.1.0 Compiler=go1.26.0 -buildmode=c-shared -gcflags=all=-l CGO_CFLAGS=-Wno-error CGO_LDFLAGS= GOOS=android GOAMD64=v1 -compiler=gc -tags=android,debug CGO_ENABLED=1 CGO_CPPFLAGS= CGO_CXXFLAGS= GOARCH=amd64
+11-02 17:11:54.804 I/Wails   ( 4042): 5:11PM AssetServer Info: middleware=true handler=true
+11-02 17:11:54.806 D/WailsActivity( 4042): Loading URL: https://wails.localhost/
+11-02 17:11:54.807 D/Wails   ( 4042): [application_android.go] platformRun: initialising
+11-02 17:11:54.810 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1268 → common 1025
+11-02 17:11:54.824 W/cr_media( 4042): BLUETOOTH_CONNECT permission is missing.
+11-02 17:11:54.825 I/EGL_emulation( 4042): Opening libGLESv1_CM_emulation.so
+11-02 17:11:54.826 W/cr_media( 4042): registerBluetoothIntentsIfNeeded: Requires BLUETOOTH permission
+11-02 17:11:54.826 I/EGL_emulation( 4042): Opening libGLESv2_emulation.so
+11-02 17:11:54.830 I/cr_LibraryLoader( 4088): Successfully loaded native library
+11-02 17:11:54.831 I/cr_CachingUmaRecorder( 4088): Flushed 2 samples from 2 histograms, 0 samples were dropped.
+11-02 17:11:54.836 W/SystemServiceRegistry( 4088): No service published for: uimode
+11-02 17:11:54.815 W/servicemanager(    0): Isolated app with UID 99002 requested 'uimode', but the service is not allowed for isolated apps.
+11-02 17:11:54.847 W/chromium( 4088): [WARNING:runtime_features.cc(694)] SharedStorage for M118+ cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI,SharedStorageAPIM118 in addition.
+11-02 17:11:54.847 W/chromium( 4088): [WARNING:runtime_features.cc(730)] AttributionReportingCrossAppWeb cannot be enabled in this configuration. Use --enable-features=ConversionMeasurement,AttributionReportingCrossAppWeb in addition.
+11-02 17:11:54.857 D/ConnectivityService(  595): requestNetwork for uid/pid:10209/4042 activeRequest: null callbackRequest: 134 [NetworkRequest [ REQUEST id=135, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false
+11-02 17:11:54.860 D/OemPaidWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=135, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.860 D/MultiInternetWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=135, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.860 D/WifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=135, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.860 D/UntrustedWifiNetworkFactory(  595): got request NetworkRequest [ REQUEST id=135, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10209 RequestorUid: 10209 RequestorPkg: com.wails.app UnderlyingNetworks: Null] ]
+11-02 17:11:54.860 D/ConnectivityService(  595): NetReassign [135 : null → 100] [c 0] [a 0] [i 3]
+11-02 17:11:54.864 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:11:54.866 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:11:54.868 W/HWUI    ( 4042): Unknown dataspace 0
+11-02 17:11:54.868 I/FontLog ( 1343): Received query name=Google Sans&weight=700&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:11:54.869 I/FontLog ( 1343): Query [name=Google Sans&weight=700&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.871 I/FontLog ( 1343): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.871 I/FontLog ( 1343): Fetch {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:11:54.875 I/FontLog ( 1343): Pulling font file for id = 12, cache size = 10 [CONTEXT service_id=132 ]
+11-02 17:11:54.882 D/WailsPathHandler( 4042): Handling path: 
+11-02 17:11:54.882 D/WailsBridge( 4042): Serving asset: /index.html
+11-02 17:11:54.885 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/index.html file=index.html
+11-02 17:11:54.887 D/WailsPathHandler( 4042): Serving /index.html with type text/html (1154 bytes)
+11-02 17:11:54.887 I/FontLog ( 1343): Received query name=Noto Color Emoji Compat&weight=400&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:11:54.888 I/FontLog ( 1343): Query [name=Noto Color Emoji Compat&weight=400&besteffort=false] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.893 I/FontLog ( 1343): Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:11:54.898 I/FontLog ( 1343): Pulling font file for id = 13, cache size = 11 [CONTEXT service_id=132 ]
+11-02 17:11:54.921 I/FontLog ( 1343): Received query name=Google Sans&weight=400&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:11:54.922 I/FontLog ( 1343): Query [name=Google Sans&weight=400&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.922 I/FontLog ( 1343): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.922 I/FontLog ( 1343): Fetch {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:11:54.928 I/cr_VariationsUtils( 2838): Seed download job already scheduled
+11-02 17:11:54.932 I/FontLog ( 1343): Pulling font file for id = 14, cache size = 9 [CONTEXT service_id=132 ]
+11-02 17:11:54.940 I/FontLog ( 1343): Received query name=Google Sans&weight=500&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:11:54.941 I/FontLog ( 1343): Query [name=Google Sans&weight=500&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.942 I/FontLog ( 1343): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:54.946 D/WailsPathHandler( 4042): Handling path: assets/index-BeAGVLB0.js
+11-02 17:11:54.946 D/WailsBridge( 4042): Serving asset: assets/index-BeAGVLB0.js
+11-02 17:11:54.946 I/FontLog ( 1343): Fetch {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:11:54.946 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/index-BeAGVLB0.js file=assets/index-BeAGVLB0.js
+11-02 17:11:54.949 D/WailsPathHandler( 4042): Serving assets/index-BeAGVLB0.js with type application/javascript (44470 bytes)
+11-02 17:11:54.951 D/CoreBackPreview(  595): Window{a4fcd3f u0 com.wails.app/com.wails.app.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@6d0700d, mPriority=0, mIsAnimationCallback=false}
+11-02 17:11:54.951 D/WailsPathHandler( 4042): Handling path: assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:11:54.951 D/WailsBridge( 4042): Serving asset: assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:11:54.952 D/WailsPathHandler( 4042): Handling path: assets/fflate-DMzVRstV.js
+11-02 17:11:54.952 D/WailsBridge( 4042): Serving asset: assets/fflate-DMzVRstV.js
+11-02 17:11:54.952 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/classPrivateMethodInitSpec-BoP5DBPd.js file=assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:11:54.952 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/fflate-DMzVRstV.js file=assets/fflate-DMzVRstV.js
+11-02 17:11:54.952 D/WailsPathHandler( 4042): Serving assets/classPrivateMethodInitSpec-BoP5DBPd.js with type application/javascript (448 bytes)
+11-02 17:11:54.955 D/WailsPathHandler( 4042): Serving assets/fflate-DMzVRstV.js with type application/javascript (3819 bytes)
+11-02 17:11:54.955 D/WailsPathHandler( 4042): Handling path: assets/preload-helper-BLdHbfdN.js
+11-02 17:11:54.955 D/WailsBridge( 4042): Serving asset: assets/preload-helper-BLdHbfdN.js
+11-02 17:11:54.955 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/preload-helper-BLdHbfdN.js file=assets/preload-helper-BLdHbfdN.js
+11-02 17:11:54.956 D/WailsPathHandler( 4042): Handling path: assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:11:54.956 D/WailsBridge( 4042): Serving asset: assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:11:54.956 D/WailsPathHandler( 4042): Serving assets/preload-helper-BLdHbfdN.js with type application/javascript (1519 bytes)
+11-02 17:11:54.956 D/WailsPathHandler( 4042): Handling path: assets/platform-B5PSDNiE.js
+11-02 17:11:54.956 D/WailsBridge( 4042): Serving asset: assets/platform-B5PSDNiE.js
+11-02 17:11:54.956 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/platform-B5PSDNiE.js file=assets/platform-B5PSDNiE.js
+11-02 17:11:54.957 D/WailsPathHandler( 4042): Handling path: assets/vue-router-C8bnKvyG.js
+11-02 17:11:54.957 D/WailsBridge( 4042): Serving asset: assets/vue-router-C8bnKvyG.js
+11-02 17:11:54.958 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/vue-router-C8bnKvyG.js file=assets/vue-router-C8bnKvyG.js
+11-02 17:11:54.958 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/runtime-dom.esm-bundler-BOybfUxl.js file=assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:11:54.960 D/WailsPathHandler( 4042): Serving assets/platform-B5PSDNiE.js with type application/javascript (125051 bytes)
+11-02 17:11:54.961 I/chromium( 4088): [INFO:viewport_data.cc(133)] E2E_Used ViewportFitCover
+11-02 17:11:54.962 D/WailsPathHandler( 4042): Serving assets/runtime-dom.esm-bundler-BOybfUxl.js with type application/javascript (8000 bytes)
+11-02 17:11:54.962 D/WailsPathHandler( 4042): Serving assets/vue-router-C8bnKvyG.js with type application/javascript (22780 bytes)
+11-02 17:11:54.963 D/WailsPathHandler( 4042): Handling path: assets/i18n-DCBKrsjr.js
+11-02 17:11:54.963 D/WailsBridge( 4042): Serving asset: assets/i18n-DCBKrsjr.js
+11-02 17:11:54.964 D/WailsPathHandler( 4042): Handling path: assets/index-B5EhQapz.css
+11-02 17:11:54.964 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/i18n-DCBKrsjr.js file=assets/i18n-DCBKrsjr.js
+11-02 17:11:54.964 D/WailsBridge( 4042): Serving asset: assets/index-B5EhQapz.css
+11-02 17:11:54.964 D/WailsPathHandler( 4042): Serving assets/i18n-DCBKrsjr.js with type application/javascript (3278 bytes)
+11-02 17:11:54.964 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/index-B5EhQapz.css file=assets/index-B5EhQapz.css
+11-02 17:11:54.964 D/WailsPathHandler( 4042): Handling path: assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:11:54.964 D/WailsBridge( 4042): Serving asset: assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:11:54.964 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/useApi-CUWMwLLw-Bz-hoMMH.js file=assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:11:54.964 D/WailsPathHandler( 4042): Serving assets/useApi-CUWMwLLw-Bz-hoMMH.js with type application/javascript (868 bytes)
+11-02 17:11:54.965 D/WailsPathHandler( 4042): Serving assets/index-B5EhQapz.css with type text/css (26123 bytes)
+11-02 17:11:54.966 I/FontLog ( 1343): Pulling font file for id = 15, cache size = 6 [CONTEXT service_id=132 ]
+11-02 17:11:54.979 W/HWUI    ( 4042): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-02 17:11:54.983 I/servicemanager(    0): Caller(pid=4042,uid=10209,sid=u:r:untrusted_app:s0:c209,c256,c512,c768) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+11-02 17:11:55.009 I/hwservicemanager(  178): getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+11-02 17:11:55.009 I/Gralloc4( 4042): mapper 4.x is not supported
+11-02 17:11:55.039 I/Icing   ( 1518): Indexing com.google.android.gms-apps from com.google.android.gms
+11-02 17:11:55.052 I/Icing   ( 1518): Indexing com.google.android.gms-internal.3p:MobileApplication from com.google.android.gms
+11-02 17:11:55.055 I/Icing   ( 1518): Indexing done com.google.android.gms-apps
+11-02 17:11:55.056 I/Icing   ( 1518): Indexing done com.google.android.gms-internal.3p:MobileApplication
+11-02 17:11:55.062 I/Icing   ( 1518): Indexing com.google.android.gms-apps from com.google.android.gms
+11-02 17:11:55.063 I/Icing   ( 1518): Indexing done com.google.android.gms-apps
+11-02 17:11:55.102 W/ziparchive(  595): Unable to open '/data/app/~~qnmH9UYT7oZWQqFnwlf1yw==/com.wails.app-xH60ehmOc_V71qTmfqYByw==/base.dm': No such file or directory
+11-02 17:11:55.107 I/ActivityTaskManager(  595): Displayed com.wails.app/.MainActivity for user 0: +1s458ms
+11-02 17:11:55.110 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:11:55.139 I/netd    (  394): tetherGetStats() -> {[]} <5.33ms>
+11-02 17:11:55.178 I/ImeTracker(  595): com.wails.app:a6e3f309: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+11-02 17:11:55.179 I/ImeTracker(  595): com.wails.app:a6e3f309: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-02 17:11:55.186 I/GoogleInputMethodService( 1482): GoogleInputMethodService.onFinishInput():3157 
+11-02 17:11:55.188 I/GoogleInputMethodService( 1482): GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-02 17:11:55.188 I/GoogleInputMethodService( 1482): GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.wails.app, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-02 17:11:55.190 I/GoogleInputMethodService( 1482): GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-02 17:11:55.191 I/AndroidIME( 1482): InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password_floating_hard_qwerty
+11-02 17:11:55.192 W/PackageConfigPersister(  595): App-specific configuration not found for packageName: com.wails.app and userId: 0
+11-02 17:11:55.210 D/BaseDepthController( 1253): setSurface:
+11-02 17:11:55.210 D/BaseDepthController( 1253): 	mWaitingOnSurfaceValidity: false
+11-02 17:11:55.210 D/BaseDepthController( 1253): 	mSurface: null
+11-02 17:11:55.212 D/BaseDepthController( 1253): mSurface is null and mCurrentBlur is: 0
+11-02 17:11:55.218 D/StateManager( 1253): goToState - fromState: Normal, toState: Normal, partial trace:
+11-02 17:11:55.218 D/StateManager( 1253): 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+11-02 17:11:55.218 D/StateManager( 1253): 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+11-02 17:11:55.218 D/StateManager( 1253): 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+11-02 17:11:55.219 D/StatsLog( 1253): LAUNCHER_ONSTOP
+11-02 17:11:55.220 I/AppWidgetServiceImpl(  595): setAppWidgetHidden() 0
+11-02 17:11:55.226 D/OneSearchSuggestProvider( 1253): Shut down the binder channel
+11-02 17:11:55.232 D/StatsLog( 1253): LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+11-02 17:11:55.250 D/WailsActivity( 4042): [WebView] LOG: [polyfill] 已补齐运行时内置对象：Promise.try, Uint8Array.prototype.toBase64, Uint8Array.fromBase64 (https://wails.localhost/assets/index-BeAGVLB0.js:2)
+11-02 17:11:55.254 D/WailsActivity( 4042): Page loaded: https://wails.localhost/#/
+11-02 17:11:55.254 D/Wails   ( 4042): [JNI] page finished: https://wails.localhost/#/
+11-02 17:11:55.258 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:11:55.259 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:11:55.260 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:11:55.277 D/WailsPathHandler( 4042): Handling path: assets/mobile-Dxz1Po8J.js
+11-02 17:11:55.277 D/WailsBridge( 4042): Serving asset: assets/mobile-Dxz1Po8J.js
+11-02 17:11:55.279 D/WailsPathHandler( 4042): Handling path: assets/desktop-BxQDml7v.js
+11-02 17:11:55.279 D/WailsBridge( 4042): Serving asset: assets/desktop-BxQDml7v.js
+11-02 17:11:55.279 D/WailsPathHandler( 4042): Handling path: assets/dist-DXUMBP2b.js
+11-02 17:11:55.279 D/WailsBridge( 4042): Serving asset: assets/dist-DXUMBP2b.js
+11-02 17:11:55.279 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/dist-DXUMBP2b.js file=assets/dist-DXUMBP2b.js
+11-02 17:11:55.280 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/mobile-Dxz1Po8J.js file=assets/mobile-Dxz1Po8J.js
+11-02 17:11:55.280 D/WailsPathHandler( 4042): Serving assets/mobile-Dxz1Po8J.js with type application/javascript (261 bytes)
+11-02 17:11:55.280 D/WailsPathHandler( 4042): Serving assets/dist-DXUMBP2b.js with type application/javascript (16117 bytes)
+11-02 17:11:55.280 D/WailsPathHandler( 4042): Handling path: assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:11:55.281 D/WailsBridge( 4042): Serving asset: assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:11:55.281 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/rolldown-runtime-DK3Fl9T5.js file=assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:11:55.281 D/WailsPathHandler( 4042): Serving assets/rolldown-runtime-DK3Fl9T5.js with type application/javascript (158 bytes)
+11-02 17:11:55.282 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/desktop-BxQDml7v.js file=assets/desktop-BxQDml7v.js
+11-02 17:11:55.282 D/WailsPathHandler( 4042): Serving assets/desktop-BxQDml7v.js with type application/javascript (10557 bytes)
+11-02 17:11:55.307 D/WailsActivity( 4042): Page loaded: https://wails.localhost/#/
+11-02 17:11:55.308 D/Wails   ( 4042): [JNI] page finished: https://wails.localhost/#/
+11-02 17:11:55.308 D/WailsPathHandler( 4042): Handling path: assets/LibraryView-oXc_08iT.js
+11-02 17:11:55.308 D/WailsBridge( 4042): Serving asset: assets/LibraryView-oXc_08iT.js
+11-02 17:11:55.308 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/LibraryView-oXc_08iT.js file=assets/LibraryView-oXc_08iT.js
+11-02 17:11:55.308 D/WailsPathHandler( 4042): Serving assets/LibraryView-oXc_08iT.js with type application/javascript (7251 bytes)
+11-02 17:11:55.309 D/WailsPathHandler( 4042): Handling path: assets/progressStore-BW2FW0WV.js
+11-02 17:11:55.309 D/WailsBridge( 4042): Serving asset: assets/progressStore-BW2FW0WV.js
+11-02 17:11:55.309 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/assets/progressStore-BW2FW0WV.js file=assets/progressStore-BW2FW0WV.js
+11-02 17:11:55.309 D/WailsPathHandler( 4042): Serving assets/progressStore-BW2FW0WV.js with type application/javascript (6211 bytes)
+11-02 17:11:55.309 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:11:55.312 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:11:55.312 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:11:55.315 D/WailsPathHandler( 4042): Handling path: wails.png
+11-02 17:11:55.315 D/WailsBridge( 4042): Serving asset: wails.png
+11-02 17:11:55.315 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:11:55.315 D/WailsPathHandler( 4042): Serving wails.png with type image/png (9057 bytes)
+11-02 17:11:55.325 D/WailsJSBridge( 4042): Invoke called: wails:runtime:ready
+11-02 17:11:55.325 D/WailsBridge( 4042): Message from JS: wails:runtime:ready
+11-02 17:11:55.326 D/Wails   ( 4042): [JS message] wails:runtime:ready
+11-02 17:11:55.333 D/WailsActivity( 4042): Wails API call: /wails/custom.js
+11-02 17:11:55.333 D/WailsBridge( 4042): Serving asset: /wails/custom.js
+11-02 17:11:55.333 E/Wails   ( 4042): [JNI] error serving asset /wails/custom.js: asset not found: /wails/custom.js
+11-02 17:11:55.356 D/WailsActivity( 4042): Page loaded: https://wails.localhost/#/
+11-02 17:11:55.357 D/Wails   ( 4042): [JNI] page finished: https://wails.localhost/#/
+11-02 17:11:55.361 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:11:55.362 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:11:55.362 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:11:55.372 I/FontLog ( 1343): Received query Noto Color Emoji Compat, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:11:55.372 I/FontLog ( 1343): Query [emojicompat-emoji-font] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:11:55.374 I/FontLog ( 1343): Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:11:55.380 I/FontLog ( 1343): Pulling font file for id = 16, cache size = 7 [CONTEXT service_id=132 ]
+11-02 17:11:55.406 I/FontLog ( 1343): Pulling font file for id = 16, cache size = 7 [CONTEXT service_id=132 ]
+11-02 17:11:55.482 W/WindowOnBackDispatcher(  992): sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@5ba1c47
+11-02 17:11:55.483 D/CoreBackPreview(  595): Window{75b6006 u0 Splash Screen com.wails.app EXITING}: Setting back callback null
+11-02 17:11:55.484 W/InputManager-JNI(  595): Input channel object '75b6006 Splash Screen com.wails.app (client)' was disposed without first being removed with the input manager!
+11-02 17:11:55.525 D/EGL_emulation( 1253): app_time_stats: avg=290.12ms min=1.01ms max=1155.20ms count=4
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:PREDICTION_ERROR, 14400, 9525649, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed App frame:UNKNOWN: 24, 14415, 27575557, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 24, 14415, 27575557, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14429, 26430750, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14437, 29644146, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14452, 33333246, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.532 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14467, 23112546, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14482, 22595758, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14504, 33822477, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14526, 24407299, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14555, 30926116, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14577, 20339318, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14592, 31558153, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14607, 21260110, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14622, 21661321, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14637, 31121828, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14652, 20254707, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14667, 24224656, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14682, 22121809, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14704, 0, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missing HWUI jank callback for vsyncId: 14704, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 W/FrameTracker(  992): Missed SF frame:UNKNOWN: 80, 14726, 21037850, CUJ=J<SPLASHSCREEN_EXIT_ANIM>
+11-02 17:11:55.533 V/PerfettoTrigger(  992): Not triggering com.android.telemetry.interaction-jank-monitor-39 - not enough time since last trigger
+11-02 17:11:55.542 D/WailsJSBridge( 4042): InvokeAsync called: {"object":0,"method":0,"windowName":"","args":{"call-id":"i62mjpL37CvFA3L9dLvYo","methodID":2757075636,"args":[]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:11:55.544 D/WailsBridge( 4042): Runtime call: {"object":0,"method":0,"windowName":"","args":{"call-id":"i62mjpL37CvFA3L9dLvYo","methodID":2757075636,"args":[]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:11:55.554 I/com.wails.app( 4042): Compiler allocated 5174KB to compile void android.view.ViewRootImpl.performTraversals()
+11-02 17:11:55.562 D/WailsPathHandler( 4042): Handling path: wails.png
+11-02 17:11:55.562 D/WailsBridge( 4042): Serving asset: wails.png
+11-02 17:11:55.563 I/Wails   ( 4042): 5:11PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:11:55.564 D/WailsPathHandler( 4042): Serving wails.png with type image/png (9057 bytes)
+11-02 17:11:55.645 W/A       ( 1605): CompleteServer request has failed and can't show offline suggestions.
+11-02 17:11:55.645 W/A       ( 1605): kotlinx.coroutines.dt: Timed out waiting for 2000 ms
+11-02 17:11:55.645 W/A       ( 1605): 	at kotlinx.coroutines.du.run(PG:42)
+11-02 17:11:55.645 W/A       ( 1605): 	at com.google.apps.tiktok.f.y.run(PG:3)
+11-02 17:11:55.645 W/A       ( 1605): 	at com.google.apps.tiktok.tracing.fl.run(PG:24)
+11-02 17:11:55.645 W/A       ( 1605): 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+11-02 17:11:55.645 W/A       ( 1605): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+11-02 17:11:55.645 W/A       ( 1605): 	at com.google.common.n.c.c.run(PG:50)
+11-02 17:11:55.645 W/A       ( 1605): 	at com.google.android.libraries.k.e.run(PG:8)
+11-02 17:11:55.645 W/A       ( 1605): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:11:55.645 W/A       ( 1605): 	at com.google.android.libraries.k.d.b.run(PG:74)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): Unable to get suggestions from AGA
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): io.grpc.StatusRuntimeException: CANCELLED
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at k3.e.a(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:77)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at i3.l.b(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:43)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at i3.l.a(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:27)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at i3.z.run(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:7)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at i3.m2.run(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:19)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:11:55.650 E/OneSearchSuggestProvider( 1253): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:11:55.650 D/SearchTargetUtil( 1253): query= size=0
+11-02 17:11:55.653 I/IPCThreadState( 1253): oneway function results for code 2 on binder at 0x7f9d85c001e0 will be dropped but finished with status UNKNOWN_TRANSACTION
+11-02 17:11:56.556 D/EGL_emulation( 4042): app_time_stats: avg=291.62ms min=27.22ms max=672.55ms count=5
+11-02 17:11:56.768 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:56.768 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:56.768 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:56.768 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:56.768 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:57.201 E/TaskPersister(  595): File error accessing recents directory (directory doesn't exist?).
+11-02 17:11:58.471 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:11:58.471 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:11:58.471 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10145} in 0ms
+11-02 17:11:58.472 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:11:58.472 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:11:58.472 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={20145} in 1ms
+11-02 17:11:58.628 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:11:58.628 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:11:58.628 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10197} in 0ms
+11-02 17:11:58.628 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:11:58.629 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:11:58.629 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={20197} in 1ms
+11-02 17:11:59.432 D/ProfileInstaller( 4042): Installing profile for com.wails.app
+11-02 17:11:59.775 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:59.775 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:59.775 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:59.776 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:11:59.776 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:00.024 I/AiAiEcho( 1542): Predicting[0]:  [CONTEXT sampling_count=5 ]
+11-02 17:12:00.024 I/AiAiEcho( 1542): EchoTargets: 
+11-02 17:12:00.024 I/AiAiEcho( 1542): Filtered by AiAi flag check: 
+11-02 17:12:00.024 I/AiAiEcho( 1542): [CONTEXT ratelimit_period="10 SECONDS" ]
+11-02 17:12:00.024 I/AiAiEcho( 1542): Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+11-02 17:12:00.025 I/AiAiEcho( 1542): #remoteViewsTwiddler: feature disabled.
+11-02 17:12:00.026 I/AiAiEcho( 1542): Predicting[0]:  [CONTEXT sampling_count=5 ]
+11-02 17:12:00.026 I/AiAiEcho( 1542): EchoTargets: 
+11-02 17:12:00.026 I/AiAiEcho( 1542): Filtered by AiAi flag check: 
+11-02 17:12:00.026 I/AiAiEcho( 1542): [CONTEXT ratelimit_period="10 SECONDS" ]
+11-02 17:12:00.026 I/AiAiEcho( 1542): Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+11-02 17:12:00.026 I/AiAiEcho( 1542): #remoteViewsTwiddler: feature disabled.
+11-02 17:12:00.028 I/AiAiEcho( 1542): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+11-02 17:12:00.028 I/AiAiEcho( 1542): #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+11-02 17:12:00.029 D/SsBaseTemplateCard( 1253): No text view can be set up
+11-02 17:12:00.029 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:12:00.029 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:12:00.029 D/SsBaseTemplateCard( 1253): Passed-in item info is null
+11-02 17:12:00.029 I/SsBaseTemplateCard( 1253): Secondary card pane is null
+11-02 17:12:00.030 D/EGL_emulation(  992): app_time_stats: avg=17841.14ms min=17841.14ms max=17841.14ms count=1
+11-02 17:12:00.033 W/PageIndicator(  992): Total number of pages invalid: 0. Assuming 1 page.
+11-02 17:12:00.119 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:00.119 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:00.119 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10152} in 0ms
+11-02 17:12:00.120 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:00.120 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:00.120 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={20152} in 1ms
+11-02 17:12:00.132 D/OomAdjuster(  595): Not killing cached processes
+11-02 17:12:00.152 I/netd    (  394): tetherGetStats() -> {[]} <0.30ms>
+11-02 17:12:02.172 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:02.780 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:02.780 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:02.780 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:02.780 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:02.780 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:02.965 D/ActivityManager(  595): freezing 3109 com.google.android.marvin.talkback
+11-02 17:12:02.966 D/ActivityManager(  595): freezing 3095 com.google.android.healthconnect.controller
+11-02 17:12:02.966 D/ActivityManager(  595): freezing 2426 com.google.android.cellbroadcastreceiver
+11-02 17:12:02.966 D/ActivityManager(  595): freezing 3069 com.google.android.apps.safetyhub
+11-02 17:12:02.967 D/ActivityManager(  595): freezing 2696 com.android.traceur
+11-02 17:12:02.967 D/ActivityManager(  595): freezing 1804 android.process.media
+11-02 17:12:02.968 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:02.968 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:02.968 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10166} in 1ms
+11-02 17:12:02.975 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:02.975 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:02.975 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10204} in 1ms
+11-02 17:12:02.981 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:02.982 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:02.982 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10199} in 1ms
+11-02 17:12:02.985 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:02.986 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:02.986 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10129} in 1ms
+11-02 17:12:03.001 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:03.001 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:03.001 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10127} in 0ms
+11-02 17:12:03.008 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:03.008 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:03.008 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10095} in 1ms
+11-02 17:12:03.381 D/ActivityManager(  595): freezing 2667 com.google.android.documentsui
+11-02 17:12:03.382 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:03.382 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:03.382 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10096} in 1ms
+11-02 17:12:03.411 I/keystore2(  201): system/security/keystore2/watchdog/src/lib.rs:319 - Watchdog thread idle -> terminating. Have a great day.
+11-02 17:12:03.456 D/ActivityManager(  595): freezing 2616 com.android.chrome
+11-02 17:12:03.457 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:03.457 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:03.457 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10145} in 1ms
+11-02 17:12:03.627 D/ActivityManager(  595): freezing 3983 com.google.android.ext.services
+11-02 17:12:03.628 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:03.629 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:03.629 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10197} in 1ms
+11-02 17:12:03.696 I/netd    (  394): tetherGetStats() -> {[]} <0.34ms>
+11-02 17:12:05.015 W/com.wails.app( 4042): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~NXgiCpDTBMzCDuutY1p1kQ==/com.google.android.webview-aYYmTW1Pl2l5IxVYSvvBlQ==/WebViewGoogle.apk' with 2 weak references
+11-02 17:12:05.119 D/ActivityManager(  595): freezing 2838 com.google.android.webview:webview_service
+11-02 17:12:05.120 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:05.121 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:05.121 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10152} in 1ms
+11-02 17:12:05.136 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:05.136 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:05.136 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10142} in 0ms
+11-02 17:12:05.137 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:05.137 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:05.137 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={20142} in 1ms
+11-02 17:12:05.783 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:05.783 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:05.784 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:05.784 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:05.784 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.676 D/OomAdjuster(  595): Not killing cached processes
+11-02 17:12:08.788 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.788 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.789 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.789 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.789 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:08.793 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:08.794 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:08.795 I/ChimeraSrvcProxy( 1343): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+11-02 17:12:08.795 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:08.795 W/.gms.persistent( 1343): Large reply transaction of 1056768 bytes, interface descriptor , code 1
+11-02 17:12:08.795 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:08.795 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:08.797 I/BugleRcsEngine( 3267): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+11-02 17:12:08.798 I/BugleRcsEngine( 3267): handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[3db4e413-9980]>Handler" thread_id=62 ]
+11-02 17:12:08.798 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:12:08.799 I/BugleRcsEngine( 3267): RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=62 ]
+11-02 17:12:09.057 D/BoundBrokerSvc( 1518): onUnbind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:12:09.148 D/WailsPathHandler( 4042): Handling path: assets/ReaderView-h29DwnQl.js
+11-02 17:12:09.148 D/WailsBridge( 4042): Serving asset: assets/ReaderView-h29DwnQl.js
+11-02 17:12:09.148 D/WailsPathHandler( 4042): Handling path: assets/settings-NXrH5w8o.js
+11-02 17:12:09.149 D/WailsBridge( 4042): Serving asset: assets/settings-NXrH5w8o.js
+11-02 17:12:09.149 D/WailsPathHandler( 4042): Handling path: wails.png
+11-02 17:12:09.149 D/WailsPathHandler( 4042): Handling path: wails.png
+11-02 17:12:09.149 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/settings-NXrH5w8o.js file=assets/settings-NXrH5w8o.js
+11-02 17:12:09.149 D/WailsBridge( 4042): Serving asset: wails.png
+11-02 17:12:09.149 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:12:09.149 D/WailsPathHandler( 4042): Serving assets/settings-NXrH5w8o.js with type application/javascript (882 bytes)
+11-02 17:12:09.150 D/WailsBridge( 4042): Serving asset: wails.png
+11-02 17:12:09.150 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/ReaderView-h29DwnQl.js file=assets/ReaderView-h29DwnQl.js
+11-02 17:12:09.150 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:12:09.150 D/WailsPathHandler( 4042): Serving wails.png with type image/png (9057 bytes)
+11-02 17:12:09.150 D/WailsPathHandler( 4042): Serving assets/ReaderView-h29DwnQl.js with type application/javascript (21011 bytes)
+11-02 17:12:09.150 D/WailsPathHandler( 4042): Serving wails.png with type image/png (9057 bytes)
+11-02 17:12:09.153 D/WailsActivity( 4042): Page loaded: https://wails.localhost/#/reader/sample
+11-02 17:12:09.153 D/Wails   ( 4042): [JNI] page finished: https://wails.localhost/#/reader/sample
+11-02 17:12:09.155 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:12:09.156 D/WailsActivity( 4042): Page loaded: https://wails.localhost/#/reader/sample
+11-02 17:12:09.156 D/Wails   ( 4042): [JNI] page finished: https://wails.localhost/#/reader/sample
+11-02 17:12:09.156 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:12:09.156 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:12:09.157 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:12:09.158 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:12:09.158 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:12:09.208 D/WailsJSBridge( 4042): InvokeAsync called: {"object":0,"method":0,"windowName":"","args":{"call-id":"Zw7VMuH1HK62atfaXK2QL","methodID":1796984773,"args":["sample"]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:12:09.208 D/WailsBridge( 4042): Runtime call: {"object":0,"method":0,"windowName":"","args":{"call-id":"Zw7VMuH1HK62atfaXK2QL","methodID":1796984773,"args":["sample"]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:12:09.211 D/WailsPathHandler( 4042): Handling path: wails.png
+11-02 17:12:09.211 D/WailsBridge( 4042): Serving asset: wails.png
+11-02 17:12:09.211 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:12:09.211 D/WailsPathHandler( 4042): Serving wails.png with type image/png (9057 bytes)
+11-02 17:12:09.214 D/WailsPathHandler( 4042): Handling path: sample/sample.epub
+11-02 17:12:09.214 D/WailsBridge( 4042): Serving asset: sample/sample.epub
+11-02 17:12:09.214 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/sample/sample.epub file=sample/sample.epub
+11-02 17:12:09.229 D/WailsPathHandler( 4042): Serving sample/sample.epub with type application/octet-stream (294175 bytes)
+11-02 17:12:09.238 D/EGL_emulation( 4042): app_time_stats: avg=792.61ms min=14.12ms max=12429.65ms count=16
+11-02 17:12:09.241 D/WailsPathHandler( 4042): Handling path: assets/view-BR2c-OKz.js
+11-02 17:12:09.241 D/WailsBridge( 4042): Serving asset: assets/view-BR2c-OKz.js
+11-02 17:12:09.241 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/view-BR2c-OKz.js file=assets/view-BR2c-OKz.js
+11-02 17:12:09.241 D/WailsPathHandler( 4042): Handling path: assets/epubcfi-BzOeE4Vd.js
+11-02 17:12:09.241 D/WailsBridge( 4042): Serving asset: assets/epubcfi-BzOeE4Vd.js
+11-02 17:12:09.241 D/WailsPathHandler( 4042): Serving assets/view-BR2c-OKz.js with type application/javascript (20733 bytes)
+11-02 17:12:09.242 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/epubcfi-BzOeE4Vd.js file=assets/epubcfi-BzOeE4Vd.js
+11-02 17:12:09.242 D/WailsPathHandler( 4042): Handling path: assets/defineProperty-BbfpZ9Tg.js
+11-02 17:12:09.242 D/WailsBridge( 4042): Serving asset: assets/defineProperty-BbfpZ9Tg.js
+11-02 17:12:09.242 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/defineProperty-BbfpZ9Tg.js file=assets/defineProperty-BbfpZ9Tg.js
+11-02 17:12:09.242 D/WailsPathHandler( 4042): Serving assets/defineProperty-BbfpZ9Tg.js with type application/javascript (707 bytes)
+11-02 17:12:09.242 D/WailsPathHandler( 4042): Serving assets/epubcfi-BzOeE4Vd.js with type application/javascript (4723 bytes)
+11-02 17:12:09.249 D/WailsPathHandler( 4042): Handling path: assets/zip-3VNA5258.js
+11-02 17:12:09.249 D/WailsBridge( 4042): Serving asset: assets/zip-3VNA5258.js
+11-02 17:12:09.249 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/zip-3VNA5258.js file=assets/zip-3VNA5258.js
+11-02 17:12:09.249 D/WailsPathHandler( 4042): Serving assets/zip-3VNA5258.js with type application/javascript (35586 bytes)
+11-02 17:12:09.261 D/WailsPathHandler( 4042): Handling path: assets/epub-Bx7_OQ2j.js
+11-02 17:12:09.262 D/WailsBridge( 4042): Serving asset: assets/epub-Bx7_OQ2j.js
+11-02 17:12:09.262 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/epub-Bx7_OQ2j.js file=assets/epub-Bx7_OQ2j.js
+11-02 17:12:09.262 D/WailsPathHandler( 4042): Serving assets/epub-Bx7_OQ2j.js with type application/javascript (23134 bytes)
+11-02 17:12:09.291 D/WailsPathHandler( 4042): Handling path: assets/paginator-BQ3RgK5E.js
+11-02 17:12:09.291 D/WailsBridge( 4042): Serving asset: assets/paginator-BQ3RgK5E.js
+11-02 17:12:09.291 I/Wails   ( 4042): 5:12PM [AssetFileServerFS] Handling request url=/assets/paginator-BQ3RgK5E.js file=assets/paginator-BQ3RgK5E.js
+11-02 17:12:09.292 D/WailsPathHandler( 4042): Serving assets/paginator-BQ3RgK5E.js with type application/javascript (23287 bytes)
+11-02 17:12:09.315 D/WailsActivity( 4042): [WebView] WARNING: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. (https://wails.localhost/assets/paginator-BQ3RgK5E.js:97)
+11-02 17:12:09.323 D/WailsActivity( 4042): [WebView] WARNING: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. (blob:https://wails.localhost/f1ec5f6f-2fc0-4da1-8aea-1bee39779529:0)
+11-02 17:12:09.333 D/WailsJSBridge( 4042): InvokeAsync called: {"object":0,"method":0,"windowName":"","args":{"call-id":"n3j_Bv6NIqwAfnTo5sXDT","methodID":515727124,"args":["sample","epubcfi(/6/2!/4/2,,/2)"]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:12:09.334 D/WailsBridge( 4042): Runtime call: {"object":0,"method":0,"windowName":"","args":{"call-id":"n3j_Bv6NIqwAfnTo5sXDT","methodID":515727124,"args":["sample","epubcfi(/6/2!/4/2,,/2)"]},"clientId":"H59-bIOu-zwuPomSgjESK"}
+11-02 17:12:10.002 D/BoundBrokerSvc( 1518): onUnbind: Intent { act=com.google.android.gms.safetynet.service.START pkg=com.google.android.gms }
+11-02 17:12:10.024 I/netd    (  394): tetherGetStats() -> {[]} <0.29ms>
+11-02 17:12:11.793 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:11.794 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:11.794 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:11.794 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:11.794 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:12.170 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:13.282 E/NetworkScheduler.ATC( 1343): Trying to release unacquired lock: com.google.android.gms/.phenotype.service.sync.PhenotypeConfigurator [CONTEXT service_id=218 ]
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): Sync failed [CONTEXT service_id=51 ]
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): czue: 29504: Network error
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzb.p(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):266)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):126)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at bpjj.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):32)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): Caused by: java.io.InterruptedIOException: request interrupted
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):474)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:13.285 W/HeterodyneSyncer( 1343): 	... 13 more
+11-02 17:12:13.288 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.phenotype.service.sync.PhenotypeConfigurator finished executing. cause:4 result: 4 elapsed_millis: 224038 uptime_millis: 224038 exec_start_elapsed_seconds: 75 [CONTEXT service_id=218 ]
+11-02 17:12:13.308 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService started execution. cause:7 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.313 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService finished executing. cause:7 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): Sync task failure [CONTEXT service_id=51 ]
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): czue: 29504: Network error
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzb.p(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):266)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):126)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at bpjj.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):32)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): Caused by: java.io.InterruptedIOException: request interrupted
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):474)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:13.314 E/HeterodyneSyncTaskChime( 1343): 	... 13 more
+11-02 17:12:13.315 I/HeterodyneSyncScheduler( 1343): Scheduling a periodic sync task every 14400 seconds, with flex of 1800 seconds [CONTEXT service_id=51 ]
+11-02 17:12:13.316 I/resolv  (  394): GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+11-02 17:12:13.317 I/resolv  (  394): res_nmkquery: (QUERY, IN, AAAA)
+11-02 17:12:13.317 I/resolv  (  394): res_nmkquery: (QUERY, IN, A)
+11-02 17:12:13.317 I/resolv  (  394): resolv_cache_lookup: FOUND IN CACHE entry=0x7033f6c2cbd0
+11-02 17:12:13.317 I/resolv  (  394): doQuery: rcode=0, ancount=1, return value=52
+11-02 17:12:13.319 I/resolv  (  394): res_nsend: used send_dg 109 terrno: 0
+11-02 17:12:13.319 I/resolv  (  394): doQuery: rcode=0, ancount=0, return value=109
+11-02 17:12:13.319 D/TrafficStats( 1343): tagSocket(128) with statsTag=0x1203, statsUid=10143
+11-02 17:12:13.338 I/GCM-GMS ( 1518): Registering GMS 745476177629
+11-02 17:12:13.342 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.gcm.gmsproc.GcmInGmsTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.343 W/GCM-GMS ( 1518): Failed to get registration: java.io.IOException: AUTHENTICATION_FAILED
+11-02 17:12:13.345 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.gcm.gmsproc.GcmInGmsTaskService finished executing. cause:5 result: 3 elapsed_millis: 11 uptime_millis: 11 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.362 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.371 I/TapAndPay( 1343): Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+11-02 17:12:13.380 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 25 uptime_millis: 25 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.393 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.395 I/TapAndPay( 1343): Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+11-02 17:12:13.396 W/Pay     ( 1518): Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+11-02 17:12:13.396 W/Pay     ( 1518): No account found on the task or the device. Notification task will not be rescheduled. [CONTEXT service_id=198 ]
+11-02 17:12:13.398 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 2 elapsed_millis: 9 uptime_millis: 9 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.413 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.415 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 8 uptime_millis: 8 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.429 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.432 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 8 uptime_millis: 8 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.449 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.469 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 26 uptime_millis: 26 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.488 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.490 I/Pay     ( 1518): Device does not support HCE. [CONTEXT service_id=198 ]
+11-02 17:12:13.500 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 2 elapsed_millis: 20 uptime_millis: 20 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.510 W/.gms.persistent( 1343): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+11-02 17:12:13.511 W/.gms.persistent( 1343): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SafetyHubPrebuilt/SafetyHubPrebuilt.apk' with 1 weak references
+11-02 17:12:13.512 W/.gms.persistent( 1343): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+11-02 17:12:13.513 W/.gms.persistent( 1343): ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PartnerSetupPrebuilt/PartnerSetupPrebuilt.apk' with 1 weak references
+11-02 17:12:13.518 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.519 I/TapAndPay( 1343): Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+11-02 17:12:13.520 W/Pay     ( 1518): Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+11-02 17:12:13.525 D/BoundBrokerSvc( 1518): onBind: Intent { act=com.google.android.gms.audit.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:12:13.525 D/BoundBrokerSvc( 1518): Loading bound service for intent: Intent { act=com.google.android.gms.audit.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:12:13.531 I/Pay     ( 1518): [SeTosMigration] walletJpEligibility is not enabled [CONTEXT service_id=198 ]
+11-02 17:12:13.532 I/Pay     ( 1518): Wallet install state NOT_INSTALLED [CONTEXT service_id=198 ]
+11-02 17:12:13.533 I/Pay     ( 1518): Migration flag not enabled. [CONTEXT service_id=198 ]
+11-02 17:12:13.535 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 21 uptime_millis: 21 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.548 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.550 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 2 elapsed_millis: 6 uptime_millis: 6 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.568 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.udc.service.UdcContextInitService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.588 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.udc.service.UdcContextInitService finished executing. cause:5 result: 1 elapsed_millis: 26 uptime_millis: 26 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.599 D/BoundBrokerSvc( 1518): onBind: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+11-02 17:12:13.599 D/BoundBrokerSvc( 1518): Loading bound service for intent: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+11-02 17:12:13.601 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.609 I/LocationHistory( 1518): [SettingsSyncOneOffTask] Synced ODLH settings for all accounts. [CONTEXT service_id=314 ]
+11-02 17:12:13.611 D/BoundBrokerSvc( 1518): onUnbind: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+11-02 17:12:13.611 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService finished executing. cause:5 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.625 W/GmsTaskChimeraService( 1343): com.google.android.gms PhenotypeSyncImmediately: Task already running, won't start another
+11-02 17:12:13.625 I/NetworkScheduler.Stats( 1343): Task com.google.android.gms/com.google.android.gms.phenotype.service.sync.PhenotypeConfigurator started execution. cause:5 exec_start_elapsed_seconds: 299 [CONTEXT service_id=218 ]
+11-02 17:12:13.704 D/ActivityManager(  595): freezing 993 com.google.android.permissioncontroller
+11-02 17:12:13.705 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+11-02 17:12:13.706 D/InetDiagMessage(  595): Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+11-02 17:12:13.706 D/InetDiagMessage(  595): Destroyed live tcp sockets for uids={10188} in 1ms
+11-02 17:12:14.798 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:14.799 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:14.799 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:14.799 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:14.799 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:14.804 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:14.805 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:14.805 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:14.806 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:14.806 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:14.807 I/BugleRcsEngine( 3267): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+11-02 17:12:14.808 I/BugleRcsEngine( 3267): handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[3db4e413-9980]>Handler" thread_id=62 ]
+11-02 17:12:14.809 D/Wails   ( 4042): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:12:14.810 I/BugleRcsEngine( 3267): RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=62 ]
+11-02 17:12:14.810 I/ChimeraSrvcProxy( 1343): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+11-02 17:12:14.810 W/.gms.persistent( 1343): Large reply transaction of 1056768 bytes, interface descriptor , code 1
+11-02 17:12:14.869 W/SP      ( 1482): File ref is being finalized but wasn't closed, file: main_en_us_2024051500_1[2]
+11-02 17:12:14.869 W/SP      ( 1482): File ref is being finalized but wasn't closed, file: main_en_us_2024051500_1[2]
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): Retrieving snapshot for com.google.android.gms.phenotype failed
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): java.util.concurrent.TimeoutException: Timed out waiting for Task
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at dkkh.n(:com.google.android.gms@242335041@24.23.35 (190800-646585959):53)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at czsy.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at czsy.j(:com.google.android.gms@242335041@24.23.35 (190800-646585959):42)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at czsy.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):4)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at czvb.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):25)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1207)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at com.google.android.gms.phenotype.sync.HeterodyneSyncTaskChimeraService.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):126)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at bpjj.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):32)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:15.321 E/PhenotypeFlagCommitter( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:16.316 D/OomAdjuster(  595): Not killing cached processes
+11-02 17:12:16.324 D/ActivityManager(  595): sync unfroze 1809 android.process.acore for 7
+11-02 17:12:16.333 D/ActivityThread( 1809): Package [com.wails.app] reported as REPLACED, but missing application info. Assuming REMOVED.
+11-02 17:12:16.348 I/netd    (  394): tetherGetStats() -> {[]} <0.85ms>
+11-02 17:12:17.808 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:17.809 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:17.809 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:17.810 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:17.810 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:18.791 I/resolv  (  394): GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+11-02 17:12:18.792 I/resolv  (  394): res_nmkquery: (QUERY, IN, AAAA)
+11-02 17:12:18.792 I/resolv  (  394): resolv_cache_lookup: FOUND IN CACHE entry=0x703506c30730
+11-02 17:12:18.792 I/resolv  (  394): res_nmkquery: (QUERY, IN, A)
+11-02 17:12:18.792 I/resolv  (  394): doQuery: rcode=0, ancount=0, return value=109
+11-02 17:12:18.792 I/resolv  (  394): resolv_cache_lookup: FOUND IN CACHE entry=0x7033f6c2cbd0
+11-02 17:12:18.792 I/resolv  (  394): doQuery: rcode=0, ancount=1, return value=52
+11-02 17:12:18.793 D/TrafficStats( 1518): tagSocket(120) with statsTag=0x30005500, statsUid=-1
+11-02 17:12:18.863 D/TrafficStats( 1518): tagSocket(6) with statsTag=0x30003000, statsUid=-1
+11-02 17:12:20.817 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:20.818 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:20.818 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:20.818 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:20.818 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:22.171 W/IPCThreadState(  595): Sending oneway calls to frozen process.
+11-02 17:12:22.190 D/EGL_emulation(  992): app_time_stats: avg=22159.77ms min=22159.77ms max=22159.77ms count=1
+11-02 17:12:22.364 D/OomAdjuster(  595): Not killing cached processes
+11-02 17:12:22.380 I/netd    (  394): tetherGetStats() -> {[]} <0.93ms>
+11-02 17:12:23.823 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:23.823 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:23.823 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:23.823 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:23.823 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:23.893 W/healthd (    0): battery l=100 v=5000 t=25.0 h=2 st=2 c=900000 fc=3000000 cc=10 chg=a
+11-02 17:12:24.209 W/.gms.persistent( 1343): Long monitor contention with owner lowpool[3] (1882) at void czzb.N(java.util.Set, epcy, evmz, java.lang.String, boolean, fkgb, czyu, epbw, epcy, boolean, fozf)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):303) waiters=1 in void czzb.N(java.util.Set, epcy, evmz, java.lang.String, boolean, fkgb, czyu, epbw, epcy, boolean, fozf) for 130.884s
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): Sync failed [CONTEXT service_id=51 ]
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): czue: 29504: Network error
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzb.r(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czxj.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):187)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):18)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): Caused by: java.io.IOException: request causes GmsNetworkException without UrlResponseInfo at execution
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):424)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	... 15 more
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): Caused by: bpcw: Failed to process request
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at bpgb.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):19)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at bpgp.onFailed(:com.google.android.gms@242335041@24.23.35 (190800-646585959):13)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at m.mw.onFailed(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at m.lw.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):9)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	... 4 more
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): Caused by: m.mg: Exception in CronetUrlRequest: net::ERR_CONNECTION_TIMED_OUT, ErrorCode=6, InternalErrorCode=-118, Retryable=true
+11-02 17:12:24.209 W/HeterodyneSyncer( 1343): 	at org.chromium.net.impl.CronetUrlRequest.onError(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):4)
+11-02 17:12:24.214 E/czvx    ( 1343): Phenotype API error. Event: # fozr@5781a9bb, EventCode: REGISTER_SYNC [CONTEXT service_id=51 ]
+11-02 17:12:24.214 E/czvx    ( 1343): czue: 29504: Network error
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzb.r(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czxj.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):187)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):18)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:24.214 E/czvx    ( 1343): Caused by: java.io.IOException: request causes GmsNetworkException without UrlResponseInfo at execution
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):424)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:24.214 E/czvx    ( 1343): 	... 15 more
+11-02 17:12:24.214 E/czvx    ( 1343): Caused by: bpcw: Failed to process request
+11-02 17:12:24.214 E/czvx    ( 1343): 	at bpgb.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):19)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at bpgp.onFailed(:com.google.android.gms@242335041@24.23.35 (190800-646585959):13)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at m.mw.onFailed(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at m.lw.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):9)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:24.214 E/czvx    ( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:24.214 E/czvx    ( 1343): 	... 4 more
+11-02 17:12:24.214 E/czvx    ( 1343): Caused by: m.mg: Exception in CronetUrlRequest: net::ERR_CONNECTION_TIMED_OUT, ErrorCode=6, InternalErrorCode=-118, Retryable=true
+11-02 17:12:24.214 E/czvx    ( 1343): 	at org.chromium.net.impl.CronetUrlRequest.onError(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):4)
+11-02 17:12:24.215 W/AsyncOperation( 1343): operation=RegisterSyncOperationCall, opStatusCode=29504 [CONTEXT service_id=51 ]
+11-02 17:12:24.215 W/AsyncOperation( 1343): OperationException[Status{statusCode=Network error, resolution=null}]
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):48)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:24.215 W/AsyncOperation( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:24.226 D/TrafficStats( 1343): tagSocket(167) with statsTag=0x1203, statsUid=10143
+11-02 17:12:24.229 I/HeterodyneSyncScheduler( 1343): Scheduling Phenotype for a PhenotypeSyncImmediately(6, com.google.android.gms.phenotype) one off with window [1, 2] in seconds [CONTEXT service_id=51 ]
+11-02 17:12:24.234 I/RegisterSyncOperation( 1343): Register sync called by com.google.android.gms, syncing since something changed [CONTEXT service_id=51 ]
+11-02 17:12:24.235 I/HeterodyneSyncer( 1343): Removed 0 invalid users [CONTEXT service_id=51 ]
+11-02 17:12:24.501 I/GMS_MM_Logger( 1343): Memory Metric Logging not allowed. Stopping.
+11-02 17:12:26.379 I/ResourceTimer(  595): GetResourceValue count=7122 pvalues=1000,11000,17000,82000
+11-02 17:12:26.379 I/ResourceTimer(  595): RetrieveAttributes count=14875 pvalues=1000,1000,3000,19000
+11-02 17:12:26.828 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:26.829 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:26.829 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:26.829 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:26.829 W/BestClock(  595): java.time.DateTimeException: Missing network time fix
+11-02 17:12:27.532 I/GMS_MM_Logger( 1518): Memory Metric Logging not allowed. Stopping.
+11-02 17:12:27.556 D/OomAdjuster(  595): Not killing cached processes
+11-02 17:12:28.305 W/.gms.persistent( 1343): Long monitor contention with owner highpool[3] (1679) at void czzb.N(java.util.Set, epcy, evmz, java.lang.String, boolean, fkgb, czyu, epbw, epcy, boolean, fozf)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):303) waiters=0 in void czzb.N(java.util.Set, epcy, evmz, java.lang.String, boolean, fkgb, czyu, epbw, epcy, boolean, fozf) for 4.070s
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): Sync failed [CONTEXT service_id=51 ]
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): czue: 29504: Network error
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzb.r(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czxj.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):187)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):18)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): Caused by: java.io.IOException: request causes GmsNetworkException without UrlResponseInfo at execution
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):424)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	... 15 more
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): Caused by: bpcw: Failed to process request
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at bpgb.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):19)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at bpgp.onFailed(:com.google.android.gms@242335041@24.23.35 (190800-646585959):13)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at m.mw.onFailed(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at m.lw.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):9)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	... 4 more
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): Caused by: m.mg: Exception in CronetUrlRequest: net::ERR_CONNECTION_TIMED_OUT, ErrorCode=6, InternalErrorCode=-118, Retryable=true
+11-02 17:12:28.305 W/HeterodyneSyncer( 1343): 	at org.chromium.net.impl.CronetUrlRequest.onError(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):4)
+11-02 17:12:28.313 E/czvx    ( 1343): Phenotype API error. Event: # fozr@11f98e98, EventCode: REGISTER_SYNC [CONTEXT service_id=51 ]
+11-02 17:12:28.313 E/czvx    ( 1343): czue: 29504: Network error
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):296)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzb.q(:com.google.android.gms@242335041@24.23.35 (190800-646585959):109)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzb.B(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzb.r(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czxj.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):187)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):18)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:28.313 E/czvx    ( 1343): Caused by: java.io.IOException: request causes GmsNetworkException without UrlResponseInfo at execution
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzh.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):424)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at czzb.N(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+11-02 17:12:28.313 E/czvx    ( 1343): 	... 15 more
+11-02 17:12:28.313 E/czvx    ( 1343): Caused by: bpcw: Failed to process request
+11-02 17:12:28.313 E/czvx    ( 1343): 	at bpgb.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):19)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at bpgp.onFailed(:com.google.android.gms@242335041@24.23.35 (190800-646585959):13)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at m.mw.onFailed(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at m.lw.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):9)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:28.313 E/czvx    ( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+11-02 17:12:28.313 E/czvx    ( 1343): 	... 4 more
+11-02 17:12:28.313 E/czvx    ( 1343): Caused by: m.mg: Exception in CronetUrlRequest: net::ERR_CONNECTION_TIMED_OUT, ErrorCode=6, InternalErrorCode=-118, Retryable=true
+11-02 17:12:28.313 E/czvx    ( 1343): 	at org.chromium.net.impl.CronetUrlRequest.onError(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):4)
+11-02 17:12:28.313 W/AsyncOperation( 1343): operation=RegisterSyncOperationCall, opStatusCode=29504 [CONTEXT service_id=51 ]
+11-02 17:12:28.313 W/AsyncOperation( 1343): OperationException[Status{statusCode=Network error, resolution=null}]
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at czvx.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):48)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at czvx.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at boey.hj(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at bofh.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+11-02 17:12:28.313 W/AsyncOperation( 1343): 	at java.lang.Thread.run(Thread.java:1012)
+11-02 17:12:28.320 I/RegisterSyncOperation( 1343): Register sync called by com.google.android.gms, syncing since something changed [CONTEXT service_id=51 ]
+11-02 17:12:28.321 I/HeterodyneSyncer( 1343): Removed 0 invalid users [CONTEXT service_id=51 ]
+11-02 17:12:28.322 D/TrafficStats( 1343): tagSocket(187) with statsTag=0x1203, statsUid=10143
+11-02 17:12:28.528 D/BoundBrokerSvc( 1518): onUnbind: Intent { act=com.google.android.gms.audit.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+11-02 17:12:29.528 I/logd    (    0): logdr: UID=2000 GID=2000 PID=4181 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns

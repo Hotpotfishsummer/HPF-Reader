@@ -1,0 +1,26 @@
+=== landscape probe ===
+{
+  "href": "https://wails.localhost/#/reader/sample",
+  "title": "HPF Reader",
+  "readyState": "complete",
+  "bodyTextLen": 53,
+  "bodyTextHead": "←返回书库☰目录第二章 · 内容隔离69% L2 ◐纸白‹上一页›下一页\n\n已从上次位置继续（约 69%）",
+  "appChildren": 1,
+  "iframeCount": 0,
+  "canvasCount": 0,
+  "rootBg": "rgba(0, 0, 0, 0)",
+  "rootH": 388,
+  "rootW": 867,
+  "hasWailsBridge": true,
+  "ua": "Mozilla/5.0 (Linux; Android 12; sdk_gphone64_x86_64 Build/SE1A.220826.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.114 Mobile Safari/537.36"
+}
+=== open TOC ===
+[{"txt":"←返回书库","x":41,"y":13},{"txt":"☰目录","x":110,"y":13},{"txt":"◐纸白","x":357,"y":13},{"txt":"‹上一页","x":415,"y":13},{"txt":"›下一页","x":475,"y":13}]
+{
+  "tapped": [
+    110,
+    13
+  ]
+}
+=== after TOC tap ===
+←返回书库☰目录第二章 · 内容隔离69% L2 ◐纸白‹上一页›下一页 | 目录 | ✕ | 第一章 · 客户端骨架 | 第二章 · 内容隔离 | 第三章 · 排版与主题 |  | 已从上次位置继续（约 69%）

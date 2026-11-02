@@ -1,0 +1,329 @@
+{
+  "summary": {
+    "runId": "mvzhkopb",
+    "startedAt": "2026-11-02T16:41:37.295Z",
+    "finishedAt": "2026-11-02T16:41:38.669Z",
+    "baseUrl": "http://127.0.0.1:18080",
+    "book": "C:\\Users\\HOTPOTFISH\\Desktop\\AllCode\\HPF-Reader\\testdata\\books\\frankenstein.epub",
+    "checks": {
+      "total": 52,
+      "passed": 52,
+      "failed": 0
+    },
+    "fatal": null
+  },
+  "checks": [
+    {
+      "id": "C-01",
+      "name": "HLC 定长 31 且格式合法",
+      "ok": true,
+      "detail": "0018bcfe56800-00000000-11111111 / 0018bcfe56800-00000001-11111111"
+    },
+    {
+      "id": "C-02",
+      "name": "同一毫秒内计数器递增（字典序 == 时间序）",
+      "ok": true,
+      "detail": "0018bcfe56800-00000000-11111111 < 0018bcfe56800-00000001-11111111"
+    },
+    {
+      "id": "C-03",
+      "name": "observe 远程 HLC 后本地时钟严格更大",
+      "ok": true,
+      "detail": "0192a3f4c1b0a-0000000b-11111111 > 0192a3f4c1b0a-0000000a-7f3c9d21"
+    },
+    {
+      "id": "C-11",
+      "name": "非法 HLC（12 位时间戳）被拒绝且不影响本地时钟",
+      "ok": true,
+      "detail": "0192a3f4c1b0a-0000000b-11111111"
+    },
+    {
+      "id": "C-12",
+      "name": "uuidv7 合法且严格递增（8-4-4-4-12，版本位 7）",
+      "ok": true,
+      "detail": "01a19d23-4714-7000-8b4a-0bfcd0144775 01a19d23-4715-7000-89ab-499c9e5db392 01a19d23-4715-7001-be6b-fe44ecca9663"
+    },
+    {
+      "id": "C-04",
+      "name": "设备前缀规整为 8 位小写字母数字",
+      "ok": true,
+      "detail": "11111111"
+    },
+    {
+      "id": "C-05",
+      "name": "指数退避 1s→2s→4s…封顶 30s",
+      "ok": true,
+      "detail": "[1000,2000,4000,8000,16000,30000,30000]"
+    },
+    {
+      "id": "C-06",
+      "name": "离线时 outbox 保留待发变更",
+      "ok": true,
+      "detail": "pending=1"
+    },
+    {
+      "id": "C-07",
+      "name": "outbox 进程重启不丢（storage 往返）",
+      "ok": true,
+      "detail": "size=1"
+    },
+    {
+      "id": "C-08",
+      "name": "ack 后出队",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "C-09",
+      "name": "apply 后最远进度只增不减（本地投影不倒退）",
+      "ok": true,
+      "detail": "{\"total\":0.2,\"furthest\":0.6}"
+    },
+    {
+      "id": "C-10",
+      "name": "游标由服务端 nextCursor 推进",
+      "ok": true,
+      "detail": "cursor=11"
+    },
+    {
+      "id": "E-00",
+      "name": "服务端存活探针 /healthz",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "id": "E-01",
+      "name": "注册成功并拿到 access/refresh（含 user.id）",
+      "ok": true,
+      "detail": "expiresIn=900"
+    },
+    {
+      "id": "E-02",
+      "name": "Bearer 认证可用（GET /v1/me）",
+      "ok": true,
+      "detail": "spike-a-mvzhkopb@example.com"
+    },
+    {
+      "id": "E-03",
+      "name": "伪造 token 被拒（401）",
+      "ok": true,
+      "detail": "伪造 token: 实际 401 unauthorized invalid or expired token"
+    },
+    {
+      "id": "E-04",
+      "name": "refresh 轮换：返回新的令牌对",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E-05",
+      "name": "旧 refresh 重用被拒（轮换 + 重用检测）",
+      "ok": true,
+      "detail": "旧 refresh 重用: 实际 401 unauthorized refresh token already used; session revoked"
+    },
+    {
+      "id": "E-06",
+      "name": "重用检测吊销整个 family（新 refresh 也失效）",
+      "ok": true,
+      "detail": "family 吊销后新 refresh: 实际 401 unauthorized refresh token already used; session revoked"
+    },
+    {
+      "id": "E-07",
+      "name": "创建书籍记录（带 contentHash）",
+      "ok": true,
+      "detail": "b73e1887-d3f6-466f-bdb5-cc02081dc1df size=294175"
+    },
+    {
+      "id": "E-08",
+      "name": "上传真实 EPUB：201 表示写入新 blob，200 表示命中已有 blob（内容寻址去重语义自洽）",
+      "ok": true,
+      "detail": "{\"status\":201,\"body\":{\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deduplicated\":false,\"sizeBytes\":294175}}"
+    },
+    {
+      "id": "E-09",
+      "name": "同一文件二次上传 → 200 且 deduplicated=true（内容寻址去重）",
+      "ok": true,
+      "detail": "{\"status\":200,\"body\":{\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deduplicated\":true,\"sizeBytes\":294175}}"
+    },
+    {
+      "id": "E-10",
+      "name": "新书：声明哈希与上传字节不符被拒（400）",
+      "ok": true,
+      "detail": "contentHash 与字节不符: 实际 400 invalid_request contentHash does not match uploaded bytes"
+    },
+    {
+      "id": "E-10b",
+      "name": "同一本书换不同文件被拒（409 conflict）",
+      "ok": true,
+      "detail": "同一本书换文件: 实际 409 conflict book already has a different file"
+    },
+    {
+      "id": "E-11",
+      "name": "书库列表包含新书",
+      "ok": true,
+      "detail": "items=2"
+    },
+    {
+      "id": "E-12",
+      "name": "单书详情可读（GET /v1/books/{id}）",
+      "ok": true,
+      "detail": "[\"id\",\"title\",\"author\",\"language\",\"format\",\"contentHash\",\"sizeBytes\",\"readingState\",\"createdAt\",\"updatedAt\"]"
+    },
+    {
+      "id": "E-13",
+      "name": "设备 B 用同一账号登录成功（独立令牌）",
+      "ok": true,
+      "detail": "user=spike-a-mvzhkopb@example.com"
+    },
+    {
+      "id": "E-14",
+      "name": "设备列表包含 A 与 B（服务端登记设备）",
+      "ok": true,
+      "detail": "[{\"id\":\"a1a1a1a1-0000-7000-8000-2c7865a02922\",\"name\":\"\",\"platform\":\"android\",\"lastSeenAt\":\"2026-11-02T16:41:37Z\"},{\"id\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"name\":\"\",\"platform\":\"windows\",\"lastSeenAt\":\"2026-11-02T16:41:37Z\"}]"
+    },
+    {
+      "id": "F-01",
+      "name": "缺陷取证：deviceId 已被其它用户占用时 register 返回 404 not_found（语义应为 409）",
+      "ok": true,
+      "detail": "跨用户复用 deviceId 注册: 实际 404 not_found resource not found"
+    },
+    {
+      "id": "F-02",
+      "name": "缺陷取证：非法 UUID 的 opId 触发 500（SQLSTATE 22P02，语义应为 400）",
+      "ok": true,
+      "detail": "非法 opId: 实际 500 internal_error sync push failed"
+    },
+    {
+      "id": "E-15",
+      "name": "引擎自动生成的 deviceId 被服务端接受（合法 UUID）",
+      "ok": true,
+      "detail": "01a19d23-48bb-7000-878e-c715609800a2"
+    },
+    {
+      "id": "S-01",
+      "name": "设备 A 推送进度：服务端 applied 且分配游标",
+      "ok": true,
+      "detail": "{\"pushed\":1,\"applied\":1,\"rejected\":0,\"appliedChanges\":1,\"cursor\":1,\"errors\":[]}"
+    },
+    {
+      "id": "S-02",
+      "name": "设备 B 首同步（snapshot）拿到 A 的进度 0.42",
+      "ok": true,
+      "detail": "{\"applied\":3,\"progress\":0.42,\"cursor\":1}"
+    },
+    {
+      "id": "S-03",
+      "name": "设备 B 增量 pull（cursor 断点续传）看到 0.50",
+      "ok": true,
+      "detail": "{\"cursorBefore\":1,\"pull\":{\"changes\":1,\"appliedChanges\":1,\"pages\":1,\"cursor\":2},\"progress\":0.5}"
+    },
+    {
+      "id": "S-04",
+      "name": "同一副本的陈旧写入被忽略（reason=older_hlc，服务端位置不变）",
+      "ok": true,
+      "detail": "{\"reasons\":[\"older_hlc\"],\"cursor\":0,\"server\":0.5}"
+    },
+    {
+      "id": "S-05",
+      "name": "被忽略的 op 不产生变更行：服务端游标不动，其它设备 pull 拉不到",
+      "ok": true,
+      "detail": "{\"serverPushCursor\":2,\"serverCursorBefore\":2,\"bChanges\":0,\"bCursor\":2,\"forwardSnapshot\":0.5}"
+    },
+    {
+      "id": "S-06",
+      "name": "跨副本前进被接纳（位置 0.8，最远 0.8）",
+      "ok": true,
+      "detail": "{\"cursor\":3,\"server\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"contentHash\":\"sha256:abababababababababababababababababababababababababababababababab\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"explicitRewind\":false,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a19d234a48-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"totalProgression\":0.8,\"updatedAt\":\"2026-11-03T00:41:38.128335+08:00\"}}"
+    },
+    {
+      "id": "S-07",
+      "name": "跨副本回退未声明 explicitRewind 被拒（reason=stale_no_rewind，位置/最远仍 0.8）",
+      "ok": true,
+      "detail": "{\"reasons\":[\"stale_no_rewind\"],\"server\":0.8,\"furthest\":0.8}"
+    },
+    {
+      "id": "S-07b",
+      "name": "同副本较新 HLC 允许回退（位置 0.55），最远保持 0.8",
+      "ok": true,
+      "detail": "{\"reasons\":[],\"position\":0.55,\"furthest\":0.8}"
+    },
+    {
+      "id": "S-08",
+      "name": "显式回退生效（位置 0.1），但最远进度保持 0.8（只增不减）",
+      "ok": true,
+      "detail": "{\"hlc\":\"001a19d234ac3-00000000-a1a1a1a1\",\"server\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"explicitRewind\":true,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a19d234ac3-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-03.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-03\",\"locations\":{\"progression\":0.1,\"totalProgression\":0.1}},\"totalProgression\":0.1,\"updatedAt\":\"2026-11-03T00:41:38.250592+08:00\"}}"
+    },
+    {
+      "id": "S-09",
+      "name": "同 opId 重放：reason=duplicate 且游标不动",
+      "ok": true,
+      "detail": "{\"item\":{\"opId\":\"01a19d23-4af0-7000-b53d-f548b7b82a69\",\"status\":\"applied\",\"reason\":\"duplicate\"},\"cursor\":6,\"before\":6}"
+    },
+    {
+      "id": "S-10",
+      "name": "设备 B 最终收敛到服务端权威状态（位置 0.6 / 最远 0.8）",
+      "ok": true,
+      "detail": "{\"changes\":4,\"progress\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"locator\":{\"href\":\"OEBPS/chapter-07.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-07\",\"locations\":{\"progression\":0.6,\"totalProgression\":0.6}},\"totalProgression\":0.6,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"explicitRewind\":false,\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"hlc\":\"001a19d234af0-00000000-a1a1a1a1\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"updatedAt\":\"\"}}"
+    },
+    {
+      "id": "A-01",
+      "name": "设备 A 推送标注：服务端 applied 且本地投影可见",
+      "ok": true,
+      "detail": "{\"applied\":1,\"id\":\"01a19d23-4b2c-7000-b580-f5d56d61a69b\"}"
+    },
+    {
+      "id": "A-02",
+      "name": "设备 B pull 到 A 新建的标注",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "A-03",
+      "name": "删除走墓碑：B 拉取后本地不再有该标注",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "A-04",
+      "name": "墓碑不可复活（remove-wins）：陈旧 upsert 未生效",
+      "ok": true,
+      "detail": "{\"reasons\":[\"tombstone_wins\"],\"stillGone\":true}"
+    },
+    {
+      "id": "A-05",
+      "name": "服务端 REST 创建的标注被客户端 pull 到（游标只由服务端分配）",
+      "ok": true,
+      "detail": "id=90f133f8-3d43-4af7-bfa8-304a95fa3561"
+    },
+    {
+      "id": "I-01",
+      "name": "用户 C 的书库为空（看不到 A 的书）",
+      "ok": true,
+      "detail": "items=0"
+    },
+    {
+      "id": "I-02",
+      "name": "用户 C 直接读 A 的 bookId 被拒（404）",
+      "ok": true,
+      "detail": "C 读 A 的书: 实际 404 not_found resource not found"
+    },
+    {
+      "id": "I-03",
+      "name": "用户 C 的同步快照为空（无书/无进度/无标注）",
+      "ok": true,
+      "detail": "{\"books\":0,\"progress\":0,\"annotations\":0}"
+    },
+    {
+      "id": "I-04",
+      "name": "用户 C 从 cursor=0 拉取：拿不到 A 的任何变更",
+      "ok": true,
+      "detail": "changes=0"
+    },
+    {
+      "id": "I-05",
+      "name": "C 写入同一 bookId 只影响 C 自己的行（A 的位置不变）",
+      "ok": true,
+      "detail": "{\"aBefore\":0.6,\"aAfter\":0.6,\"c\":0.01}"
+    }
+  ]
+}

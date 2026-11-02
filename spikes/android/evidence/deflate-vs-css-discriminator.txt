@@ -1,0 +1,12 @@
+=== APK-C: frankenstein repacked 100%% STORE (no deflate needed) on WebView 91 ===
+Performing Streamed Install
+Success
+
+=== state (store-only real book, NO deflate involved) ===
+{"text":"←☰阅读0% ◐‹›","iframes":0,"fv":{"w":412,"h":1482},"innerH":843,"innerW":412,"layerWorks":"rgb(0, 0, 0)"}
+=== TOC (proves EPUB parsed) ===
+←☰阅读0% ◐‹› | 目录 | ✕ | Frankenstein; | or, the Modern Prometheus | CONTENTS | Letter 1 | Letter 2 | Letter 3 | Letter 4 | Chapter 1 | Chapter 2 | Chapter 3 | Chapter 4 | Chapter 5 | Chapter 6 | Chapter 7 | Chapter 8 | Chapter 9 | Chapter 10 | Chapter 11 | Chapter 12 | Chapter 13 | Chapter 14 | Chapter 15 | Chapter 16 | Chapter 17 | Chapter 18 | Chapter 19
+=== logcat: any compression error? ===
+11-02 17:25:52.983 W/GLSUser ( 1106): 	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:289)
+11-02 17:25:52.983 W/GLSUser ( 1106): 	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:232)
+=== tap Chapter 5 (pure text, no image) in real book on WebView 91 ===

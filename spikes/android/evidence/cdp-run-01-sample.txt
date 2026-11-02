@@ -1,0 +1,74 @@
+=== findtext 打开示例书 ===
+{
+  "tag": "A",
+  "x": 40.00297546386719,
+  "y": 275.78570461273193,
+  "w": 80.00595092773438,
+  "h": 23.238096237182617
+}
+=== tap 40 276 ===
+{
+  "tapped": [
+    40,
+    276
+  ]
+}
+=== probe after tap ===
+{
+  "href": "https://wails.localhost/#/reader/sample",
+  "title": "HPF Reader",
+  "readyState": "complete",
+  "bodyTextLen": 51,
+  "bodyTextHead": "Object.groupBy is not a function\n\n返回书库\n返回书库目录上一页下一页",
+  "appChildren": 1,
+  "iframeCount": 0,
+  "canvasCount": 0,
+  "rootBg": "rgba(0, 0, 0, 0)",
+  "rootH": 843,
+  "rootW": 412,
+  "hasWailsBridge": true,
+  "ua": "Mozilla/5.0 (Linux; Android 12; sdk_gphone64_x86_64 Build/SE1A.220826.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.114 Mobile Safari/537.36"
+}
+=== text ===
+Object.groupBy is not a function
+
+返回书库
+返回书库目录上一页下一页
+=== addscript polyfill-es2024.js ===
+{
+  "registered": "1",
+  "bytes": 1513
+}
+=== reload ===
+{
+  "reloaded": true
+}
+=== goto #/reader/sample ===
+https://wails.localhost/#/reader/sample
+=== probe ===
+{"href":"https://wails.localhost/#/reader/sample","iframes":0,"bodyText":"Object.groupBy is not a function\n\n返回书库\n返回书库目录上一页下一页"}
+=== preloadrun polyfill -> #/reader/sample ===
+{
+  "scriptId": "1",
+  "beforeInject": "undefined",
+  "afterInject": "function",
+  "settleMs": 12000,
+  "probe": {
+    "href": "https://wails.localhost/#/reader/sample",
+    "title": "HPF Reader",
+    "readyState": "complete",
+    "bodyTextLen": 12,
+    "bodyTextHead": "返回书库目录上一页下一页",
+    "appChildren": 1,
+    "iframeCount": 0,
+    "canvasCount": 0,
+    "rootBg": "rgba(0, 0, 0, 0)",
+    "rootH": 843,
+    "rootW": 412,
+    "hasWailsBridge": true,
+    "ua": "Mozilla/5.0 (Linux; Android 12; sdk_gphone64_x86_64 Build/SE1A.220826.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.114 Mobile Safari/537.36"
+  }
+}
+=== deep shadow probe ===
+{"shadow":{"shadowHosts":[],"iframes":[]},"foliateFound":true,"paginator":false,"customEls":["foliate-view"],"innerTextSample":""}
+=== screencap ===

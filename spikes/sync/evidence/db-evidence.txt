@@ -1,0 +1,58 @@
+=== 1) 行数总览 ===
+    table_name    | count 
+------------------+-------
+ users            |     6
+ devices          |     6
+ books            |     2
+ book_files       |     1
+ reading_progress |     2
+ annotations      |     2
+ change_log       |    10
+ sync_idempotency |    12
+(8 rows)
+
+
+=== 2) change_log：服务端裁决轨迹（seq 单调递增 == 游标） ===
+ seq |   entity   | entity_id8 |   op   |               hlc               | device8  | total_progression |  content_hash16  
+-----+------------+------------+--------+---------------------------------+----------+-------------------+------------------
+   1 | progress   | b73e1887   | upsert | 001a19d2349b3-00000000-a1a1a1a1 | a1a1a1a1 | 0.42              | sha256:bf04d57cf
+   2 | progress   | b73e1887   | upsert | 001a19d2349e3-00000000-a1a1a1a1 | a1a1a1a1 | 0.5               | sha256:bf04d57cf
+   3 | progress   | b73e1887   | upsert | 001a19d234a48-00000000-a1a1a1a1 | a1a1a1a1 | 0.8               | sha256:ababababa
+   4 | progress   | b73e1887   | upsert | 001a19d234a99-00000000-a1a1a1a1 | a1a1a1a1 | 0.55              | sha256:ababababa
+   5 | progress   | b73e1887   | upsert | 001a19d234ac3-00000000-a1a1a1a1 | a1a1a1a1 | 0.1               | sha256:bf04d57cf
+   6 | progress   | b73e1887   | upsert | 001a19d234af0-00000000-a1a1a1a1 | a1a1a1a1 | 0.6               | sha256:bf04d57cf
+   7 | annotation | 01a19d23   | upsert | 001a19d234b2c-00000000-a1a1a1a1 | a1a1a1a1 |                   | 
+   8 | annotation | 01a19d23   | delete | 001a19d234b3b-00000000-a1a1a1a1 | a1a1a1a1 |                   | 
+   9 | annotation | 90f133f8   | upsert | 001a19d234b94-00000000-418c5f27 |          |                   | 
+  10 | progress   | b73e1887   | upsert | 001a19d234c30-00000000-a1a1a1a1 | a1a1a1a1 | 0.01              | sha256:cdcdcdcdc
+(10 rows)
+
+
+=== 3) reading_progress：服务端权威合并结果 ===
+  book8   | total_progression | furthest_progression | explicit_rewind |  content_hash16  |               hlc               
+----------+-------------------+----------------------+-----------------+------------------+---------------------------------
+ b73e1887 |               0.6 |                  0.8 | f               | sha256:bf04d57cf | 001a19d234af0-00000000-a1a1a1a1
+ b73e1887 |              0.01 |                 0.01 | f               | sha256:cdcdcdcdc | 001a19d234c30-00000000-a1a1a1a1
+(2 rows)
+
+
+=== 4) annotations：墓碑（deleted_at 非空 == 已删除但仍占墓碑窗口） ===
+   id8    |   kind    |  book8   |   state   | change_rows 
+----------+-----------+----------+-----------+-------------
+ 01a19d23 | highlight | b73e1887 | tombstone |           2
+ 90f133f8 | note      | b73e1887 | active    |           1
+(2 rows)
+
+
+=== 5) 缺陷取证：失败的 register 是否留下孤儿用户（devices=0 即孤儿） ===
+              email              | devices 
+---------------------------------+---------
+ spike-a-mvzhkopb@example.com    |       2
+ spike-auto-mvzhkopb@example.com |       1
+ spike-c-mvzhkopb@example.com    |       1
+ spike-f1b-mvzhkopb@example.com  |       0
+ spike-f1-mvzhkopb@example.com   |       1
+ spike-r-mvzhkopb@example.com    |       1
+(6 rows)
+
+

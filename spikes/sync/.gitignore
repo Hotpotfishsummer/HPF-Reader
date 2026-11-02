@@ -1,0 +1,5 @@
+# vite 中间产物（可随时重新生成）
+.build/
+
+# 服务端 local 存储写下的书文件副本（原始书在 testdata/books/）
+evidence/bookfiles/

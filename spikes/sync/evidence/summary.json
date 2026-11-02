@@ -1,0 +1,13 @@
+{
+  "runId": "mvzhkopb",
+  "startedAt": "2026-11-02T16:41:37.295Z",
+  "finishedAt": "2026-11-02T16:41:38.669Z",
+  "baseUrl": "http://127.0.0.1:18080",
+  "book": "C:\\Users\\HOTPOTFISH\\Desktop\\AllCode\\HPF-Reader\\testdata\\books\\frankenstein.epub",
+  "checks": {
+    "total": 52,
+    "passed": 52,
+    "failed": 0
+  },
+  "fatal": null
+}

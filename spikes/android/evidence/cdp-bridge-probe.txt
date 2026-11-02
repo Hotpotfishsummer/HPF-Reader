@@ -1,0 +1,2 @@
+=== window.wails shape ===
+{"wailsKeys":["invoke","invokeAsync","isDebug","log","platform"],"types":{"invoke":"function","invokeAsync":"function","isDebug":"function","log":"function","platform":"function"},"chromeKeys":[]}

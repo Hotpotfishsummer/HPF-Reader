@@ -1,0 +1,339 @@
+--------- beginning of system
+11-02 17:02:19.555 I/ActivityTaskManager(  550): START u0 {flg=0x10000000 cmp=com.wails.app/.MainActivity} from uid 2000
+11-02 17:02:19.556 W/ActivityTaskManager(  550): Can't find TaskDisplayArea to determine support for multi window. Task id=40 attached=false
+11-02 17:02:19.558 D/CompatibilityChangeReporter(  550): Compat change id reported: 174042980; UID 10146; state: DISABLED
+11-02 17:02:19.559 D/CompatibilityChangeReporter(  550): Compat change id reported: 184838306; UID 10146; state: DISABLED
+11-02 17:02:19.559 D/CompatibilityChangeReporter(  550): Compat change id reported: 185004937; UID 10146; state: DISABLED
+11-02 17:02:19.562 D/CompatibilityChangeReporter(  550): Compat change id reported: 181136395; UID 10146; state: DISABLED
+11-02 17:02:19.562 D/CompatibilityChangeReporter(  550): Compat change id reported: 174042936; UID 10146; state: DISABLED
+11-02 17:02:19.564 D/CompatibilityChangeReporter(  550): Compat change id reported: 168419799; UID 10146; state: DISABLED
+11-02 17:02:19.565 D/PhoneStartingWindowTypeAlgorithm(  758): preferredStartingWindowType newTask:true taskSwitch:true processRunning:false allowTaskSnapshot:true activityCreated:false useEmptySplashScreen:true legacySplashScreen:false topIsHome:false
+11-02 17:02:19.565 D/StartingSurfaceDrawer(  758): addSplashScreen com.wails.app theme=7f110271 task=40 suggestType=3
+11-02 17:02:19.566 D/StartingSurfaceDrawer(  758): window attributes color: 0 icon null duration 0 brandImage null
+--------- beginning of main
+11-02 17:02:19.567 D/SplashScreenView(  758): Build android.window.SplashScreenView{8c64586 V.E...... ......ID 0,0-0,0}
+11-02 17:02:19.567 D/SplashScreenView(  758): Icon: view: null drawable: null size: 0
+11-02 17:02:19.567 D/SplashScreenView(  758): Branding: view: android.view.View{13e9e47 G.ED..... ......I. 0,0-0,0 #10204a6 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-02 17:02:19.567 D/StartingSurfaceDrawer(  758): fillViewWithIcon surfaceWindowView android.window.SplashScreenView{8c64586 V.E...... ......ID 0,0-0,0}
+11-02 17:02:19.569 D/CompatibilityChangeReporter(  550): Compat change id reported: 135634846; UID 10146; state: DISABLED
+11-02 17:02:19.570 D/CompatibilityChangeReporter(  550): Compat change id reported: 143937733; UID 10146; state: ENABLED
+11-02 17:02:19.577 D/Zygote  (  348): Forked child process 6971
+11-02 17:02:19.578 I/ActivityManager(  550): Start proc 6971:com.wails.app/u0a146 for pre-top-activity {com.wails.app/com.wails.app.MainActivity}
+11-02 17:02:19.583 I/com.wails.app( 6971): Late-enabling -Xcheck:jni
+11-02 17:02:19.584 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3f49e4000 0x3f53c8000]
+11-02 17:02:19.587 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3f6790000 0x3f7174000]
+11-02 17:02:19.588 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3fa3e8000 0x3fadcc000]
+11-02 17:02:19.603 W/com.wails.app( 6971): Unexpected CPU variant for X86 using defaults: x86_64
+11-02 17:02:19.608 I/adbd    (  444): jdwp connection from 6971
+11-02 17:02:19.636 D/CompatibilityChangeReporter( 6971): Compat change id reported: 171979766; UID 10146; state: ENABLED
+11-02 17:02:19.686 I/GsaVoiceInteractionSrv( 1380): Handling ACTION_STOP_HOTWORD
+11-02 17:02:19.770 V/GraphicsEnvironment( 6971): ANGLE Developer option for 'com.wails.app' set to: 'default'
+11-02 17:02:19.770 V/GraphicsEnvironment( 6971): Neither updatable production driver nor prerelease driver is supported.
+11-02 17:02:19.771 D/NetworkSecurityConfig( 6971): No Network Security Config specified, using platform default
+11-02 17:02:19.772 D/NetworkSecurityConfig( 6971): No Network Security Config specified, using platform default
+11-02 17:02:19.818 D/AppCompatDelegate( 6971): Checking for metadata for AppLocalesMetadataHolderService : Service not found
+11-02 17:02:19.872 D/libEGL  ( 6971): loaded /vendor/lib64/egl/libEGL_emulation.so
+11-02 17:02:19.875 D/libEGL  ( 6971): loaded /vendor/lib64/egl/libGLESv1_CM_emulation.so
+11-02 17:02:19.877 D/libEGL  ( 6971): loaded /vendor/lib64/egl/libGLESv2_emulation.so
+11-02 17:02:19.907 W/com.wails.app( 6971): Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (unsupported, reflection, allowed)
+11-02 17:02:19.907 W/com.wails.app( 6971): Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+11-02 17:02:19.917 I/WebViewFactory( 6971): Loading com.google.android.webview version 91.0.4472.114 (code 447211487)
+11-02 17:02:19.934 W/ActivityManager(  550): Unable to start service Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } U=0: not found
+11-02 17:02:19.934 W/RemoteSmartspaceService(  550): could not bind to Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } using flags 67112961
+11-02 17:02:19.934 W/ActivityManager(  550): Unbind failed: could not find connection for android.app.LoadedApk$ServiceDispatcher$InnerConnection@55daa9a
+11-02 17:02:19.937 I/A       ( 1515): onApplyWindowInsets: systemWindowInsets=Insets{left=0, top=63, right=0, bottom=126}
+11-02 17:02:19.937 I/A       ( 1515): onApplyWindowInsets: systemWindowInsets=Insets{left=0, top=63, right=0, bottom=126}
+11-02 17:02:19.940 W/com.wails.app( 6971): Accessing hidden method Landroid/os/Trace;->isTagEnabled(J)Z (unsupported, reflection, allowed)
+11-02 17:02:19.941 W/com.wails.app( 6971): Accessing hidden method Landroid/os/Trace;->traceBegin(JLjava/lang/String;)V (unsupported, reflection, allowed)
+11-02 17:02:19.941 W/com.wails.app( 6971): Accessing hidden method Landroid/os/Trace;->traceEnd(J)V (unsupported, reflection, allowed)
+11-02 17:02:19.941 W/com.wails.app( 6971): Accessing hidden method Landroid/os/Trace;->asyncTraceBegin(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+11-02 17:02:19.941 W/com.wails.app( 6971): Accessing hidden method Landroid/os/Trace;->asyncTraceEnd(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+11-02 17:02:19.951 I/cr_VariationsUtils( 6971): Failed reading seed file "/data/user/0/com.wails.app/app_webview/variations_seed_new"
+11-02 17:02:19.951 I/cr_VariationsUtils( 6971): Failed reading seed file "/data/user/0/com.wails.app/app_webview/variations_seed"
+11-02 17:02:19.969 I/cr_LibraryLoader( 6971): Loaded native library version number "91.0.4472.114"
+11-02 17:02:19.969 I/cr_CachingUmaRecorder( 6971): Flushed 6 samples from 6 histograms.
+11-02 17:02:19.983 D/CompatibilityChangeReporter(  550): Compat change id reported: 135634846; UID 10146; state: DISABLED
+11-02 17:02:19.983 D/CompatibilityChangeReporter(  550): Compat change id reported: 143937733; UID 10146; state: ENABLED
+11-02 17:02:19.987 D/Zygote  (  876): Forked child process 6999
+11-02 17:02:19.988 I/ActivityManager(  550): Start proc 6999:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i7 for  {com.wails.app/org.chromium.content.app.SandboxedProcessService0:0}
+11-02 17:02:19.989 W/ocessService0:( 6999): Unexpected CPU variant for X86 using defaults: x86_64
+11-02 17:02:19.995 I/adbd    (  444): jdwp connection from 6999
+11-02 17:02:20.009 D/CompatibilityChangeReporter( 6999): Compat change id reported: 171979766; UID 99007; state: ENABLED
+11-02 17:02:20.023 D/NetworkSecurityConfig( 6999): No Network Security Config specified, using platform default
+11-02 17:02:20.024 D/NetworkSecurityConfig( 6999): No Network Security Config specified, using platform default
+11-02 17:02:20.026 I/cr_ChildProcessService( 6999): Creating new ChildProcessService pid=6999
+11-02 17:02:20.029 D/CompatibilityChangeReporter( 6971): Compat change id reported: 171228096; UID 10146; state: ENABLED
+11-02 17:02:20.033 D/ConnectivityService(  550): requestNetwork for uid/pid:10146/6971 activeRequest: null callbackRequest: 176 [NetworkRequest [ REQUEST id=177, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]] callback flags: 0 priority: 2147483647
+11-02 17:02:20.035 D/ConnectivityService(  550): NetReassign [177 : null → 100]
+11-02 17:02:20.036 D/WifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=177, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.036 D/UntrustedWifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=177, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.036 D/OemPaidWifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=177, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.037 D/ConnectivityService(  550): NetReassign [no changes]
+11-02 17:02:20.066 I/WailsBridge( 6971): Wails bridge initialized
+11-02 17:02:20.068 D/WailsActivity( 6971): Loading URL: https://wails.localhost/
+11-02 17:02:20.069 W/com.wails.app( 6971): Accessing hidden method Landroid/media/AudioManager;->getOutputLatency(I)I (unsupported, reflection, allowed)
+11-02 17:02:20.071 D/Wails   ( 6971): Platform: Android
+11-02 17:02:20.072 I/Wails   ( 6971): 5:02PM Build Info: Wails=v3.1.0 Compiler=go1.26.0 -compiler=gc CGO_ENABLED=1 CGO_CFLAGS= CGO_CPPFLAGS= CGO_CXXFLAGS= CGO_LDFLAGS= GOARCH=amd64 GOOS=android -buildmode=c-shared -gcflags=all=-l -tags=android,debug GOAMD64=v1
+11-02 17:02:20.072 I/Wails   ( 6971): 5:02PM AssetServer Info: middleware=true handler=true
+11-02 17:02:20.075 W/cr_media( 6971): Requires BLUETOOTH permission
+11-02 17:02:20.153 D/HostConnection( 6971): createUnique: call
+11-02 17:02:20.156 D/HostConnection( 6971): HostConnection::get() New Host Connection established 0x727786729390, tid 7040
+11-02 17:02:20.156 D/Wails   ( 6971): [application_android.go] platformRun: initialising
+11-02 17:02:20.158 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1268 → common 1025
+11-02 17:02:20.160 D/HostConnection( 6971): HostComposition ext ANDROID_EMU_CHECKSUM_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_vulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memory_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 ANDROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma ANDROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object GL_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_version_3_0 
+11-02 17:02:20.161 I/hwservicemanager(  206): getTransport: Cannot find entry android.hardware.configstore@1.0::ISurfaceFlingerConfigs/default in either framework or device VINTF manifest.
+11-02 17:02:20.164 D/EGL_emulation( 6971): eglCreateContext: 0x727786726e10: maj 3 min 0 rcv 3
+11-02 17:02:20.164 D/EGL_emulation( 6971): eglMakeCurrent: 0x727786726e10: ver 3 0 (tinfo 0x7279a297c080) (first time)
+11-02 17:02:20.170 D/ConnectivityService(  550): requestNetwork for uid/pid:10146/6971 activeRequest: null callbackRequest: 179 [NetworkRequest [ REQUEST id=180, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]] callback flags: 0 priority: 2147483647
+11-02 17:02:20.170 D/ConnectivityService(  550): NetReassign [180 : null → 100]
+11-02 17:02:20.171 D/WifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=180, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.171 D/UntrustedWifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=180, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.172 D/OemPaidWifiNetworkFactory(  550): got request NetworkRequest [ REQUEST id=180, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.wails.app] ]
+11-02 17:02:20.172 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:20.172 D/EGL_emulation( 6971): eglCreateContext: 0x727786726e10: maj 3 min 0 rcv 3
+11-02 17:02:20.179 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:20.182 I/cr_LibraryLoader( 6999): Loaded native library version number "91.0.4472.114"
+11-02 17:02:20.182 I/cr_CachingUmaRecorder( 6999): Flushed 1 samples from 1 histograms.
+11-02 17:02:20.184 D/WailsPathHandler( 6971): Handling path: 
+11-02 17:02:20.184 D/WailsBridge( 6971): Serving asset: /index.html
+11-02 17:02:20.184 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/index.html file=index.html
+11-02 17:02:20.184 D/WailsPathHandler( 6971): Serving /index.html with type text/html (1154 bytes)
+11-02 17:02:20.188 W/SystemServiceRegistry( 6999): No service published for: uimode
+11-02 17:02:20.204 D/CompatibilityChangeReporter(  550): Compat change id reported: 158002302; UID 10146; state: ENABLED
+11-02 17:02:20.205 D/HostConnection( 6971): createUnique: call
+11-02 17:02:20.206 D/HostConnection( 6971): HostConnection::get() New Host Connection established 0x727786728fd0, tid 6989
+11-02 17:02:20.212 D/HostConnection( 6971): HostComposition ext ANDROID_EMU_CHECKSUM_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_vulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memory_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 ANDROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma ANDROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object GL_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_version_3_0 
+11-02 17:02:20.213 W/OpenGLRenderer( 6971): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-02 17:02:20.215 D/EGL_emulation( 6971): eglCreateContext: 0x727786725190: maj 3 min 0 rcv 3
+11-02 17:02:20.217 D/EGL_emulation( 6971): eglCreateContext: 0x727786724890: maj 3 min 0 rcv 3
+11-02 17:02:20.219 D/EGL_emulation( 6971): eglMakeCurrent: 0x727786725190: ver 3 0 (tinfo 0x7279a297c100) (first time)
+11-02 17:02:20.222 E/HWComposer(  392): getSupportedContentTypes: getSupportedContentTypes failed for display 4619827259835644672: Unsupported (8)
+11-02 17:02:20.224 I/hwservicemanager(  206): getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+11-02 17:02:20.225 I/Gralloc4( 6971): mapper 4.x is not supported
+11-02 17:02:20.227 D/HostConnection( 6971): createUnique: call
+11-02 17:02:20.228 D/HostConnection( 6971): HostConnection::get() New Host Connection established 0x727786729c90, tid 6989
+11-02 17:02:20.228 D/goldfish-address-space( 6971): allocate: Ask for block of size 0x100
+11-02 17:02:20.228 D/goldfish-address-space( 6971): allocate: ioctl allocate returned offset 0x3f3ffe000 size 0x2000
+11-02 17:02:20.229 I/hwservicemanager(  206): getTransport: Cannot find entry android.hardware.graphics.allocator@4.0::IAllocator/default in either framework or device VINTF manifest.
+11-02 17:02:20.229 W/Gralloc4( 6971): allocator 4.x is not supported
+11-02 17:02:20.230 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3f53c8000 0x3f5dac000]
+11-02 17:02:20.235 D/HostConnection( 6971): HostComposition ext ANDROID_EMU_CHECKSUM_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_vulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memory_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 ANDROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma ANDROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object GL_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_version_3_0 
+11-02 17:02:20.237 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3f5dac000 0x3f6790000]
+11-02 17:02:20.239 D/goldfish-address-space(  364): claimShared: Ask to claim region [0x3f8000000 0x3f89e4000]
+11-02 17:02:20.353 D/WailsPathHandler( 6971): Handling path: assets/fflate-DMzVRstV.js
+11-02 17:02:20.353 D/WailsBridge( 6971): Serving asset: assets/fflate-DMzVRstV.js
+11-02 17:02:20.354 D/WailsPathHandler( 6971): Handling path: assets/preload-helper-BLdHbfdN.js
+11-02 17:02:20.354 D/WailsBridge( 6971): Serving asset: assets/preload-helper-BLdHbfdN.js
+11-02 17:02:20.355 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/preload-helper-BLdHbfdN.js file=assets/preload-helper-BLdHbfdN.js
+11-02 17:02:20.355 D/WailsPathHandler( 6971): Serving assets/preload-helper-BLdHbfdN.js with type application/javascript (1519 bytes)
+11-02 17:02:20.355 D/WailsPathHandler( 6971): Handling path: assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:02:20.355 D/WailsBridge( 6971): Serving asset: assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:02:20.355 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/classPrivateMethodInitSpec-BoP5DBPd.js file=assets/classPrivateMethodInitSpec-BoP5DBPd.js
+11-02 17:02:20.355 D/WailsPathHandler( 6971): Serving assets/classPrivateMethodInitSpec-BoP5DBPd.js with type application/javascript (448 bytes)
+11-02 17:02:20.356 D/WailsPathHandler( 6971): Handling path: assets/platform-B5PSDNiE.js
+11-02 17:02:20.356 D/WailsBridge( 6971): Serving asset: assets/platform-B5PSDNiE.js
+11-02 17:02:20.356 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/platform-B5PSDNiE.js file=assets/platform-B5PSDNiE.js
+11-02 17:02:20.356 D/StartingSurfaceDrawer(  758): Task start finish, remove starting surface for task 40
+11-02 17:02:20.357 V/StartingSurfaceDrawer(  758): Removing splash screen window for task: 40
+11-02 17:02:20.357 I/ActivityTaskManager(  550): Displayed com.wails.app/.MainActivity: +800ms
+11-02 17:02:20.357 D/WailsPathHandler( 6971): Serving assets/platform-B5PSDNiE.js with type application/javascript (125051 bytes)
+11-02 17:02:20.357 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/fflate-DMzVRstV.js file=assets/fflate-DMzVRstV.js
+11-02 17:02:20.358 D/WailsPathHandler( 6971): Serving assets/fflate-DMzVRstV.js with type application/javascript (3819 bytes)
+11-02 17:02:20.360 D/WailsPathHandler( 6971): Handling path: assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:02:20.360 D/WailsBridge( 6971): Serving asset: assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:02:20.360 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/runtime-dom.esm-bundler-BOybfUxl.js file=assets/runtime-dom.esm-bundler-BOybfUxl.js
+11-02 17:02:20.360 D/WailsPathHandler( 6971): Serving assets/runtime-dom.esm-bundler-BOybfUxl.js with type application/javascript (8000 bytes)
+11-02 17:02:20.366 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:20.367 D/WailsPathHandler( 6971): Handling path: assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:02:20.367 D/WailsBridge( 6971): Serving asset: assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:02:20.367 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/useApi-CUWMwLLw-Bz-hoMMH.js file=assets/useApi-CUWMwLLw-Bz-hoMMH.js
+11-02 17:02:20.368 D/WailsPathHandler( 6971): Serving assets/useApi-CUWMwLLw-Bz-hoMMH.js with type application/javascript (868 bytes)
+11-02 17:02:20.370 D/WailsPathHandler( 6971): Handling path: assets/vue-router-C8bnKvyG.js
+11-02 17:02:20.370 D/WailsBridge( 6971): Serving asset: assets/vue-router-C8bnKvyG.js
+11-02 17:02:20.370 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/vue-router-C8bnKvyG.js file=assets/vue-router-C8bnKvyG.js
+11-02 17:02:20.370 D/WailsPathHandler( 6971): Handling path: assets/i18n-DCBKrsjr.js
+11-02 17:02:20.370 D/WailsBridge( 6971): Serving asset: assets/i18n-DCBKrsjr.js
+11-02 17:02:20.370 D/WailsPathHandler( 6971): Serving assets/vue-router-C8bnKvyG.js with type application/javascript (22780 bytes)
+11-02 17:02:20.370 D/WailsPathHandler( 6971): Handling path: assets/index-B5EhQapz.css
+11-02 17:02:20.371 D/WailsBridge( 6971): Serving asset: assets/index-B5EhQapz.css
+11-02 17:02:20.371 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/index-B5EhQapz.css file=assets/index-B5EhQapz.css
+11-02 17:02:20.372 D/WailsPathHandler( 6971): Serving assets/index-B5EhQapz.css with type text/css (26123 bytes)
+11-02 17:02:20.374 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/i18n-DCBKrsjr.js file=assets/i18n-DCBKrsjr.js
+11-02 17:02:20.374 D/WailsPathHandler( 6971): Serving assets/i18n-DCBKrsjr.js with type application/javascript (3278 bytes)
+11-02 17:02:20.374 D/WailsPathHandler( 6971): Handling path: assets/index-BeAGVLB0.js
+11-02 17:02:20.374 D/WailsBridge( 6971): Serving asset: assets/index-BeAGVLB0.js
+11-02 17:02:20.375 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/index-BeAGVLB0.js file=assets/index-BeAGVLB0.js
+11-02 17:02:20.375 D/WailsPathHandler( 6971): Serving assets/index-BeAGVLB0.js with type application/javascript (44470 bytes)
+11-02 17:02:20.387 I/GoogleInputMethodService( 1316): GoogleInputMethodService.onFinishInput():3420 
+11-02 17:02:20.387 I/GoogleInputMethodService( 1316): GoogleInputMethodService.onStartInput():2002 
+11-02 17:02:20.387 I/DeviceUnlockedTag( 1316): DeviceUnlockedTag.notifyDeviceLockStatusChanged():31 Notify device unlocked.
+11-02 17:02:20.450 D/WailsActivity( 6971): Page loaded: https://wails.localhost/#/
+11-02 17:02:20.450 D/Wails   ( 6971): [JNI] page finished: https://wails.localhost/#/
+11-02 17:02:20.451 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:20.455 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:02:20.455 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:20.469 D/WailsActivity( 6971): [WebView] LOG: [polyfill] 已补齐运行时内置对象：Object.hasOwn, Object.groupBy, Map.groupBy, Array.prototype.at, String.prototype.at, Array.prototype.findLast, Array.prototype.findLastIndex, Array.prototype.toSorted, Array.prototype.toReversed, Array.prototype.toSpliced, Array.prototype.with, structuredClone, crypto.randomUUID, AbortSignal.timeout, Promise.withResolvers, Promise.try, Uint8Array.prototype.toBase64, DecompressionStream(deflate-raw), Uint8Array.fromBase64 (https://wails.localhost/assets/index-BeAGVLB0.js:2)
+11-02 17:02:20.475 D/WailsPathHandler( 6971): Handling path: assets/mobile-Dxz1Po8J.js
+11-02 17:02:20.475 D/WailsBridge( 6971): Serving asset: assets/mobile-Dxz1Po8J.js
+11-02 17:02:20.475 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/mobile-Dxz1Po8J.js file=assets/mobile-Dxz1Po8J.js
+11-02 17:02:20.476 D/WailsPathHandler( 6971): Serving assets/mobile-Dxz1Po8J.js with type application/javascript (261 bytes)
+11-02 17:02:20.477 D/WailsPathHandler( 6971): Handling path: assets/desktop-BxQDml7v.js
+11-02 17:02:20.477 D/WailsBridge( 6971): Serving asset: assets/desktop-BxQDml7v.js
+11-02 17:02:20.477 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/desktop-BxQDml7v.js file=assets/desktop-BxQDml7v.js
+11-02 17:02:20.477 D/WailsPathHandler( 6971): Serving assets/desktop-BxQDml7v.js with type application/javascript (10557 bytes)
+11-02 17:02:20.486 D/WailsPathHandler( 6971): Handling path: assets/dist-DXUMBP2b.js
+11-02 17:02:20.486 D/WailsBridge( 6971): Serving asset: assets/dist-DXUMBP2b.js
+11-02 17:02:20.486 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/dist-DXUMBP2b.js file=assets/dist-DXUMBP2b.js
+11-02 17:02:20.486 D/WifiNl80211Manager(  550): Scan result ready event
+11-02 17:02:20.486 D/WifiNative(  550): Scan result ready event
+11-02 17:02:20.486 D/WailsPathHandler( 6971): Serving assets/dist-DXUMBP2b.js with type application/javascript (16117 bytes)
+11-02 17:02:20.491 D/WailsPathHandler( 6971): Handling path: assets/progressStore-BW2FW0WV.js
+11-02 17:02:20.491 D/WailsBridge( 6971): Serving asset: assets/progressStore-BW2FW0WV.js
+11-02 17:02:20.491 D/WailsPathHandler( 6971): Handling path: assets/LibraryView-oXc_08iT.js
+11-02 17:02:20.492 D/WailsBridge( 6971): Serving asset: assets/LibraryView-oXc_08iT.js
+11-02 17:02:20.492 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/LibraryView-oXc_08iT.js file=assets/LibraryView-oXc_08iT.js
+11-02 17:02:20.492 D/WailsPathHandler( 6971): Serving assets/LibraryView-oXc_08iT.js with type application/javascript (7251 bytes)
+11-02 17:02:20.492 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/progressStore-BW2FW0WV.js file=assets/progressStore-BW2FW0WV.js
+11-02 17:02:20.493 D/WailsPathHandler( 6971): Handling path: assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:02:20.493 D/WailsBridge( 6971): Serving asset: assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:02:20.493 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/rolldown-runtime-DK3Fl9T5.js file=assets/rolldown-runtime-DK3Fl9T5.js
+11-02 17:02:20.494 D/WailsPathHandler( 6971): Serving assets/rolldown-runtime-DK3Fl9T5.js with type application/javascript (158 bytes)
+11-02 17:02:20.497 D/WailsPathHandler( 6971): Serving assets/progressStore-BW2FW0WV.js with type application/javascript (6211 bytes)
+11-02 17:02:20.514 D/WailsJSBridge( 6971): Invoke called: wails:runtime:ready
+11-02 17:02:20.514 D/WailsBridge( 6971): Message from JS: wails:runtime:ready
+11-02 17:02:20.515 D/Wails   ( 6971): [JS message] wails:runtime:ready
+11-02 17:02:20.520 D/WailsActivity( 6971): Wails API call: /wails/custom.js
+11-02 17:02:20.520 D/WailsBridge( 6971): Serving asset: /wails/custom.js
+11-02 17:02:20.520 E/Wails   ( 6971): [JNI] error serving asset /wails/custom.js: asset not found: /wails/custom.js
+11-02 17:02:20.521 D/WailsActivity( 6971): Page loaded: https://wails.localhost/#/
+11-02 17:02:20.521 D/Wails   ( 6971): [JNI] page finished: https://wails.localhost/#/
+11-02 17:02:20.524 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:20.526 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:20.526 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:02:20.529 D/WailsActivity( 6971): Page loaded: https://wails.localhost/#/
+11-02 17:02:20.529 D/Wails   ( 6971): [JNI] page finished: https://wails.localhost/#/
+11-02 17:02:20.531 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:20.534 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:02:20.534 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:20.595 D/WailsJSBridge( 6971): InvokeAsync called: {"object":0,"method":0,"windowName":"","args":{"call-id":"bBMzZa32P9NOx_06sjM4J","methodID":2757075636,"args":[]},"clientId":"UDZnxQ9Njn-EuAu2ae_-K"}
+11-02 17:02:20.596 D/WailsBridge( 6971): Runtime call: {"object":0,"method":0,"windowName":"","args":{"call-id":"bBMzZa32P9NOx_06sjM4J","methodID":2757075636,"args":[]},"clientId":"UDZnxQ9Njn-EuAu2ae_-K"}
+11-02 17:02:20.619 D/WailsPathHandler( 6971): Handling path: wails.png
+11-02 17:02:20.619 D/WailsBridge( 6971): Serving asset: wails.png
+11-02 17:02:20.619 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:02:20.620 D/WailsPathHandler( 6971): Serving wails.png with type image/png (9057 bytes)
+11-02 17:02:20.620 D/WailsPathHandler( 6971): Handling path: wails.png
+11-02 17:02:20.621 D/WailsBridge( 6971): Serving asset: wails.png
+11-02 17:02:20.622 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:02:20.623 D/WailsPathHandler( 6971): Serving wails.png with type image/png (9057 bytes)
+11-02 17:02:20.663 W/InputManager-JNI(  550): Input channel object '803dbe1 Splash Screen com.wails.app (client)' was disposed without first being removed with the input manager!
+11-02 17:02:20.900 I/FontLog ( 1106): Received query Noto Color Emoji Compat, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+11-02 17:02:20.900 I/FontLog ( 1106): Query [emojicompat-emoji-font] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+11-02 17:02:20.901 I/FontLog ( 1106): Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+11-02 17:02:20.907 I/FontLog ( 1106): Pulling font file for id = 19, cache size = 4 [CONTEXT service_id=132 ]
+11-02 17:02:20.915 I/FontLog ( 1106): Pulling font file for id = 19, cache size = 4 [CONTEXT service_id=132 ]
+11-02 17:02:21.810 D/EGL_emulation( 6971): app_time_stats: avg=241.60ms min=5.80ms max=898.67ms count=6
+11-02 17:02:25.623 D/ProfileInstaller( 6971): Installing profile for com.wails.app
+11-02 17:02:32.038 D/WailsActivity( 6971): Page loaded: https://wails.localhost/#/reader/sample
+11-02 17:02:32.038 D/Wails   ( 6971): [JNI] page finished: https://wails.localhost/#/reader/sample
+11-02 17:02:32.039 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:32.040 D/WailsActivity( 6971): Page loaded: https://wails.localhost/#/reader/sample
+11-02 17:02:32.041 D/WailsPathHandler( 6971): Handling path: assets/ReaderView-h29DwnQl.js
+11-02 17:02:32.041 D/WailsBridge( 6971): Serving asset: assets/ReaderView-h29DwnQl.js
+11-02 17:02:32.041 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/ReaderView-h29DwnQl.js file=assets/ReaderView-h29DwnQl.js
+11-02 17:02:32.041 D/WailsPathHandler( 6971): Serving assets/ReaderView-h29DwnQl.js with type application/javascript (21011 bytes)
+11-02 17:02:32.041 D/WailsPathHandler( 6971): Handling path: assets/settings-NXrH5w8o.js
+11-02 17:02:32.041 D/WailsBridge( 6971): Serving asset: assets/settings-NXrH5w8o.js
+11-02 17:02:32.041 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/settings-NXrH5w8o.js file=assets/settings-NXrH5w8o.js
+11-02 17:02:32.041 D/WailsPathHandler( 6971): Serving assets/settings-NXrH5w8o.js with type application/javascript (882 bytes)
+11-02 17:02:32.041 D/Wails   ( 6971): [JNI] page finished: https://wails.localhost/#/reader/sample
+11-02 17:02:32.042 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:02:32.042 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:32.044 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1282 → common 1287
+11-02 17:02:32.046 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1284 → common 1027
+11-02 17:02:32.046 D/Wails   ( 6971): [events_common_android.go] forwarding android event 1283 → common 1288
+11-02 17:02:32.046 D/WailsPathHandler( 6971): Handling path: wails.png
+11-02 17:02:32.046 D/WailsBridge( 6971): Serving asset: wails.png
+11-02 17:02:32.047 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:02:32.047 D/WailsPathHandler( 6971): Serving wails.png with type image/png (9057 bytes)
+11-02 17:02:32.048 D/WailsPathHandler( 6971): Handling path: wails.png
+11-02 17:02:32.048 D/WailsBridge( 6971): Serving asset: wails.png
+11-02 17:02:32.048 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:02:32.049 D/WailsPathHandler( 6971): Serving wails.png with type image/png (9057 bytes)
+11-02 17:02:32.081 D/WailsJSBridge( 6971): InvokeAsync called: {"object":0,"method":0,"windowName":"","args":{"call-id":"eEYbhyFHpXA89Wfw3Dfst","methodID":1796984773,"args":["sample"]},"clientId":"UDZnxQ9Njn-EuAu2ae_-K"}
+11-02 17:02:32.082 D/WailsBridge( 6971): Runtime call: {"object":0,"method":0,"windowName":"","args":{"call-id":"eEYbhyFHpXA89Wfw3Dfst","methodID":1796984773,"args":["sample"]},"clientId":"UDZnxQ9Njn-EuAu2ae_-K"}
+11-02 17:02:32.088 D/WailsPathHandler( 6971): Handling path: wails.png
+11-02 17:02:32.088 D/WailsBridge( 6971): Serving asset: wails.png
+11-02 17:02:32.088 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/wails.png file=wails.png
+11-02 17:02:32.089 D/WailsPathHandler( 6971): Serving wails.png with type image/png (9057 bytes)
+11-02 17:02:32.089 D/WailsPathHandler( 6971): Handling path: sample/sample.epub
+11-02 17:02:32.089 D/WailsBridge( 6971): Serving asset: sample/sample.epub
+11-02 17:02:32.089 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/sample/sample.epub file=sample/sample.epub
+11-02 17:02:32.089 D/WailsPathHandler( 6971): Serving sample/sample.epub with type application/octet-stream (5509 bytes)
+11-02 17:02:32.102 D/WailsPathHandler( 6971): Handling path: assets/view-BR2c-OKz.js
+11-02 17:02:32.102 D/WailsBridge( 6971): Serving asset: assets/view-BR2c-OKz.js
+11-02 17:02:32.102 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/view-BR2c-OKz.js file=assets/view-BR2c-OKz.js
+11-02 17:02:32.103 D/WailsPathHandler( 6971): Serving assets/view-BR2c-OKz.js with type application/javascript (20733 bytes)
+11-02 17:02:32.105 D/EGL_emulation( 6971): app_time_stats: avg=634.26ms min=5.28ms max=10025.66ms count=16
+11-02 17:02:32.107 D/WailsPathHandler( 6971): Handling path: assets/epubcfi-BzOeE4Vd.js
+11-02 17:02:32.107 D/WailsBridge( 6971): Serving asset: assets/epubcfi-BzOeE4Vd.js
+11-02 17:02:32.107 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/epubcfi-BzOeE4Vd.js file=assets/epubcfi-BzOeE4Vd.js
+11-02 17:02:32.108 D/WailsPathHandler( 6971): Handling path: assets/defineProperty-BbfpZ9Tg.js
+11-02 17:02:32.108 D/WailsBridge( 6971): Serving asset: assets/defineProperty-BbfpZ9Tg.js
+11-02 17:02:32.108 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/defineProperty-BbfpZ9Tg.js file=assets/defineProperty-BbfpZ9Tg.js
+11-02 17:02:32.143 D/WailsPathHandler( 6971): Serving assets/epubcfi-BzOeE4Vd.js with type application/javascript (4723 bytes)
+11-02 17:02:32.143 D/WailsPathHandler( 6971): Serving assets/defineProperty-BbfpZ9Tg.js with type application/javascript (707 bytes)
+11-02 17:02:32.157 D/WailsPathHandler( 6971): Handling path: assets/zip-3VNA5258.js
+11-02 17:02:32.158 D/WailsBridge( 6971): Serving asset: assets/zip-3VNA5258.js
+11-02 17:02:32.158 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/zip-3VNA5258.js file=assets/zip-3VNA5258.js
+11-02 17:02:32.158 D/WailsPathHandler( 6971): Serving assets/zip-3VNA5258.js with type application/javascript (35586 bytes)
+11-02 17:02:32.169 D/WailsPathHandler( 6971): Handling path: assets/epub-Bx7_OQ2j.js
+11-02 17:02:32.169 D/WailsBridge( 6971): Serving asset: assets/epub-Bx7_OQ2j.js
+11-02 17:02:32.170 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/epub-Bx7_OQ2j.js file=assets/epub-Bx7_OQ2j.js
+11-02 17:02:32.170 D/WailsPathHandler( 6971): Serving assets/epub-Bx7_OQ2j.js with type application/javascript (23134 bytes)
+11-02 17:02:32.199 D/WailsPathHandler( 6971): Handling path: assets/paginator-BQ3RgK5E.js
+11-02 17:02:32.200 D/WailsBridge( 6971): Serving asset: assets/paginator-BQ3RgK5E.js
+11-02 17:02:32.200 I/Wails   ( 6971): 5:02PM [AssetFileServerFS] Handling request url=/assets/paginator-BQ3RgK5E.js file=assets/paginator-BQ3RgK5E.js
+11-02 17:02:32.200 D/WailsPathHandler( 6971): Serving assets/paginator-BQ3RgK5E.js with type application/javascript (23287 bytes)
+11-02 17:02:36.203 D/TelephonyManager(  550): requestModemActivityInfo: Sending result to app: ModemActivityInfo{ mTimestamp=2209513 mSleepTimeMs=0 mIdleTimeMs=2209494 mTxTimeMs[]=[0, 0, 0, 0, 0] mRxTimeMs=0}
+11-02 17:02:36.262 I/netd    (  347): trafficSwapActiveStatsMap() <58.89ms>
+11-02 17:02:36.263 I/netd    (  347): tetherGetStats() -> {[]} <0.25ms>
+11-02 17:02:43.120 E/GCM     ( 1106): Missing checkin config file
+11-02 17:02:43.120 W/GCM     ( 1106): GCM FAILED TO INITIALIZE - missing checkin
+11-02 17:02:43.120 E/WakeLock( 1106): GCM_HB_ALARM release without a matched acquire!
+11-02 17:02:43.121 W/WakeLock( 1106): GCM_HB_ALARM counter does not exist
+11-02 17:02:43.122 I/AlarmManager( 1106): setExactAndAllowWhileIdle [name: GCM_CONN_ALARM type: 2 triggerAtMillis: 3116433]
+11-02 17:02:47.274 I/GoogleInputMethodService( 1316): GoogleInputMethodService.onFinishInput():3420 
+11-02 17:02:47.274 I/GoogleInputMethodService( 1316): GoogleInputMethodService.onStartInput():2002 
+11-02 17:02:47.275 I/DeviceUnlockedTag( 1316): DeviceUnlockedTag.notifyDeviceLockStatusChanged():31 Notify device unlocked.
+11-02 17:02:47.285 D/EGL_emulation( 6971): app_time_stats: avg=3794.28ms min=47.17ms max=14981.14ms count=4
+11-02 17:02:49.481 D/resolv  (  347): GetAddrInfoHandler::run: {100 786532 100 983140 10100 0}
+11-02 17:02:49.481 D/resolv  (  347): resolv_getaddrinfo: explore_fqdn(): ai_family=0 ai_socktype=1 ai_protocol=6
+11-02 17:02:49.481 D/resolv  (  347): doQuery: (1, 28)
+11-02 17:02:49.481 D/resolv  (  347): doQuery: (1, 1)
+11-02 17:02:49.481 D/resolv  (  347): res_nmkquery: (QUERY, IN, A)
+11-02 17:02:49.481 D/resolv  (  347): res_nsend
+11-02 17:02:49.481 I/resolv  (  347): resolv_cache_lookup: lookup
+11-02 17:02:49.481 I/resolv  (  347): resolv_cache_lookup: FOUND IN CACHE entry=0x74941682cb10
+11-02 17:02:49.481 D/resolv  (  347): doQuery: rcode=0, ancount=1
+11-02 17:02:49.481 D/resolv  (  347): res_nmkquery: (QUERY, IN, AAAA)
+11-02 17:02:49.481 D/resolv  (  347): res_nsend
+11-02 17:02:49.481 I/resolv  (  347): resolv_cache_lookup: lookup
+11-02 17:02:49.481 I/resolv  (  347): resolv_cache_lookup: NOT IN CACHE (STALE ENTRY 0x7494368266d0DISCARDED)
+11-02 17:02:49.481 I/resolv  (  347): _cache_remove_p: entry 221 removed (count=33)
+11-02 17:02:49.481 I/resolv  (  347): resolv_populate_res_for_net: netid=100
+11-02 17:02:49.481 I/resolv  (  347): res_stats_usable_server: NS stats: S 64 + E 0 + T 0 + I 0 = 64, rtt = 9, min_samples = 8
+11-02 17:02:49.481 I/resolv  (  347): res_stats_usable_server: success rate 100
+11-02 17:02:49.481 D/resolv  (  347): res_nsend: Querying server (# 1) address = 10.0.2.3:53
+11-02 17:02:49.481 D/resolv  (  347): send_dg: new DG socket
+11-02 17:02:49.482 I/resolv  (  347): get_timeout: using timeout of 5000 msec
+11-02 17:02:49.482 I/resolv  (  347): retrying_poll: 56 retrying_poll
+11-02 17:02:49.483 I/resolv  (  347): retrying_poll: 56 retrying_poll returning 1
+11-02 17:02:49.483 I/resolv  (  347): res_nsend: used send_dg 109 terrno: 0
+11-02 17:02:49.483 I/resolv  (  347): res_stats_set_sample: rcode = 0, sec = 1
+11-02 17:02:49.483 I/resolv  (  347): res_cache_add_stats_sample_locked: adding sample to stats, next = 30, count = 64
+11-02 17:02:49.483 D/resolv  (  347): res_nsend: got answer:
+11-02 17:02:49.483 I/resolv  (  347): answer_getTTL: TTL = 30
+11-02 17:02:49.483 I/resolv  (  347): _cache_add_p: entry 223 added (count=34)
+11-02 17:02:49.483 I/resolv  (  347): cache_dump_mru_locked: MRU LIST (34):  223 222 220 196 216 215 207 175 205 184 200 198 201 199 170 169 114 109 71 42 30 64 40 39 25 7 6 11 14 22 21 15 13 12
+11-02 17:02:49.483 D/resolv  (  347): doQuery: rcode=0, ancount=0
+11-02 17:02:49.483 I/ResolverController(  347): No valid NAT64 prefix (100, <unspecified>/0)

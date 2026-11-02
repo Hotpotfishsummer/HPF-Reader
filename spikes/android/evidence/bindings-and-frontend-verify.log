@@ -1,0 +1,159 @@
+=== COMMAND: wails3 generate bindings -ts -i -f '-tags android' -clean=true ===
+Wails v3.1.0 › Generate Bindings
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:7:7: GOOS redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:7:7: 	other declaration of GOOS
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:9:7: IsAix redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:9:7: 	other declaration of IsAix
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:10:7: IsAndroid redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:10:7: 	other declaration of IsAndroid
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:11:7: IsDarwin redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:11:7: 	other declaration of IsDarwin
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:12:7: IsDragonfly redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:12:7: 	other declaration of IsDragonfly
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:13:7: IsFreebsd redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:13:7: 	other declaration of IsFreebsd
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:14:7: IsHurd redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:14:7: 	other declaration of IsHurd
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:15:7: IsIllumos redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:15:7: 	other declaration of IsIllumos
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:16:7: IsIos redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:16:7: 	other declaration of IsIos
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:17:7: IsJs redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:17:7: 	other declaration of IsJs
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:18:7: IsLinux redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:18:7: 	other declaration of IsLinux
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:19:7: IsNacl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:19:7: 	other declaration of IsNacl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:20:7: IsNetbsd redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:20:7: 	other declaration of IsNetbsd
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:21:7: IsOpenbsd redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:21:7: 	other declaration of IsOpenbsd
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:22:7: IsPlan9 redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:22:7: 	other declaration of IsPlan9
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:23:7: IsSolaris redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:23:7: 	other declaration of IsSolaris
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:24:7: IsWasip1 redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:24:7: 	other declaration of IsWasip1
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:25:7: IsWindows redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:25:7: 	other declaration of IsWindows
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_windows.go:26:7: IsZos redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\internal\goos\zgoos_android.go:26:7: 	other declaration of IsZos
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:109:14: undefined: sockaddr_un
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:46:19: undefined: access
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:113:20: undefined: _AF_UNIX
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:120:8: undefined: socket
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:120:15: undefined: _AF_UNIX
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:120:25: undefined: _SOCK_DGRAM
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:120:37: undefined: _O_CLOEXEC
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\runtime\write_err_android.go:127:11: undefined: connect
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\time\zoneinfo_windows.go:13:5: platformZoneSources redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\time\zoneinfo_android.go:16:5: 	other declaration of platformZoneSources
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\time\zoneinfo_windows.go:230:6: initLocal redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\time\zoneinfo_android.go:21:6: 	other declaration of initLocal
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\assetserver\assetserver_windows.go:5:5: baseURL redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\assetserver\assetserver_android.go:9:5: 	other declaration of baseURL
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\operatingsystem\os_windows.go:12:6: platformInfo redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\operatingsystem\os_android.go:10:6: 	other declaration of platformInfo
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\runtime\runtime_windows.go:5:5: invoke redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\internal\runtime\runtime_android.go:7:5: 	other declaration of invoke
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:247:2: userBuffer redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_stubs.go:19:2: 	other declaration of userBuffer
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:248:2: groupBuffer redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_stubs.go:20:2: 	other declaration of groupBuffer
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:251:6: current redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_stubs.go:23:6: 	other declaration of current
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:454:6: lookupUser redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_android.go:11:6: 	other declaration of lookupUser
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:465:6: lookupUserId redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_android.go:15:6: 	other declaration of lookupUserId
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:473:6: lookupGroup redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_android.go:19:6: 	other declaration of lookupGroup
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:481:6: lookupGroupId redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_android.go:23:6: 	other declaration of lookupGroupId
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\lookup_windows.go:496:6: listGroups redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.0.windows-amd64\src\os\user\listgroups_stub.go:17:6: 	other declaration of listGroups
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_windows.go:421:6: newPlatformApp redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_android_nocgo.go:95:6: 	other declaration of newPlatformApp
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_windows.go:486:6: fatalHandler redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_android_nocgo.go:184:6: 	other declaration of fatalHandler
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\autostart_windows.go:23:6: newAutostartImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\autostart_android.go:7:6: 	other declaration of newAutostartImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\clipboard_windows.go:27:6: newClipboardImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\clipboard_android.go:11:6: 	other declaration of newClipboardImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_windows.go:173:6: newDialogImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_android.go:41:6: 	other declaration of newDialogImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_windows.go:183:6: newOpenFileDialogImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_android.go:111:6: 	other declaration of newOpenFileDialogImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_windows.go:292:6: newSaveFileDialogImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_android.go:168:6: 	other declaration of newSaveFileDialogImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\events_common_windows.go:7:5: commonApplicationEventMap redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\events_common_android.go:10:5: 	other declaration of commonApplicationEventMap
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\global_shortcut_windows.go:26:6: newGlobalShortcutImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\global_shortcut_unsupported.go:13:6: 	other declaration of newGlobalShortcutImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\logger_dev_windows.go:14:6: DefaultLogger redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\logger_android.go:94:6: 	other declaration of DefaultLogger
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\menu_windows.go:36:6: newMenuImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\menu_android.go:13:6: 	other declaration of newMenuImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\single_instance_windows.go:28:6: newPlatformLock redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\single_instance_android.go:15:6: 	other declaration of newPlatformLock
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\systemtray_windows.go:451:6: newSystemTrayImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\systemtray_android.go:30:6: 	other declaration of newSystemTrayImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\webview_window_windows.go:1521:6: newWindowImpl redeclared in this block
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\webview_window_android.go:16:6: 	other declaration of newWindowImpl
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_windows.go:458:15: method App.logPlatformInfo already declared at C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_android_nocgo.go:175:15
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_windows.go:476:15: method App.platformEnvironment already declared at C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\application_android_nocgo.go:178:15
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dev_output_android.go:28:15: undefined: unix.Dup3
+ WARNING  [warn] C:\Users\HOTPOTFISH\go\pkg\mod\github.com\wailsapp\wails\v3@v3.1.0\pkg\application\dialogs_windows.go:25:8: about.UseAppIcon undefined (type *androidDialog has no field or method UseAppIcon)
+ INFO  Processed: 250 Packages, 2 Services, 11 Methods, 0 Enums, 2 Models, 1 Event in 2.7366024s.
+ INFO  Output directory: C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\apps\client\frontend\bindings
+ WARNING  104 warnings emitted
+bindings exit=0
+=== generated bindings file count ===
+7
+=== COMMAND: corepack pnpm run build (in apps/client/frontend) ===
+$ vue-tsc --noEmit && vite build --mode production
+vite v8.3.5 building client environment for production...
+transforming...
+[plugin builtin:vite-import-glob] Invalid glob pattern: `vendor/pdfjs/*` in file 'src\vendor\foliate-js\pdf.js'. Glob patterns must start with:
+  • '/' for absolute paths from project root
+  • './' or '../' for relative paths
+  • '**/' for recursive matching from project root
+  • '#' for subpath imports (with '*' wildcard)
+✓ 174 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    0.98 kB │ gzip:   0.44 kB
+dist/assets/index-CR6jS4Mh.css                    22.85 kB │ gzip:   5.18 kB
+dist/assets/desktop-B9oRns8p.js                    0.06 kB │ gzip:   0.07 kB
+dist/assets/dist-CA0d7Z1a.js                       0.07 kB │ gzip:   0.08 kB
+dist/assets/rolldown-runtime-DK3Fl9T5.js           0.15 kB │ gzip:   0.15 kB
+dist/assets/mobile-Dxz1Po8J.js                     0.26 kB │ gzip:   0.22 kB
+dist/assets/useApi-CUWMwLLw-DdLI9b4P.js            0.86 kB │ gzip:   0.47 kB
+dist/assets/settings-C8oTGJyX.js                   0.90 kB │ gzip:   0.52 kB
+dist/assets/comic-book-Bc_1EzdL.js                 1.11 kB │ gzip:   0.68 kB
+dist/assets/preload-helper-BLdHbfdN.js             1.51 kB │ gzip:   0.79 kB
+dist/assets/i18n-EZelnKfi.js                       2.14 kB │ gzip:   1.20 kB
+dist/assets/search-DdQcuAdo.js                     2.31 kB │ gzip:   1.07 kB
+dist/assets/fflate-CIG33RrD.js                     3.82 kB │ gzip:   2.05 kB
+dist/assets/LibraryView-BEWYl4C1.js                4.00 kB │ gzip:   1.72 kB
+dist/assets/tts-DN-woJA-.js                        4.51 kB │ gzip:   1.82 kB
+dist/assets/epubcfi-BzOeE4Vd.js                    4.72 kB │ gzip:   2.04 kB
+dist/assets/fixed-layout-neXwLekV.js               5.59 kB │ gzip:   2.32 kB
+dist/assets/SettingsView-B_T3XRkQ.js               5.74 kB │ gzip:   1.78 kB
+dist/assets/fb2-DgH9Jg0u.js                        6.90 kB │ gzip:   2.86 kB
+dist/assets/runtime-dom.esm-bundler-DoFIHk7w.js    7.44 kB │ gzip:   3.38 kB
+dist/assets/desktop-BxQDml7v.js                   10.55 kB │ gzip:   3.94 kB
+dist/assets/ReaderView-Bb7x_oFD.js                14.96 kB │ gzip:   6.19 kB
+dist/assets/dist-DXUMBP2b.js                      16.11 kB │ gzip:   5.99 kB
+dist/assets/view-UcWaFJgn.js                      19.12 kB │ gzip:   6.70 kB
+dist/assets/paginator-DeLvVQvW.js                 21.04 kB │ gzip:   7.07 kB
+dist/assets/epub-BXFDM7TN.js                      21.69 kB │ gzip:   8.17 kB
+dist/assets/mobi-8lpad5do.js                      22.00 kB │ gzip:   8.31 kB
+dist/assets/vue-router-BffmVgK7.js                22.78 kB │ gzip:   9.11 kB
+dist/assets/index-CPZ_V7U5.js                     33.70 kB │ gzip:  10.46 kB
+dist/assets/zip-3VNA5258.js                       35.58 kB │ gzip:  14.10 kB
+dist/assets/platform-Dn-niZ79.js                 124.85 kB │ gzip:  45.33 kB
+dist/assets/pdf-imrYNTHN.js                      401.66 kB │ gzip: 119.59 kB
+
+✓ built in 905ms
+frontend build exit=0

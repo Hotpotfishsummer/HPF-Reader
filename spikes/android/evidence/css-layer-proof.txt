@@ -1,0 +1,7 @@
+pid=8702
+=== flatten layers + check .absolute ===
+{"ok":true,"hoistedLayerBlocks":0,"emittedRules":66,"absolutePos":"static","cssBytes":5786}
+=== reload reader (flatten persists only this session) ===
+{"bodyBg":"rgba(0, 0, 0, 0)","font":"sans-serif"}
+=== CSS nesting / container-query on WebView 91 ===
+{"nestedAmpersand":"grid","containerQueryApplied":"block","containerTypeAccepted":"size","supportsNesting":false,"supportsLayer":false}

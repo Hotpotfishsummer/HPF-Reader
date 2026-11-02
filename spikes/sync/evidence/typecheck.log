@@ -1,0 +1,18 @@
+$ vue-tsc --noEmit
+src/compat/__tests__/polyfills.spec.ts(164,53): error TS18046: 's' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(168,54): error TS18046: 'n' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(169,49): error TS18046: 'n' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(170,49): error TS18046: 'n' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(189,49): error TS2345: Argument of type '(this: { limit: number; }, n: number) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: ArrayLike<unknown>) => unknown'.
+  Types of parameters 'n' and 'value' are incompatible.
+    Type 'unknown' is not assignable to type 'number'.
+src/compat/__tests__/polyfills.spec.ts(205,49): error TS18046: 'b' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(205,53): error TS18046: 'a' is of type 'unknown'.
+src/compat/__tests__/polyfills.spec.ts(292,5): error TS2532: Object is possibly 'undefined'.
+src/compat/__tests__/polyfills.spec.ts(292,5): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'number | number[]'.
+  Property '0' does not exist on type 'number | number[]'.
+src/compat/__tests__/polyfills.spec.ts(293,12): error TS2532: Object is possibly 'undefined'.
+src/compat/__tests__/polyfills.spec.ts(293,12): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'number | number[]'.
+  Property '0' does not exist on type 'number | number[]'.
+[ELIFECYCLE] Command failed with exit code 2.
+

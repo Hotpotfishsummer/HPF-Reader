@@ -1,0 +1,11 @@
+=== install pristine sample APK on API-31 (WebView 91) ===
+Performing Streamed Install
+Success
+
+=== sample book state on 91 ===
+=== pagination: tap next ===
+=== sample book on WebView 91 ===
+=== tap next ===
+=== sample book on WebView 91 (port 9301) ===
+{"text":"←☰第一章 · 客户端骨架36% ◐‹›","iframes":0,"fv":{"w":412,"h":1482},"innerH":843,"innerW":412,"layerWorks":"rgb(0, 0, 0)"}
+=== tap next, then re-probe ===

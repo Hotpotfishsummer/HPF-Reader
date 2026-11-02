@@ -1,0 +1,6 @@
+
+Algorithm : SHA256
+Hash      : BF04D57CF243314AB770DF6FCEA6A9CFB1E5A281426453E23C128C5A9C3EB662
+Path      : C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\testdata\books\frankenstein.epub
+
+

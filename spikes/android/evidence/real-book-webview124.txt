@@ -1,0 +1,35 @@
+=== install real-book APK on API-35 (WebView 124) ===
+Performing Streamed Install
+Success
+
+pid=4042
+=== reader state on WebView 124 ===
+← | ☰ | 阅读 | 0% | ◐ | ‹ | ›
+=== foliate size ===
+{"w":412,"h":867}
+=== console/log errors ===
+11-02 17:11:55.250 D/WailsActivity( 4042): [WebView] LOG: [polyfill] 已补齐运行时内置对象：Promise.try, Uint8Array.prototype.toBase64, Uint8Array.fromBase64 (https://wails.localhost/assets/index-BeAGVLB0.js:2)
+11-02 17:12:08.797 I/BugleRcsEngine( 3267): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+11-02 17:12:08.798 I/BugleRcsEngine( 3267): handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[3db4e413-9980]>Handler" thread_id=62 ]
+11-02 17:12:08.799 I/BugleRcsEngine( 3267): RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=62 ]
+11-02 17:12:09.315 D/WailsActivity( 4042): [WebView] WARNING: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. (https://wails.localhost/assets/paginator-BQ3RgK5E.js:97)
+11-02 17:12:09.323 D/WailsActivity( 4042): [WebView] WARNING: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. (blob:https://wails.localhost/f1ec5f6f-2fc0-4da1-8aea-1bee39779529:0)
+11-02 17:12:14.807 I/BugleRcsEngine( 3267): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+11-02 17:12:14.808 I/BugleRcsEngine( 3267): handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[3db4e413-9980]>Handler" thread_id=62 ]
+11-02 17:12:14.810 I/BugleRcsEngine( 3267): RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=62 ]
+=== tap TOC button ===
+[{"txt":"←","x":23,"y":24},{"txt":"☰","x":58,"y":24},{"txt":"◐","x":337,"y":24},{"txt":"‹","x":368,"y":24},{"txt":"›","x":394,"y":24}]
+=== TOC content ===
+{"count":0,"items":[]}
+=== TOC after tap 58,24 ===
+← | ☰ | 阅读 | 0% | ◐ | ‹ | › | 目录 | ✕ | Frankenstein; | or, the Modern Prometheus | CONTENTS | Letter 1 | Letter 2 | Letter 3 | Letter 4 | Chapter 1 | Chapter 2 | Chapter 3 | Chapter 4 | Chapter 5 | Chapter 6 | Chapter 7 | Chapter 8 | Chapter 9 | Chapter 10 | Chapter 11 | Chapter 12 | Chapter 13 | Chapter 14 | Chapter 15 | Chapter 16 | Chapter 17 | Chapter 18 | Chapter 19 | Chapter 20 | Chapter 21 | Chapter 22 | Chapter 23 | Chapter 24 | THE FULL PROJECT GUTENBERG™ LICENSE
+=== tap Chapter 5 in TOC ===
+{
+  "tag": "BUTTON",
+  "x": 159.61904907226562,
+  "y": 422,
+  "w": 287.23809814453125,
+  "h": 28
+}
+=== state after jumping to Chapter 5 ===
+← | ☰ | Chapter 5 | 21% | ◐ | ‹ | ›

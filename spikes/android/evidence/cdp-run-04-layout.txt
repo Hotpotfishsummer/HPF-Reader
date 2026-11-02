@@ -1,0 +1,10 @@
+=== layout chain ===
+{"chain":[{"tag":"FOLIATE-VIEW","cls":"","offH":1482,"clientH":1482,"h":"1482px","minH":"0px","maxH":"none","pos":"static"},{"tag":"DIV","cls":"relative min-h-0 min-w-0 flex-1","offH":1482,"clientH":1482,"h":"1482px","minH":"0px","maxH":"none","pos":"static"},{"tag":"DIV","cls":"flex min-h-0 w-full flex-1 pt-12","offH":1482,"clientH":1482,"h":"1482px","minH":"0px","maxH":"none","pos":"static"},{"tag":"DIV","cls":"relative flex h-full w-full overflow-hidden","offH":1507,"clientH":1507,"h":"1507.48px","minH":"0px","maxH":"none","pos":"static"},{"tag":"DIV","cls":"absolute inset-0 overflow-hidden bg-[var(--reader-paper)]","offH":1507,"clientH":1507,"h":"1507.48px","minH":"0px","maxH":"none","pos":"static"},{"tag":"DIV","cls":"","offH":843,"clientH":843,"h":"843.048px","minH":"0px","maxH":"none","pos":"static"},{"tag":"BODY","cls":"","offH":843,"clientH":843,"h":"843.048px","minH":"0px","maxH":"none","pos":"static"}],"docH":843,"bodyH":843,"bodyOffH":843}
+=== rotate to landscape ===
+=== landscape metrics ===
+{"innerW":867,"innerH":388,"fv":{"w":867,"h":1526},"text":"←返回书库☰目录第二章 · 内容隔离69% L2 ◐纸白‹上一页›下一页"}
+=== which rules set position on the paper div ===
+{"found":true,"absRuleCount":0,"sample":[],"computedPos":"static","computedH":"1551.48px","sheetCount":1}
+=== run-as test ===
+=== push frankenstein into app private storage via run-as ===
+local bytes: 294175
