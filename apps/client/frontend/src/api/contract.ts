@@ -35,25 +35,48 @@ export type SourceItem = components['schemas']['SourceItem']
 export type SourceList = components['schemas']['SourceList']
 
 /**
- * 术语表条目（M5-4 服务端化尚未落地，见 task-22）。
+ * 术语表（task-24）。
  *
- * ⚠️ **契约缺口**：`GET/PUT /v1/books/{id}/glossary` 在 task-23 的说明里
- * 提到"可能还在做"，实测服务端**没有**这个路由（server.go 的路由表里没有）。
- * 因此这里按"服务端已有的能力"来设计：术语表通过
- * `POST /v1/ai/translate` 的 `glossary` 字段传给模型（这条**是**实现了的），
- * UI 侧的术语表编辑只维护本地状态，不假装能持久化到服务端。
- * 详见 apps/client/STATUS.md 的"契约缺口"一节。
+ * ★ 类型现在**直接来自生成的 `schema.d.ts`**，不再手写。
+ *   task-23 时我手写过一份（`GlossaryEntry` / `origin: user|llm|deterministic`），
+ *   那份是错的：服务端的字段名是 `source`、枚举是
+ *   `user_confirmed|llm_extracted|deterministic`。手写契约必然漂移，所以这次以生成为准。
+ *
+ * 三条必须记住的语义（写在这里，因为类型本身表达不了）：
+ *
+ * 1. **`key` 是服务端算的归一化原文键**，不是原始写法。
+ *    同一人物会有多种写法（`Mr. Darcy` / `Darcy` / `达西先生`），
+ *    按原始写法存会变成多条，译文一致性无从谈起。
+ *    客户端**不得自行实现归一化** —— openapi 明确写了「那是一套有版本的规则，
+ *    重复实现必然不一致」。所以本地新增术语时 key 留空，交给服务端算。
+ *
+ * 2. **`source` 优先级 `user_confirmed > llm_extracted > deterministic`**。
+ *    已有术语是 `user_confirmed` 时，自动流水线的写入被服务端**忽略**。
+ *    这是「用户手工确认的译名重跑不得覆盖」的硬保证（后端有测试守着）。
+ *
+ * 3. **`version` 参与译文 `input_hash`**。
+ *    术语改一条，受影响块必须重译 —— 也就是说**改术语会触发重新翻译并消耗额度**。
+ *    UI 必须提前告知（见 GlossaryPanel 的 `glossaryVersionWarning`）。
  */
-export interface GlossaryEntry {
-  /** 原文写法（source）。 */
-  source: string
-  /** 标准译名（target）。 */
-  target: string
-  /** 来源标记：用户确认 / LLM 抽取 / 确定性规则。 */
-  origin: GlossaryOrigin
+export type Glossary = components['schemas']['Glossary']
+export type GlossaryTerm = components['schemas']['GlossaryTerm']
+export type GlossarySource = GlossaryTerm['source']
+export type GlossaryPutRequest = components['schemas']['GlossaryPutRequest']
+
+/**
+ * 术语来源的优先级数值（越小越优先）。
+ * 用于 UI 判断「这条会不会被自动流水线覆盖」，以及展示排序。
+ */
+export const GLOSSARY_SOURCE_PRIORITY: Record<GlossarySource, number> = {
+  user_confirmed: 0,
+  llm_extracted: 1,
+  deterministic: 2,
 }
 
-export type GlossaryOrigin = 'user' | 'llm' | 'deterministic'
+/** 该来源是否会被自动流水线覆盖（user_confirmed 不会）。 */
+export function isOverridable(source: GlossarySource): boolean {
+  return source !== 'user_confirmed'
+}
 
 /**
  * ⚠️ 契约缺口（已在 spikes/sync/RESULTS.md 记录，本任务不改 api/ 目录）：

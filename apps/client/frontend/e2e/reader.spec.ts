@@ -129,7 +129,42 @@ test.describe('阅读闭环（本地优先）', () => {
       first.cfi,
       { timeout: 15_000 },
     )
-    const turned = await probe(page)
+
+    /**
+     * ★ 这个断言经过返工，根因是**产品行为的时序**，不是写法问题，记录在这里：
+     *
+     * 点一次 next-page，引擎的 lastLocation.cfi 会经过多个中间态：
+     *   first  = epubcfi(/6/2!/4,/2,/8/1:49)   带文本偏移的精确位置
+     *   瞬态   = epubcfi(/6/2!/4)              分页重排过程中的粗粒度值
+     *   稳定   = epubcfi(/6/4!/4,/2,/8/1:84)   分页收敛后真正写进进度的值
+     *
+     * 原来"点完立刻读一次 localStorage 再比 cfi"，比的是瞬态 vs 稳定，
+     * 竞态下读到的是**上一页**的值 —— 实测全量跑约 1/3 概率红，
+     * 而单独跑 reader.spec.ts 却 9/9 全绿（机器没那么忙，恰好撞对时机）。
+     *
+     * 正确的不变量是：**最终，引擎当前位置与 localStorage 记录一致**。
+     * 所以轮询到两者收敛，而不是猜某个中间态。
+     */
+    const readState = () =>
+      page.evaluate(() => {
+        const el = document.querySelector('foliate-view') as unknown as { lastLocation?: { cfi?: string } } | null
+        const raw = localStorage.getItem('hpf.reader.progress.v1')
+        const table = raw ? (JSON.parse(raw) as Record<string, { locator?: string }>) : null
+        return { cfi: el?.lastLocation?.cfi ?? '', stored: table?.['sample']?.locator ?? '' }
+      })
+
+    await expect
+      .poll(
+        async () => {
+          const s = await readState()
+          return s.cfi !== '' && s.cfi === s.stored
+        },
+        { timeout: 15_000, message: '引擎位置应该已写入 localStorage（进度落盘）' },
+      )
+      .toBe(true)
+
+    const settled = await readState()
+    const turned = { cfi: settled.cfi, index: (await probe(page)).index }
     expect(turned.cfi).not.toBe(first.cfi)
 
     // ★ 进度必须已经写进 localStorage —— 没有任何后端参与
@@ -146,7 +181,6 @@ test.describe('阅读闭环（本地优先）', () => {
     expect(resumed.cfi).toBe(turned.cfi)
     expect(resumed.index).toBe(turned.index)
 
-    // 续读提示与工具栏百分比都来自这次恢复
     await expect(page.getByTestId('reader-resumed')).toBeVisible()
     const percent = Number((await page.getByTestId('progress').textContent())?.replace('%', '') ?? '0')
     expect(percent).toBeGreaterThanOrEqual(0)

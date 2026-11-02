@@ -93,8 +93,8 @@ const targetLang = computed(() => (settings.locale === 'zh-CN' ? 'zh-CN' : 'en')
  * 这条链路是**服务端已实现**的（POST /v1/ai/translate 的 glossary 进 system 前缀），
  * 所以划词翻译也会遵守已确认的译名 —— 这是术语一致性的实际落点。
  */
-const glossary = useGlossary(() => bookId.value)
-const glossaryForTranslate = computed(() => glossary.translateMap.value)
+const glossary = useGlossary(() => bookId.value, () => targetLang.value)
+const glossaryForTranslate = computed(() => glossary.translateGlossary.value)
 
 const themeOrder: ReaderTheme[] = ['light', 'sepia', 'dark', 'ink']
 const themeLabel = computed(() => t(`settings.themeName.${settings.readerTheme}`))
@@ -511,6 +511,7 @@ onBeforeUnmount(() => {
     <GlossaryPanel
       v-if="glossaryOpen"
       :book-id="bookId"
+      :target-lang="targetLang"
       @close="glossaryOpen = false"
     />
 

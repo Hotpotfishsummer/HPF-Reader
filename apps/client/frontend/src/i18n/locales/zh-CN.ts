@@ -124,7 +124,31 @@ export default {
     glossaryAdd: '添加',
     glossaryConfirm: '确认',
     glossaryDelete: '删除',
-    glossaryLocalOnly: '术语表暂存在本机（服务端存储接口尚未提供）。',
+    // ---- task-24：服务端术语表 + 归一化 ----
+    sourceUserConfirmed: '已确认',
+    sourceLlmExtracted: 'LLM 抽取',
+    sourceDeterministic: '自动规则',
+    loading: '读取中…',
+    saving: '保存中…',
+    /** ★ 必须说清后果：改术语会导致相关块重译并消耗额度。 */
+    glossaryVersionWarning:
+      '改动术语会让相关段落重新翻译（会消耗额度）——术语版本参与译文缓存键，旧译文不能复用。',
+    glossaryStale: '离线缓存：服务端暂时不可达，下面显示的是本机缓存，可能不是最新。',
+    glossaryAliases: '别名',
+    /** ★ 如实说明做不到的事。 */
+    glossaryMergeEntry: '合并同一人物的多种写法',
+    glossaryMergeHint:
+      '自动规则只能合并写法相近的（如 Mr. Darcy / Darcy）。像 Scarlett / 斯嘉丽 这种译名归化，字符串比对必然失败，请手动选择并合并。',
+    glossaryMergeInto: '保留哪一条（输入 key）',
+    glossaryMerge: '合并',
+    glossaryMerged: '已合并',
+    /** 锁定 = user_confirmed，自动流水线不再覆盖。 */
+    glossaryLock: '锁定',
+    glossaryUnlock: '解锁',
+    glossaryLockHint: '锁定后自动流水线不再改动这组译名（来源升级为用户确认）',
+    glossaryUnlockHint: '解锁后允许自动流水线重新抽取和修改这条术语',
+    glossarySplit: '拆分',
+    glossarySplitHint: '把该别名拆出来（误合并时用）',
     // ---- 配额 ----
     quotaTitleShort: '本月用量',
     quotaCallsLabel: '调用次数',

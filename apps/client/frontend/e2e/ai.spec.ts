@@ -408,6 +408,38 @@ test.describe('客户端翻译 UI（task-23）', () => {
 
   test('术语表：新增 → 来源标记 → 确认升级', async ({ page }) => {
     await mockAiBackend(page)
+    // ★ task-24 起术语表真的走服务端（GET/PUT /v1/books/{id}/glossary），
+    //   mockAiBackend 只覆盖了 usage/translate/jobs，这里必须补上，
+    //   否则 putGlossary 失败 → commit 抛错 → 面板里不会出现任何行。
+    //   （这个失败是**真实的**：服务端不可用时 UI 不假装写入成功。）
+    let terms: Array<{ key: string; display: string; target: string; source: string }> = []
+    let version = 0
+    await page.route('**/v1/books/*/glossary*', async (route) => {
+      const req = route.request()
+      if (req.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ bookId: 'b1', targetLang: 'zh', version, terms }),
+        })
+        return
+      }
+      const body = JSON.parse(req.postData() as string) as {
+        terms?: Array<{ key: string; display: string; target: string; source: string }>
+      }
+      for (const t of body.terms ?? []) {
+        const key = t.display.replace(/^(Mr|Mrs|Ms|Dr)\.?\s+/i, '').trim().toLowerCase()
+        const i = terms.findIndex((x) => x.key === key)
+        if (i >= 0) terms[i] = { ...t, key }
+        else terms = [...terms, { ...t, key }]
+      }
+      version += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ bookId: 'b1', targetLang: 'zh', version, terms }),
+      })
+    })
     await openRealBook(page)
 
     await page.getByTestId('toggle-glossary').click()
@@ -417,7 +449,7 @@ test.describe('客户端翻译 UI（task-23）', () => {
     // 空状态
     await expect(panel.getByTestId('glossary-empty')).toBeVisible()
 
-    // 新增一条（用户确认 → origin=user）
+    // 新增一条（用户确认 → source=user_confirmed）
     await panel.getByTestId('glossary-new-source').fill('Elizabeth')
     await panel.getByTestId('glossary-new-target').fill('伊丽莎白')
     await panel.getByTestId('glossary-add').click()
@@ -426,13 +458,15 @@ test.describe('客户端翻译 UI（task-23）', () => {
     await expect(rows).toHaveCount(1)
     await expect(rows.first()).toContainText('Elizabeth')
     await expect(rows.first()).toContainText('伊丽莎白')
-    // 来源标记必须是"用户确认"
-    await expect(rows.first()).toContainText('用户确认')
+    // 来源标记必须是"已确认"（task-24 文案；task-23 时叫"用户确认"）
+    await expect(rows.first()).toContainText('已确认')
 
-    // 明确标注只存本机（不假装已同步服务端）
-    await expect(panel.getByTestId('glossary-local-only')).toBeVisible()
+    // ★ task-24 反转了这条断言：task-23 时这里是"暂存在本机"，
+    //   现在术语表真的存服务端，那个"只存本机"的标注**必须不存在**。
+    //   完整服务端持久化验证见 e2e/glossary.spec.ts。
+    await expect(panel.getByTestId('glossary-local-only')).toHaveCount(0)
 
     mkdirSync(EVIDENCE_DIR, { recursive: true })
-    await page.screenshot({ path: path.join(EVIDENCE_DIR, 'task-23-glossary.png') })
+    await page.screenshot({ path: path.join(EVIDENCE_DIR, 'task-24-glossary-panel.png') })
   })
 })

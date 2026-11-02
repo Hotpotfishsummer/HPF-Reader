@@ -1,6 +1,6 @@
 import type { ApiClient } from './client'
 import { ApiError } from './client'
-import type { AiJob, AiUsage, QuotaExceededError, TranslateRequest } from './contract'
+import type { AiJob, AiUsage, Glossary, GlossaryPutRequest, QuotaExceededError, TranslateRequest } from './contract'
 
 /**
  * AI 相关接口的客户端封装（task-23）。
@@ -140,6 +140,15 @@ export interface AiApi {
   createBookTranslateJob(bookId: string, targetLang: string): Promise<AiJob>
   /** 查任务状态（轮询用）。 */
   getJob(jobId: string): Promise<AiJob>
+  /** 读取一本书在某目标语言下的术语表。 */
+  getGlossary(bookId: string, targetLang: string): Promise<Glossary>
+  /**
+   * 批量写入 / 删除术语（**合并语义**，不是替换）。
+   *
+   * 返回更新后的完整术语表（含新的 `version`）。
+   * ⚠️ version 变化会让受影响块的译文缓存失效 → 重译并消耗额度。
+   */
+  putGlossary(bookId: string, req: GlossaryPutRequest): Promise<Glossary>
 }
 
 export function createAiApi(client: ApiClient): AiApi {
@@ -279,6 +288,19 @@ export function createAiApi(client: ApiClient): AiApi {
 
     async getJob(jobId) {
       return client.request<AiJob>('/v1/ai/jobs/' + encodeURIComponent(jobId))
+    },
+
+    async getGlossary(bookId, targetLang) {
+      // targetLang 必填而非默认 zh —— 猜语言会产生难以解释的行为（契约原文）。
+      const qs = '?targetLang=' + encodeURIComponent(targetLang)
+      return client.request<Glossary>('/v1/books/' + encodeURIComponent(bookId) + '/glossary' + qs)
+    },
+
+    async putGlossary(bookId, req) {
+      return client.request<Glossary>('/v1/books/' + encodeURIComponent(bookId) + '/glossary', {
+        method: 'PUT',
+        body: JSON.stringify(req),
+      })
     },
   }
 }
