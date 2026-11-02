@@ -50,11 +50,20 @@ tasks:
       - pnpm-lock.yaml
     generates:
       - node_modules
+    # 用 corepack pnpm 而不是裸 pnpm。
+    #
+    # 原因：`corepack enable` 需要管理员权限（写 C:\Program Files\nodejs\），
+    # 普通账户会 EPERM 失败；但 `corepack pnpm ...` 在用户态就能用，
+    # 且自动读取 package.json 的 packageManager 字段锁定版本。
+    # 这样 CI/新机器无需全局安装 pnpm 也能构建，比要求「先装 pnpm」更省事。
+    #
+    # 保留裸 pnpm 回退：若用户已全局安装（corepack enable 成功过），
+    # 直接调用更快，避免每次经 corepack 转发。
     preconditions:
-      - sh: pnpm --version
-        msg: "pnpm not found"
+      - sh: 'pnpm --version >/dev/null 2>&1 || corepack pnpm --version >/dev/null 2>&1'
+        msg: "neither pnpm nor corepack available — install Node.js 18+ (corepack ships with it)"
     cmds:
-      - pnpm install
+      - cmd: 'if pnpm --version >/dev/null 2>&1; then pnpm install; else corepack pnpm install; fi'
 
   install:frontend:deps:yarn:
     dir: frontend
@@ -125,7 +134,8 @@ tasks:
   frontend:run:pnpm:
     dir: frontend
     cmds:
-      - pnpm run {{.SCRIPT}}
+      # 与 install:frontend:deps:pnpm 同理：优先裸 pnpm，回退 corepack。
+      - cmd: 'if pnpm --version >/dev/null 2>&1; then pnpm run {{.SCRIPT}}; else corepack pnpm run {{.SCRIPT}}; fi'
     vars:
       SCRIPT: "{{.SCRIPT}}"
 
@@ -223,7 +233,7 @@ tasks:
   frontend:dev:pnpm:
     dir: frontend
     cmds:
-      - pnpm dev --port {{.VITE_PORT}} --strictPort
+      - cmd: 'if pnpm --version >/dev/null 2>&1; then pnpm dev --port {{.VITE_PORT}} --strictPort; else corepack pnpm dev --port {{.VITE_PORT}} --strictPort; fi'
 
   frontend:dev:bun:
     dir: frontend

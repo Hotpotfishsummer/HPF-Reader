@@ -3,7 +3,18 @@ version: '3'
 vars:
   APP_NAME: "hpfreader"
   BIN_DIR: "bin"
-  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
+  # 默认必须与仓库实际使用的包管理器一致：本项目有 pnpm-lock.yaml，
+  # 依赖树是 pnpm 的（node_modules 里是指向 .pnpm 的符号链接）。
+  #
+  # 缺陷背景：默认值曾是 "npm"，导致 `android:package` 走到 npm install，
+  # 而 npm 的 arborist 无法解析 pnpm 的链接树，直接崩：
+  #   TypeError: Cannot read properties of null (reading 'matches')
+  #     at Link.matches (.../@npmcli/arborist/lib/node.js:1184:41)
+  # 报错文本里那些 @vitest/coverage-v8 的 ERESOLVE 警告是 birpc 的 peer 依赖噪音，
+  # **不是**根因（曾据此误判为「版本冲突」，实际 pnpm why 查无此包）。
+  #
+  # 仍然保留 npm 分支（install:frontend:deps:npm 等），只是不再作为默认。
+  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "pnpm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
   # Target OS for build/package/run. Defaults to the host OS, and is overridden
   # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
