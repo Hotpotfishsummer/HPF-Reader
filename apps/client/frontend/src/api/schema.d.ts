@@ -989,17 +989,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/books/{bookId}/glossary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取术语表
+         * @description 返回一本书在某个目标语言下的全部术语。
+         *
+         *     术语表的 **key 是归一化后的原文键**（如 `darcy`），不是原始写法。
+         *     原因：同一人物会以多种写法出现（`Mr. Darcy` / `Darcy` / `达西先生`），
+         *     若按原始写法存，同一个人会变成多条术语，译文一致性无从谈起。
+         *
+         *     `display` 保留原始写法供展示，`target` 是标准译名。
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 目标语言。必填而非默认 zh——猜语言会产生难以解释的行为。 */
+                    targetLang: string;
+                };
+                header?: never;
+                path: {
+                    bookId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Glossary"];
+                    };
+                };
+                /** @description bookId 非 UUID，或缺少 targetLang */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        /**
+         * 批量写入 / 删除术语
+         * @description **合并语义**，不是替换：只处理请求里出现的 key，未提及的术语保持不动。
+         *     客户端因此可以只提交改动的那几条，不必回传整份术语表。
+         *
+         *     **来源优先级**：已有术语是 `user_confirmed` 时，`llm_extracted` /
+         *     `deterministic` 的写入会被忽略。用户手工确认的译名**重跑不得覆盖**。
+         *     这关乎信任而非精度：用户改的译名被自动流水线冲掉，会认为功能不可靠。
+         *
+         *     `key` 可省略，由服务端用归一化规则从 `display` 计算。
+         *     客户端不应自行实现归一化——那是一套有版本的规则，重复实现必然不一致。
+         *
+         *     每次成功写入或删除都会使 `version` 递增。`version` 参与译文缓存键：
+         *     术语变了，受影响块必须重译，否则会复用基于旧术语的错误译文。
+         *
+         *     写入同时进入同步通道（`book_config` 通道，
+         *     entityId 形如 `glossary:<bookId>:<key>`），其它设备靠游标增量拉取。
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GlossaryPutRequest"];
+                };
+            };
+            responses: {
+                /** @description 更新后的完整术语表 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Glossary"];
+                    };
+                };
+                /** @description bookId 非 UUID / 缺 targetLang / 术语缺 target / source 非法 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Error: {
-            /** @example invalid_credentials */
+            /** @description 机器可读错误码 */
             code: string;
+            /** @description 人类可读说明 */
             message: string;
+            /** @description 可选的附加信息 */
             details?: {
                 [key: string]: unknown;
             };
+        };
+        GlossaryTerm: {
+            /** @description 归一化原文键（如 `darcy`）。用于去重与按 key 删除。 */
+            key: string;
+            /** @description 展示用原始写法（保留大小写与尊称，如 `Mr. Darcy`）。 */
+            display: string;
+            /** @description 标准译名。 */
+            target: string;
+            aliases?: string[];
+            /**
+             * @description 术语来源。优先级 user_confirmed > llm_extracted > deterministic。
+             *     `user_confirmed` 不会被自动流水线的重跑覆盖。
+             * @enum {string}
+             */
+            source: "user_confirmed" | "llm_extracted" | "deterministic";
+        };
+        Glossary: {
+            /** Format: uuid */
+            bookId: string;
+            targetLang: string;
+            /**
+             * Format: int64
+             * @description 每次术语变更递增。参与译文 input_hash：
+             *     术语变了，受影响块必须重译。
+             */
+            version: number;
+            terms: components["schemas"]["GlossaryTerm"][];
+        };
+        GlossaryPutRequest: {
+            targetLang: string;
+            terms?: components["schemas"]["GlossaryTerm"][];
+            /** @description 要删除的归一 key。与 terms 合并成一个请求，避免「先删后写」之间出现空窗。 */
+            removeKeys?: string[];
         };
         AuthTokens: {
             accessToken: string;

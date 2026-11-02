@@ -632,13 +632,6 @@ components:
           items: { type: string }
           description: 要删除的归一 key。与 terms 合并成一个请求，避免「先删后写」之间出现空窗。
 
-      type: object
-      required: [code, message]
-      properties:
-        code: { type: string, example: invalid_credentials }
-        message: { type: string }
-        details: { type: object, additionalProperties: true }
-
     AuthTokens:
       type: object
       required: [accessToken, refreshToken, expiresIn]
