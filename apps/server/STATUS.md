@@ -1162,3 +1162,68 @@ go.mod / go.sum                  新增 opencc / go-pinyin / smetrics
 `127.0.0.1:8081` 连不上）。要做宿主机直连验证必须让它同时连一个非 internal 网络
 （`edge`），且必须在 `docker start` **之前** `docker network connect`，
 否则启动瞬间 DNS 解析失败（`lookup postgres: no such host`）。
+
+## 10. 真模型端到端验证（`liveai` tag，Lead 补做）
+
+> 背景：M5-1/M5-2/M5-3 的全部测试此前都跑在 `provider=fake` 上。
+> fake 能验证 SSE 链路、错误处理、取消、断点续跑，但**验证不了**三件最关键的事：
+> 译文质量、上游 usage 帧的真实格式、术语表是否真被模型遵守。
+> 这三件恰恰是「上线能不能用」和「账单对不对」的全部依据。
+
+### 10.1 为什么单独加 build tag
+
+真模型测试需要外部 API key，不能进 CI（无网/无 key 会红）。
+但**不能因此就不做**——所以用 `//go:build liveai` 隔离：
+
+```bash
+HPF_LIVE_AI_BASE_URL=... HPF_LIVE_AI_KEY=... HPF_LIVE_AI_MODEL=... \
+  go test -tags liveai ./internal/ai/ -run Live -v
+```
+
+已验证 `go build ./...` / `go vet ./...` / `go test ./...`（不带 tag）**完全不受影响**。
+
+### 10.2 四条断言与实测输出
+
+| 测试 | 断言什么 | 实测结果 |
+|---|---|---|
+| `TestLiveTranslateReturnsChinese` | 真的翻成中文，且不等于原文 | `凡是有钱的单身汉，总想娶位太太，这已经成了一条举世公认的真理。` |
+| `TestLiveUsageFrameIsReal` | usage 通道有产出、数字合理、`source=upstream` | `input=168 output=310 source=upstream` |
+| `TestLiveGlossaryIsHonored` | 术语表真的生效（模型用指定译名） | `达西先生对伊丽莎白微笑。` |
+| `TestLiveReasoningTokensAreCounted` | 计费输出与可见字数的倍率 | `可见译文 31 字，计费输出 token=207` → **6.7 倍** |
+
+### 10.3 ★ 最重要的一条发现：思考 token 让成本比「按字数估算」高一个量级
+
+上游原始帧（直接 curl 抓的，不是我们的解析结果）：
+
+```json
+{"usage":{"prompt_tokens":62,"completion_tokens":232,"total_tokens":294,
+ "completion_tokens_details":{"reasoning_tokens":210}}}
+```
+
+**232 个 completion token 里，210 个是 `reasoning_tokens`**——推理型模型把思考过程计入计费，
+但**不把思考内容放进正文流**。用户为 232 个输出 token 付费，却只看到 31 个字的译文。
+
+实测倍率：**计费输出 ≈ 可见字数的 6.7 倍**（不同文本/模型会浮动，这里只作量级参考）。
+
+#### 这对我们意味着什么
+
+1. **`EstimateTokens` 的本地估算会系统性低估输出成本**——它按可见文本算，看不到思考 token。
+   所以 `usage_source=estimated` 时给出的成本数字**必须视为下界**，不能当账单依据。
+2. **配额换算要按实测倍率校准**，不能按「译文字数」拍脑袋。
+   之前规划里「5,000,000 token ≈ 10 整书」这个换算**需要按真模型实测重算**（见 §10.4）。
+3. **选模型时「推理型 vs 非推理型」是成本分水岭**，不是参数细节。
+   若整书翻译用推理模型，成本可能高一个量级；是否值得要按译文质量实测决定。
+
+### 10.4 待办（明确未做，不要当成已完成）
+
+- **整书真实成本未测**：本轮只测了单句/短段。要得出「一本书多少钱」，
+  需要用真模型跑完一本真书（24 章约 3000 字/章），并核对 `ai_usage` 累加与上游账单。
+- **未验证 `estimated` 与 `upstream` 的偏差幅度**：需要在拿不到 usage 帧时（如上游不返回）
+  对比同一文本的估算值与真实值，得出修正系数。
+- **未测非推理型模型做对比**：无法回答「用便宜的非推理模型是否够好」。
+
+### 10.5 环境备注
+
+真模型验证用的是本机可访问的 magpie 网关（OpenAI 兼容，`/v1`）。
+配置通过 `HPF_AI_PROVIDER=openai` + `HPF_AI_BASE_URL` + `HPF_AI_API_KEY` 接入，
+**没有硬编码任何 key 到仓库**（测试只从环境变量读，未设置则 skip）。
