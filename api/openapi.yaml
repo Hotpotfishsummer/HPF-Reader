@@ -1,0 +1,611 @@
+openapi: 3.1.0
+info:
+  title: HPF-Reader API
+  version: 0.1.0
+  description: |
+    HPF-Reader 服务端契约（单一权威来源）。
+    服务端 Go 实现，客户端（Vue + Wails v3）由本文件生成类型化客户端。
+
+    同步模型要点：
+    - 位置一律使用 Readium Locator 信封；引擎专有定位（EPUB CFI 等）放在 locations.fragments。
+    - HLC（混合逻辑时钟）字符串格式：<13位毫秒>-<8位十六进制计数器>-<8位设备ID前8位>，字典序即时间序。
+    - 服务端权威合并（S1）：客户端只做 outbox + apply，不做冲突裁决。
+    - 游标 cursor 由服务端单调递增分配（BIGINT IDENTITY），客户端不得自行推进。
+
+servers:
+  - url: https://api.example.com
+    description: 生产
+  - url: http://127.0.0.1:8080
+    description: 本地开发
+
+tags:
+  - name: auth
+  - name: books
+  - name: sync
+  - name: annotations
+  - name: ai
+  - name: sources
+  - name: system
+
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: 存活探针
+      security: []
+      responses:
+        '200': { description: OK }
+
+  /v1/auth/register:
+    post:
+      tags: [auth]
+      summary: 注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, maxLength: 200 }
+                displayName: { type: string, maxLength: 64 }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthTokens' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      summary: 登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                deviceName: { type: string, maxLength: 64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: 轮换刷新令牌
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/me:
+    get:
+      tags: [auth]
+      summary: 当前用户
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/devices:
+    get:
+      tags: [auth]
+      summary: 设备列表
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Device' }
+
+  /v1/books:
+    get:
+      tags: [books]
+      summary: 书库列表
+      parameters:
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: updatedSince, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookPage' }
+    post:
+      tags: [books]
+      summary: 创建书籍记录（随后上传文件）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookCreate' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+
+  /v1/books/{bookId}:
+    parameters:
+      - { name: bookId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [books]
+      summary: 书籍详情
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [books]
+      summary: 更新元数据或阅读状态
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookUpdate' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+    delete:
+      tags: [books]
+      summary: 删除书籍
+      responses:
+        '204': { description: 已删除 }
+
+  /v1/books/{bookId}/file:
+    parameters:
+      - { name: bookId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [books]
+      summary: 上传书籍文件（幂等：按 contentHash 去重）
+      parameters:
+        - { name: contentHash, in: query, required: true, schema: { type: string }, description: 客户端计算的 sha256 }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        '200': { description: 已存在（去重命中） }
+        '201': { description: 已上传 }
+    get:
+      tags: [books]
+      summary: 下载书籍文件（支持 Range）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '206': { description: 部分内容 }
+
+  /v1/sync/push:
+    post:
+      tags: [sync]
+      summary: 推送本地变更（幂等，按 opId 去重）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SyncPushRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncPushResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/sync/pull:
+    get:
+      tags: [sync]
+      summary: 拉取自 cursor 之后的变更（服务端权威结果）
+      parameters:
+        - { name: cursor, in: query, required: true, schema: { type: integer, format: int64, minimum: 0 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 500 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncPullResponse' }
+
+  /v1/books/{bookId}/annotations:
+    parameters:
+      - { name: bookId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [annotations]
+      summary: 标注列表
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Annotation' }
+    post:
+      tags: [annotations]
+      summary: 新建标注
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AnnotationCreate' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Annotation' }
+
+  /v1/ai/translate:
+    post:
+      tags: [ai]
+      summary: 流式翻译（SSE）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TranslateRequest' }
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /v1/ai/jobs:
+    post:
+      tags: [ai]
+      summary: 提交后台 AI 任务（人名归一化、整书翻译等）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AiJobCreate' }
+      responses:
+        '202':
+          description: 已受理
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiJob' }
+
+  /v1/ai/jobs/{jobId}:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [ai]
+      summary: 查询任务状态
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiJob' }
+
+  /v1/sources/search:
+    get:
+      tags: [sources]
+      summary: 合法书源搜索（Gutenberg / Standard Ebooks / Open Library / OPDS）
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1 } }
+        - { name: source, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SourceItem' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: 未认证
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: 不存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: 冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: invalid_credentials }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    AuthTokens:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: access token 有效期（秒） }
+        user: { $ref: '#/components/schemas/User' }
+
+    User:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    Device:
+      type: object
+      required: [id, name, platform]
+      properties:
+        id: { type: string, description: 设备 ID（HLC 前缀来源） }
+        name: { type: string }
+        platform: { type: string, enum: [web, windows, macos, linux, android, ios] }
+        lastSeenAt: { type: string, format: date-time }
+
+    Locator:
+      type: object
+      description: Readium Locator；引擎专有定位放在 locations.fragments
+      required: [href, type]
+      properties:
+        href: { type: string, description: 章节/资源路径 }
+        type: { type: string, description: 媒体类型，如 application/xhtml+xml }
+        title: { type: string, nullable: true }
+        locations:
+          type: object
+          properties:
+            fragments:
+              type: array
+              items: { type: string }
+              description: 引擎专有定位，例如 EPUB CFI
+            progression: { type: number, minimum: 0, maximum: 1, description: 本章内进度 }
+            position: { type: integer, minimum: 1 }
+            totalProgression: { type: number, minimum: 0, maximum: 1, description: 全书进度 }
+        text:
+          type: object
+          properties:
+            before: { type: string }
+            highlight: { type: string }
+            after: { type: string }
+
+    BookCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 512 }
+        author: { type: string, nullable: true }
+        language: { type: string, nullable: true }
+        format: { type: string, enum: [epub, pdf, txt, mobi, azw3, fb2, cbz] }
+        contentHash: { type: string, description: 文件 sha256，用于去重与多设备匹配 }
+
+    BookUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        author: { type: string, nullable: true }
+        readingState: { type: string, enum: [unread, reading, finished, archived] }
+        rating: { type: integer, minimum: 0, maximum: 5, nullable: true }
+
+    Book:
+      type: object
+      required: [id, title, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        author: { type: string, nullable: true }
+        language: { type: string, nullable: true }
+        format: { type: string, nullable: true }
+        contentHash: { type: string, nullable: true }
+        sizeBytes: { type: integer, format: int64, nullable: true }
+        readingState: { type: string, enum: [unread, reading, finished, archived] }
+        progress: { $ref: '#/components/schemas/ReadingProgress' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    BookPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Book' }
+        nextCursor: { type: string, nullable: true }
+
+    ReadingProgress:
+      type: object
+      description: 服务端权威的阅读进度
+      properties:
+        locator: { $ref: '#/components/schemas/Locator' }
+        furthestLocator:
+          allOf: [{ $ref: '#/components/schemas/Locator' }]
+          description: 历史最远位置（不受回退影响）
+        totalProgression: { type: number, minimum: 0, maximum: 1 }
+        explicitRewind: { type: boolean, description: 用户主动回退标记 }
+        hlc: { type: string, description: 该值的 HLC }
+        deviceId: { type: string }
+        updatedAt: { type: string, format: date-time }
+
+    SyncOp:
+      type: object
+      description: 一次幂等变更操作
+      required: [opId, entity, entityId, kind, hlc]
+      properties:
+        opId: { type: string, description: UUID v7，幂等键（服务端保留 7 天） }
+        entity: { type: string, enum: [progress, annotation, book, book_config] }
+        entityId: { type: string }
+        bookId: { type: string, nullable: true }
+        kind: { type: string, enum: [upsert, delete] }
+        hlc: { type: string }
+        deviceId: { type: string }
+        payload: { type: object, additionalProperties: true }
+
+    SyncPushRequest:
+      type: object
+      required: [deviceId, ops]
+      properties:
+        deviceId: { type: string }
+        ops:
+          type: array
+          maxItems: 500
+          items: { $ref: '#/components/schemas/SyncOp' }
+
+    SyncPushResponse:
+      type: object
+      required: [results, cursor]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [opId, status]
+            properties:
+              opId: { type: string }
+              status: { type: string, enum: [applied, duplicate, rejected] }
+              reason: { type: string, nullable: true }
+        cursor: { type: integer, format: int64, description: 服务端已分配到的最新游标 }
+
+    SyncChange:
+      type: object
+      required: [cursor, entity, entityId, kind, hlc]
+      properties:
+        cursor: { type: integer, format: int64 }
+        entity: { type: string, enum: [progress, annotation, book, book_config] }
+        entityId: { type: string }
+        bookId: { type: string, nullable: true }
+        kind: { type: string, enum: [upsert, delete] }
+        hlc: { type: string }
+        deviceId: { type: string, nullable: true }
+        payload: { type: object, additionalProperties: true }
+
+    SyncPullResponse:
+      type: object
+      required: [changes, nextCursor, hasMore]
+      properties:
+        changes:
+          type: array
+          items: { $ref: '#/components/schemas/SyncChange' }
+        nextCursor: { type: integer, format: int64 }
+        hasMore: { type: boolean }
+
+    AnnotationCreate:
+      type: object
+      required: [locator, type]
+      properties:
+        locator: { $ref: '#/components/schemas/Locator' }
+        type: { type: string, enum: [highlight, underline, note, bookmark] }
+        color: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        text: { type: string, nullable: true, description: 被标注的原文 }
+
+    Annotation:
+      allOf:
+        - $ref: '#/components/schemas/AnnotationCreate'
+        - type: object
+          required: [id, bookId, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            bookId: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    TranslateRequest:
+      type: object
+      required: [text, targetLang]
+      properties:
+        text: { type: string, maxLength: 20000 }
+        targetLang: { type: string, example: zh-CN }
+        sourceLang: { type: string, nullable: true }
+        bookId: { type: string, nullable: true }
+        context: { type: string, nullable: true, description: 上文片段，用于保持术语一致 }
+
+    AiJobCreate:
+      type: object
+      required: [kind, bookId]
+      properties:
+        kind: { type: string, enum: [entity_normalize, book_translate, summarize] }
+        bookId: { type: string, format: uuid }
+        options: { type: object, additionalProperties: true }
+
+    AiJob:
+      type: object
+      required: [id, kind, status]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string }
+        status: { type: string, enum: [queued, running, succeeded, failed, canceled] }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        result: { type: object, additionalProperties: true, nullable: true }
+        error: { type: string, nullable: true }
+
+    SourceItem:
+      type: object
+      required: [source, title, downloadUrl, license]
+      properties:
+        source: { type: string, example: gutenberg }
+        title: { type: string }
+        author: { type: string, nullable: true }
+        language: { type: string, nullable: true }
+        downloadUrl: { type: string, format: uri }
+        coverUrl: { type: string, format: uri, nullable: true }
+        license: { type: string, description: 授权标识，例如 public-domain / cc0 }
+
+security:
+  - bearerAuth: []

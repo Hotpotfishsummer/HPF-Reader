@@ -1,0 +1,35 @@
+# deps / build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Go
+apps/*/bin/
+apps/*/tmp/
+build/bin/
+*.exe
+*.test
+*.out
+
+# Wails
+apps/client/build/bin/
+apps/client/frontend/dist/
+
+# env & data
+.env
+.env.*
+!.env.example
+data/
+pgdata/
+miniodata/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# spikes output
+spikes/**/build/
+spikes/**/node_modules/
