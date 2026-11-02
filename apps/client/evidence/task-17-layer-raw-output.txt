@@ -1,0 +1,82 @@
+# task-17：@layer 扁平化 —— 原始命令与原始输出
+# 目录：apps/client/frontend    工具：corepack pnpm    Tailwind v4.3.3
+
+## 结论（一句话）
+Tailwind v4 输出的 5 个 @layer 块已由 @csstools/postcss-cascade-layers 在构建期扁平化，
+产物 CSS 中 @layer 出现次数由 **5 → 0**；保留 Tailwind v4，未降级到 v3。
+
+## 1) 修复前：真实构建产物（临时注释掉 postcssCascadeLayers()）
+
+$ (注释掉 vite.config.ts 里 postcssCascadeLayers() 后) corepack pnpm run build
+[build exit] 0
+$ ls dist/assets/*.css
+  index-B5EhQapz.css   26123 B
+$ grep -c "@layer" dist/assets/index-B5EhQapz.css
+  5
+
+5 个块的实际名字（Tailwind v4 固定输出）：
+  @layer properties{...}
+  @layer theme{...}
+  @layer base{...}
+  @layer components;
+  @layer utilities{...}
+
+→ WebView 91 不支持 @layer（需 Chrome 99+），会把整块静默丢弃。
+  实测（Lead/mobile-dev 在 Android 12 WebView 91 上）：
+    {"supportsLayer":false,"layerProbe":0,"topLevelRules":66,"layerBlockRules":0,
+     "buttonBorderRadius":"0px","bodyBg":"rgba(0,0,0,0)","fvHeight":"1482px","innerH":843}
+
+## 2) 修复：接入官方 polyfill（保留 Tailwind v4）
+
+$ corepack pnpm add -D @csstools/postcss-cascade-layers
+  + @csstools/postcss-cascade-layers 6.0.2
+
+vite.config.ts:
+  import postcssCascadeLayers from "@csstools/postcss-cascade-layers"
+  const postcssPlugins = [postcssCascadeLayers()]
+  css: { postcss: { plugins: postcssPlugins } }
+
+## 3) 修复后：真实构建产物
+
+$ corepack pnpm run build
+[build exit] 0
+$ ls dist/assets/*.css
+  index-CWBMA-wk.css   43941 B
+$ grep -c "@layer" dist/assets/index-CWBMA-wk.css
+  0        <-- 验收要求 = 0，达成
+
+## 4) 扁平化后工具类确实存在且带 specificity 保护
+
+$ grep -o ".absolute[^}]*}" dist/assets/index-CWBMA-wk.css | head -1
+  .absolute:not(#\#):not(#\#):not(#\#):not(#\#):not(#\#):not(#\#):not(#\#):not(#\#){position:absolute}
+
+  （:not(#\#) 是 polyfill 用来保持原 @layer 层叠优先级的惯用手法，
+    Chrome 88+ 支持带 id 的 :not()，91 可正确解析）
+
+## 5) 审计门禁（防止回归）
+
+$ corepack pnpm run audit:compat:dist
+  --- CSS 能力（源码扫不出，必须扫构建产物）---
+  @layer（层叠层）               99         ✅ 0        vite.config.ts 用官方 @csstools/postcss-cascade-layers 扁平化
+  @container（容器查询）          105        ✅ 0        已由 useReaderLayout 显式 max-column-count 覆盖
+  CSS 嵌套（&）                 120        ✅ 0        不处理（91 只丢弃嵌套选择器，不整块失效）
+  ✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
+[audit exit] 0
+
+### 门禁的反向验证（证明它不是装饰）
+$ (向产物 CSS 头部注入 "@layer theme{.injected{color:red}}")
+$ corepack pnpm run audit:compat:dist
+  @layer（层叠层）               99         ❌ 1
+  ❌ 构建产物里仍有低于 Chrome 91 且必须处理的 CSS 特性
+[audit exit] 1
+$ (还原产物)
+$ corepack pnpm run audit:compat:dist
+[audit exit] 0
+
+## 6) 全套门禁
+$ pwsh -NoProfile -File scripts/capture-evidence.ps1
+  build (vue-tsc --noEmit && vite build)   [exit code] 0
+  audit src --chrome 91                    [exit code] 0
+  audit dist --chrome 91                   [exit code] 0
+  unit tests (vitest run)  83 passed       [exit code] 0
+  e2e (playwright test)    9 passed        [exit code] 0

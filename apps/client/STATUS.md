@@ -1,16 +1,28 @@
 # apps/client 交付状态
 
 > 覆盖 **task-9**（客户端骨架）、**task-12**（本地优先阅读闭环 + 横竖屏自适应）、
-> **task-14**（老旧 WebView 兼容性）。最后核对时间：2026-11-03。
+> **task-14**（老旧 WebView 兼容性）、**task-17**（`@layer` CSS 兼容性）。
+> 最后核对时间：2026-11-03。
 > 所有命令均在 Windows + PowerShell 下实测通过，原始输出见 `apps/client/evidence/`。
 
 **状态：**
 - task-9 骨架：已完成。
-- task-12 阅读闭环 / 横竖屏：**已完成**（8/8 E2E 通过，含真实公版书）。
+- task-12 阅读闭环 / 横竖屏：**已完成**（9/9 E2E 通过，含真实公版书）。
 - task-14 老旧 WebView 兼容性：**已完成**（审计 + polyfill + 构建目标 + 单测 + E2E 模拟验证）。
-  **含两个 Android 真机阻塞点**：① `Object.groupBy is not a function`（§9.1~9.6）；
-  ② `Unsupported compression format: 'deflate-raw'`（§9.7，**零新增依赖**）。
+- task-17 `@layer` 扁平化：**已完成**（§10，产物 CSS 中 `@layer` 由 5 → **0**）。
 - task-12 的"真实 exe 截图"：**已完成**（4 张真实窗口截图，见 §8.3）。
+
+**Android（WebView 91 / Android 12）的三个硬阻塞点，全部已解**：
+
+| # | 阻塞点 | 类型 | 缺失版本 | 修法 | 详见 |
+|---|--------|------|----------|------|------|
+| 1 | `Object.groupBy` 等 14 个 builtin | JS 运行时 | Chrome 92~127 | 手写 polyfill | §9.1~9.6 |
+| 2 | `DecompressionStream('deflate-raw')` | JS Web API 格式 | Chrome 103 | 复用 vendored fflate 窄兜底（**零新增依赖**） | §9.7 |
+| 3 | **`@layer`**（Tailwind v4 输出） | **CSS 语法** | **Chrome 99** | **构建期扁平化** | **§10** |
+
+> 关键教训：前两个能靠"运行时探测 + JS 兜底"解决，**第三个不能** —— CSS 无法 polyfill，
+> 只能在构建期改写产物。所以兼容审计必须**同时扫源码和产物**，并覆盖
+> **JS 能力 / CSS 语法 / Web API 格式**三类（前两次各漏了一类，见 §10.6）。
 
 ---
 
@@ -208,6 +220,9 @@ corepack pnpm run dev
 | 5 | vendor 目录含 pdfjs 的 `.map`（约 7.6 MB） | 仅仓库体积 | 未删；确认不需要 PDF 调试后可直接删 `*.map` |
 | 6 | happy-dom 解析带外链样式表的文档会打印 DOMException | 测试噪音，非被测代码问题 | 已在 `vitest.config.ts` 里 `handleDisabledFileLoadingAsSuccess` + 过滤该条日志 |
 | 7 | `frontend/dist/` 需先构建，否则 `go build` 报 `pattern all:frontend/dist: no matching files` | 编译顺序问题 | 先 `pnpm run build` 再 `go build` |
+| 8 | CSS 嵌套 `&`（paginator 的 `&.vertical`，需 Chrome 120+）在老 WebView 上不生效 | **仅**垂直排版/滚动模式的细节间距；正文可读性不受影响 | 不处理，作为已知限制（§10.5） |
+| 9 | `@layer` 扁平化后产物 CSS 从 26 KB 增至 44 KB | 体积 +68%（每条工具类多 8 个 `:not(#\#)`） | 接受：本地资源服务器无传输成本，换老设备可用（§10.2） |
+| 10 | WebView < 91 时启动探测会提示更新 WebView | 用户需手动更新系统组件 | 兜底提示（`src/compat/capabilities.ts`），不白屏 |
 
 ---
 
@@ -219,6 +234,12 @@ corepack pnpm run dev
 - **不要**给 `foliate-js` 配 tsconfig `paths` 映射：会覆盖 `src/reader/foliate.d.ts` 的
   ambient 声明，导致 `vue-tsc` 去解析没有类型的上游 JS。运行时别名只在 `vite.config.ts` 里配。
 - `vitest.config.ts` **故意不复用** `vite.config.ts`：后者的 Wails 插件在测试环境会捣乱。
+- **CSS 兼容性只能靠"扫构建产物"**：我们自己的 `.css`/`.vue` 里一个现代语法都没有，
+  但 Tailwind v4 的**输出**里全是 `@layer`。只扫源码的审计永远发现不了这类问题 ——
+  这也是 `audit:compat:dist` 与 `audit:compat`（src）必须**两个都跑**的原因。
+- **CSS 失效是静默的**：不支持的 `@layer`/`@container` **不抛异常、不报错、console 干净**，
+  只是规则不生效。所以"没有报错"绝不等于"样式正常"，必须靠**断言 computed style** 或
+  **断言产物无该语法**来验证（§10.3）。
 - `pnpm` 需要 `pnpm-workspace.yaml` 里加 `onlyBuiltDependencies: [vue-demi]`，
   否则 install 以 `ERR_PNPM_IGNORED_BUILDS` 退出 1。
 - 写 vitest 用例时不要在模板字符串里用 `\'` 转义给 HTML 属性，会把自己写崩；用反引号包 HTML。
@@ -328,7 +349,9 @@ apps/client/
 > 所以真实书是用 Playwright 走同一份 `dist/` 验证的（见 §9.7 的 `e2e-legacy-deflate-raw.png`）。
 
 - 另有 Playwright 证据（同样证明真实渲染，且可复现、可复核）：
-  - `evidence/e2e-landscape-wide.png`（1280×800，横屏双栏 + 侧栏目录）
+  - `evidence/task-17-layer-raw-output.txt`（**@layer 修复前后原始输出**：5 → 0、审计门禁、反向验证）
+- `evidence/e2e-legacy-css-layer.png`（**模拟 WebView 91 不支持 @layer** 下的真实 EPUB：双栏、31 章目录、Letter 2 正文）
+- `evidence/e2e-landscape-wide.png`（1280×800，横屏双栏 + 侧栏目录）
   - `evidence/e2e-portrait-narrow.png`（480×900，竖屏单栏 + 紧凑工具栏）
   - `evidence/e2e-night-mode.png`（夜间模式，正文深色 `rgb(20, 22, 26)`）
   - `evidence/e2e-sample-reader.png`（示例书正文）
@@ -556,3 +579,146 @@ Android 端（task-15）此前的两个阻塞都已解除：
 （`src/platform/mobile.ts` 的桥接、WebView 文件选择器、权限申请），不在本任务范围内。
 真实书验收请用 `testdata/books/frankenstein.epub`（31 章、含 36 个 deflate 条目），
 **不要**用 `sample.epub` —— 它是 STORE 压缩，测不出解压路径。
+
+## 10. task-17：`@layer` 兼容性 —— Tailwind v4 样式表在老 WebView 上整份失效
+
+> 这是「Android 可用」的**第三个**硬阻塞，也是**唯一一个不是 JS 运行时**的：
+> 前面两个（builtin、deflate-raw）都是 JS 能力缺失，这个是 **CSS 能力缺失**。
+
+### 10.1 问题本质
+
+Tailwind v4 把**整份样式表**包在 `@layer` 里（固定输出 5 个块）：
+
+```
+@layer properties{...}
+@layer theme{...}
+@layer base{...}
+@layer components;
+@layer utilities{...}
+```
+
+而 **`@layer` 是 Chrome 99+** 才有的。WebView 91（Android 12）不支持，
+并且它的失败方式是**最坏的一种**：**整块静默丢弃** —— 不抛异常、不报错、console 干净。
+
+实测（Android 12 / WebView 91，Lead 与 mobile-dev 双重确认）：
+
+```json
+{"supportsLayer": false, "layerProbe": 0,
+ "sheetCount": 1, "topLevelRules": 66, "layerBlockRules": 0,
+ "buttonBorderRadius": "0px", "buttonBg": "rgb(239, 239, 239)",
+ "bodyFont": "sans-serif", "bodyBg": "rgba(0,0,0,0)",
+ "fvHeight": "1482px", "innerH": 843}
+```
+
+读法：66 条顶层规则里 **layer 块 = 0**，说明浏览器把整份 Tailwind 样式表当垃圾扔了。
+于是所有工具类失效 —— `.absolute{position:absolute}` 算出来是 `static`、
+`.flex` 是 `block`、`.h-full` 是 `auto`。
+
+阅读器的根容器是 `relative flex h-full w-full overflow-hidden`，
+正文宿主是 `relative min-h-0 min-w-0 flex-1`。这些类全失效后容器塌掉，
+foliate-view 被撑到 **1482px**（视口只有 843px），正文被推出可视区。
+
+### 10.2 修法：构建期扁平化（保留 Tailwind v4）
+
+用官方 polyfill **`@csstools/postcss-cascade-layers`**（6.0.2），
+接进 `vite.config.ts` 的 postcss 链：
+
+```ts
+import postcssCascadeLayers from '@csstools/postcss-cascade-layers'
+
+const postcssPlugins = [postcssCascadeLayers()]
+
+export default defineConfig({
+  css: { postcss: { plugins: postcssPlugins } },
+  plugins: [vue(), tailwindcss(), wails('./bindings')],
+})
+```
+
+**没有降级到 Tailwind v3** —— 那会牵动整条构建链（配置格式、插件生态、
+与 `@tailwindcss/vite` 的集成方式都变），而问题本身与 Tailwind 版本无关，
+只是它的输出用了新语法。扁平化是**构建期语法降级**，和我们把 `build.target` 降到 `chrome91` 是同一思路。
+
+扁平化为什么语义正确：`@layer` 的唯一作用是**层叠顺序**。polyfill 剥掉外壳、
+按原文档顺序展开，并用 `:not(#\#)` 链把 specificity 抬到与原来层级等效，
+因此层叠结果不变（这正是 `postcss-cascade-layers` 的设计目标）。
+`:not(#\#)` 是 Chrome 88+ 就支持的写法，91 能正确解析。
+
+> 代价：产物 CSS 从 26 123 B → 43 941 B（+68%），因为每条工具类选择器都多了
+> 8 个 `:not(#\#)`。这是**用体积换老设备可用**，可以接受：
+> 43 KB 的 CSS 在本地资源服务器上是零成本（不是网络传输），
+> 而样式失效意味着整个 UI 不可用。
+
+### 10.3 验证（三道，都有原始输出）
+
+原始输出全文见 `apps/client/evidence/task-17-layer-raw-output.txt`。
+
+**① 产物断言（硬门禁）**：
+
+```
+$ grep -c "@layer" dist/assets/index-*.css
+  修复前：5
+  修复后：0        <-- 验收要求 = 0，达成
+```
+
+**② E2E 行为断言**（`reader.spec.ts`「模拟 Chromium 91 不支持 @layer」）：
+
+Playwright 没法真的关掉 `@layer` 解析，所以用 `addInitScript` 在**任何样式表解析之前**
+把 `CSSLayerBlockRule` / `CSSLayerStatementRule` 置为 `undefined` ——
+这是 Chromium 判定「不支持 @layer」的真实探测路径，浏览器随即丢弃 layer 块。
+然后断言三件事：
+
+1. `CSSLayerBlockRule` 确实是 `undefined`（证明复刻生效，否则测试是空跑）；
+2. 遍历 `document.styleSheets`，layer 规则数 = **0**（证明产物真的没有 @layer）；
+3. 打开 frankenstein.epub：`rootDisplay === "flex"`、`hostPosition === "relative"`、
+   宿主高度 ≤ 视口高度（**丢弃 @layer 时会撑到 1482px**）、分页 > 1、目录 ≥ 20 项、
+   跳章后正文 > 2000 字。截图 `e2e-legacy-css-layer.png`。
+
+**③ 审计门禁**（`scripts/audit-builtins.mjs` 新增「CSS 能力」一节，扫的是**构建产物**）：
+
+```
+--- CSS 能力（源码扫不出，必须扫构建产物）---
+@layer（层叠层）               99         ✅ 0        @csstools/postcss-cascade-layers 扁平化
+@container（容器查询）          105        ✅ 0        已由 useReaderLayout 显式 max-column-count 覆盖
+CSS 嵌套（&）                 120        ✅ 0        不处理（91 只丢弃嵌套选择器，不整块失效）
+✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
+```
+
+这一节**必须扫产物**：我们自己的 `.css`/`.vue` 是干净的，
+毒在 Tailwind 的**输出**里 —— 只扫源码永远发现不了。
+
+门禁做过**反向验证**（证明它不是装饰）：向产物 CSS 注入 `@layer theme{.injected{color:red}}`，
+审计立刻 `❌ 1` + `[audit exit] 1`；还原后回到 `exit 0`。
+
+### 10.4 `@container`（次要项）：判定为**无需处理**
+
+vendored `paginator.js:493` 有一条 `@container (orientation: portrait)`（Chrome 105+），
+在竖屏把 `--_max-column-count-spread` 切成 portrait 值。
+
+**结论：它对我们没有影响，不必处理。** 理由是可验证的代码事实，不是"应该没事"：
+
+1. `paginator.js:473` 里 `--_max-column-count-spread` 的**默认值**就是 `var(--_max-column-count)`；
+2. `attributeChangedCallback`（`paginator.js:637`）把 `max-column-count` 属性写进 `--_max-column-count`；
+3. 我们的 `useReaderLayout.ts` 已经按**同一个方向逻辑**算出列数（竖屏 1 / 横屏够宽 2），
+   并通过 `useFoliateEngine.setLayout()` 写进该属性。
+
+所以「@container 生效」和「不生效」最终 spread 的值**恰好相同**。
+"竖屏单栏"的真正保证来自我们的 `decide()`，不是上游那条容器查询。
+E2E 里已加断言：竖屏下 `data-hpf-columns === "1"`（注意要 poll，因为 setLayout 走 150ms 防抖）。
+
+### 10.5 CSS 嵌套 `&`：已知限制，不处理
+
+paginator 的 shadow 样式里有 `&.vertical` 等嵌套写法（CSS 嵌套需 Chrome 120+）。
+实测 WebView 91 的行为是：**只丢弃嵌套选择器本身，不整块失效** —— `&` 前面的基础声明照常生效。
+影响面仅是滚动模式的细节排版（垂直排版），**不影响正文可读性**，因此不硬啃。
+
+### 10.6 这三个阻塞点的性质对比（接手必读）
+
+| # | 阻塞点 | 类型 | 缺失版本 | 修法 | 位置 |
+|---|--------|------|----------|------|------|
+| 1 | `Object.groupBy` 等 14 个 builtin | JS 运行时 | Chrome 92~127 | 手写 polyfill | `src/compat/polyfills.ts` |
+| 2 | `DecompressionStream("deflate-raw")` | JS Web API 格式 | Chrome 103 | 复用 vendored fflate 窄兜底 | 同上 |
+| 3 | **`@layer`** | **CSS 语法** | **Chrome 99** | **构建期扁平化** | `vite.config.ts` |
+
+关键教训：**前两个都能靠"运行时探测 + JS 兜底"解决，第三个不能** ——
+CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计必须**同时扫源码和产物**，
+并且要覆盖 **JS 能力、CSS 语法、Web API 格式**三类（我们前两次各漏了一类）。

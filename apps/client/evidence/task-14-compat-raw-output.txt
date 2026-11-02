@@ -1,6 +1,6 @@
 HPF-Reader task-14 / task-12 - raw commands and raw output
 ==============================================================================
-collected: 2026-11-03 01:34:55 +08:00
+collected: 2026-11-03 01:47:55 +08:00
 cwd: C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\apps\client\frontend
 node: v24.20.0   pnpm: 12.16.1
 
@@ -19,7 +19,7 @@ transforming...
 rendering chunks...
 computing gzip size...
 dist/index.html                                       1.15 kB │ gzip:   0.48 kB
-dist/assets/index-B5EhQapz.css                       26.12 kB │ gzip:   6.05 kB
+dist/assets/index-CWBMA-wk.css                       43.94 kB │ gzip:   6.51 kB
 dist/assets/fflate-PAm6N6RW.js                        0.05 kB │ gzip:   0.07 kB
 dist/assets/desktop-B9oRns8p.js                       0.06 kB │ gzip:   0.07 kB
 dist/assets/dist-CA0d7Z1a.js                          0.07 kB │ gzip:   0.08 kB
@@ -51,12 +51,11 @@ dist/assets/mobi-B4ERdDFF.js                         23.26 kB │ gzip:   8.70 k
 dist/assets/paginator-BQ3RgK5E.js                    23.28 kB │ gzip:   7.55 kB
 dist/assets/SettingsView-FgrwIJBB.js                 23.72 kB │ gzip:   7.71 kB
 dist/assets/zip-3VNA5258.js                          35.58 kB │ gzip:  14.10 kB
-dist/assets/index-BeAGVLB0.js                        44.47 kB │ gzip:  14.20 kB
+dist/assets/index-ClQ_gafZ.js                        44.47 kB │ gzip:  14.20 kB
 dist/assets/platform-B5PSDNiE.js                    125.05 kB │ gzip:  45.38 kB
 dist/assets/pdf-_oOHlv5F.js                         432.03 kB │ gzip: 127.18 kB
 
-✓ built in 839ms
-[plugin hpf-flatten-css-layers] flatten-css-layers: index-B5EhQapz.css 展平 4 个 @layer 块、丢弃 1 条顺序声明（26123 → 26041 B）
+✓ built in 945ms
 [exit code] 0
 
 ### audit src --chrome 91
@@ -110,6 +109,20 @@ DecompressionStream 存在性                     80         基线已支持
 
 注意：上面这些无法靠静态扫描确认，必须在真实 WebView 里执行 probe 探测；
      启动探测结果见 src/compat/capabilities.ts（挂到 window.__HPF_CAPABILITIES__）。
+
+--- CSS 能力（源码扫不出，必须扫构建产物）---
+
+能力                        最低Chrome   产物命中       处理
+------------------------------------------------------------------------------------------------
+@layer（层叠层）               99         ✅ 0        vite.config.ts 用官方 @csstools/postcss-cascade-layers 在构建期扁平化（保留 Tailwind v4）
+  原因：Tailwind v4 把整份样式表包进 @layer；91 上整块被静默丢弃 → 全部工具类失效、整份样式表作废
+@container（容器查询）          105        ✅ 0        不影响结果：我们的 useReaderLayout 已按**同一个方向逻辑**算出栏数（竖屏 1 / 横屏 2）并设 max-column-count 属性，而 spread 默认就是 var(--_max-column-count)，所以缺失 @container 时值**恰好相同**
+  产物 CSS 中 0 属正常；该规则在 vendor JS 的 shadow DOM 模板里，实命中 1 处（src/vendor/foliate-js/paginator.js，只读不改）
+  原因：paginator 用 @container(orientation:portrait) 在竖屏把 --_max-column-count-spread 切成 portrait 值（1 栏）；91 上不生效，spread 退回 var(--_max-column-count)
+CSS 嵌套（&）                 120        ✅ 0        不处理（实测 91 只丢弃嵌套选择器，不整块失效）—— 见 STATUS 已知限制
+  原因：paginator 的 &.vertical 等嵌套规则；不生效只影响细节排版，不影响正文渲染
+
+✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
 
 ✅ 未发现低于 Chrome 91 且缺少 polyfill 的运行时内置 API。
 [exit code] 0
@@ -170,6 +183,20 @@ DecompressionStream 存在性                     80         基线已支持
 注意：上面这些无法靠静态扫描确认，必须在真实 WebView 里执行 probe 探测；
      启动探测结果见 src/compat/capabilities.ts（挂到 window.__HPF_CAPABILITIES__）。
 
+--- CSS 能力（源码扫不出，必须扫构建产物）---
+
+能力                        最低Chrome   产物命中       处理
+------------------------------------------------------------------------------------------------
+@layer（层叠层）               99         ✅ 0        vite.config.ts 用官方 @csstools/postcss-cascade-layers 在构建期扁平化（保留 Tailwind v4）
+  原因：Tailwind v4 把整份样式表包进 @layer；91 上整块被静默丢弃 → 全部工具类失效、整份样式表作废
+@container（容器查询）          105        ✅ 0        不影响结果：我们的 useReaderLayout 已按**同一个方向逻辑**算出栏数（竖屏 1 / 横屏 2）并设 max-column-count 属性，而 spread 默认就是 var(--_max-column-count)，所以缺失 @container 时值**恰好相同**
+  产物 CSS 中 0 属正常；该规则在 vendor JS 的 shadow DOM 模板里，实命中 1 处（src/vendor/foliate-js/paginator.js，只读不改）
+  原因：paginator 用 @container(orientation:portrait) 在竖屏把 --_max-column-count-spread 切成 portrait 值（1 栏）；91 上不生效，spread 退回 var(--_max-column-count)
+CSS 嵌套（&）                 120        ✅ 0        不处理（实测 91 只丢弃嵌套选择器，不整块失效）—— 见 STATUS 已知限制
+  原因：paginator 的 &.vertical 等嵌套规则；不生效只影响细节排版，不影响正文渲染
+
+✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
+
 ✅ 未发现低于 Chrome 91 且缺少 polyfill 的运行时内置 API。
 [exit code] 0
 
@@ -191,16 +218,15 @@ DOMException [NotSupportedError]: Failed to load iframe page "https://evil.examp
     at DOMParser.parseFromString (file:///C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/apps/client/frontend/node_modules/.pnpm/happy-dom@21.0.4/node_modules/happy-dom/lib/dom-parser/DOMParser.js:32:67)
     at parse (C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/apps/client/frontend/src/reader/__tests__/sanitize.spec.ts:29:26)
     at C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/apps/client/frontend/src/reader/__tests__/sanitize.spec.ts:99:17
- ✓ src/reader/__tests__/sanitize.spec.ts (23 tests) 46ms
- ✓ src/compat/__tests__/polyfills.spec.ts (44 tests) 78ms
- ✓ tests/architecture.spec.ts (4 tests) 37ms
- ✓ src/compat/__tests__/deflateRaw.spec.ts (12 tests) 18ms
- ✓ src/compat/__tests__/flattenCssLayers.spec.ts (10 tests) 5ms
+ ✓ src/compat/__tests__/polyfills.spec.ts (44 tests) 82ms
+ ✓ src/reader/__tests__/sanitize.spec.ts (23 tests) 47ms
+ ✓ tests/architecture.spec.ts (4 tests) 35ms
+ ✓ src/compat/__tests__/deflateRaw.spec.ts (12 tests) 17ms
 
- Test Files  5 passed (5)
-      Tests  93 passed (93)
-   Start at  01:35:03
-   Duration  1.70s (environment 93%, tests 3%, import 2%, transform 1%, worker 1%)
+ Test Files  4 passed (4)
+      Tests  83 passed (83)
+   Start at  01:48:03
+   Duration  1.43s (environment 92%, tests 4%, import 3%, transform 1%, worker 1%)
 
 [exit code] 0
 
@@ -208,24 +234,24 @@ DOMException [NotSupportedError]: Failed to load iframe page "https://evil.examp
 $ corepack pnpm run test:e2e
 ------------------------------------------------------------------------------
 $ playwright test
-[WebServer] (node:37296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:45192) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (node:42760) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:12516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 
 Running 9 tests using 1 worker
 
-(node:21232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:40488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  ok 1 [chromium] › e2e\reader.spec.ts:111:3 › 阅读闭环（本地优先） › 打开示例书 → 翻页 → 进度写入本地存储 → 重开续读 (903ms)
-  ok 2 [chromium] › e2e\reader.spec.ts:155:3 › 阅读闭环（本地优先） › 真实公版书：本地文件直开、真实目录、真实分页 (723ms)
+  ok 1 [chromium] › e2e\reader.spec.ts:111:3 › 阅读闭环（本地优先） › 打开示例书 → 翻页 → 进度写入本地存储 → 重开续读 (779ms)
+  ok 2 [chromium] › e2e\reader.spec.ts:155:3 › 阅读闭环（本地优先） › 真实公版书：本地文件直开、真实目录、真实分页 (680ms)
   ok 3 [chromium] › e2e\reader.spec.ts:228:3 › 阅读闭环（本地优先） › 横竖屏自适应：竖屏单栏 / 横屏双栏侧栏，旋转后重排且不丢位置 (1.6s)
-  ok 4 [chromium] › e2e\reader.spec.ts:310:3 › 阅读闭环（本地优先） › 夜间模式：正文主题切换真的写进章节文档 (623ms)
-  ok 5 [chromium] › e2e\reader.spec.ts:357:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91 缺 deflate-raw：真实 deflate 压缩的 EPUB 仍能打开 (931ms)
-  ok 6 [chromium] › e2e\reader.spec.ts:428:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91 不支持 @layer：真实 EPUB 仍能正常排版 (799ms)
-  ok 7 [chromium] › e2e\reader.spec.ts:508:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91：删掉 ES2022+ 内置对象后仍能打开并阅读 (618ms)
-  ok 8 [chromium] › e2e\reader.spec.ts:583:3 › L2 隔离与冒烟 › 能打开示例书、完成分页、并施加 L2 净化 (540ms)
-  ok 9 [chromium] › e2e\reader.spec.ts:653:3 › L2 隔离与冒烟 › 书库空态与设置页可用（无后端也不白屏） (572ms)
+  ok 4 [chromium] › e2e\reader.spec.ts:328:3 › 阅读闭环（本地优先） › 夜间模式：正文主题切换真的写进章节文档 (618ms)
+  ok 5 [chromium] › e2e\reader.spec.ts:375:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91 缺 deflate-raw：真实 deflate 压缩的 EPUB 仍能打开 (799ms)
+  ok 6 [chromium] › e2e\reader.spec.ts:446:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91 不支持 @layer：真实 EPUB 仍能正常排版 (780ms)
+  ok 7 [chromium] › e2e\reader.spec.ts:526:3 › 老旧 WebView 兼容性（task-14） › 模拟 Chromium 91：删掉 ES2022+ 内置对象后仍能打开并阅读 (609ms)
+  ok 8 [chromium] › e2e\reader.spec.ts:601:3 › L2 隔离与冒烟 › 能打开示例书、完成分页、并施加 L2 净化 (470ms)
+  ok 9 [chromium] › e2e\reader.spec.ts:671:3 › L2 隔离与冒烟 › 书库空态与设置页可用（无后端也不白屏） (439ms)
 
-  9 passed (11.3s)
+  9 passed (10.6s)
 [exit code] 0

@@ -15,8 +15,15 @@ import { useViewport, type Orientation } from '@/app/useViewport'
  * 必须把新的列数交给 `renderer.setAttribute('max-column-count', ...)`。
  *
  * 补充一个上游事实（vendored paginator.js:493）：paginator 自带
- * `@container (orientation: portrait)` → 强制 `--_max-column-count-portrait: 1`。
- * 也就是说"竖屏单栏"是引擎原生保证的，我们只在横屏时决定"最多几栏"。
+ * `@container (orientation: portrait)` → 竖屏时把
+ * `--_max-column-count-spread` 切成 `--_max-column-count-portrait`（1 栏）。
+ *
+ * ★ task-17：这条 `@container` 是 **Chrome 105+** 才生效的，在老 WebView 上
+ * 完全不应用。但它对我们**没有影响**，因为我们自己已经按同一个方向逻辑
+ * 算出列数（`decide()`：竖屏 1 / 横屏且够宽 2），并通过 `setLayout` 写进
+ * `max-column-count` 属性；而 spread 的默认值就是 `var(--_max-column-count)`。
+ * 所以 @container 生效与不生效，最终 spread 的值**恰好相同**。
+ * 真正"竖屏单栏"的保证来自这里的 `decide()`，不是上游那条容器查询。
  */
 
 export type TocMode = 'overlay' | 'sidebar'

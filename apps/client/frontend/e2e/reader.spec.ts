@@ -273,6 +273,24 @@ test.describe('阅读闭环（本地优先）', () => {
     expect(narrow.cfi.slice(0, 20)).toBe(wide.cfi.slice(0, 20))
     await page.screenshot({ path: path.join(EVIDENCE_DIR, 'e2e-portrait-narrow.png') })
 
+    // ★ task-17：@container 缺失对我们**没有影响** —— 这里留下可复核的取证。
+    //   paginator 在竖屏靠 @container(orientation:portrait) 把
+    //   --_max-column-count-spread 切成 portrait 值；该查询在 Chrome 105+ 才生效。
+    //   但我们已按方向设了 max-column-count 属性，而 spread 默认就是
+    //   var(--_max-column-count) —— 因此"@container 生效"与"不生效"最终 spread
+    //   **值相同**。下面断言竖屏下我们设的列数确实是 1（= portrait 期望值）。
+    // 注意：setLayout 走 150ms 防抖（工具栏的 data-columns 是即时的，
+    // 引擎属性要等重排落定），所以这里必须 poll 而不是立刻断言。
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const view = document.querySelector('foliate-view')
+            return view?.getAttribute('data-hpf-columns') ?? ''
+          }),
+        { timeout: 15_000 },
+      )
+      .toBe('1')
     // 竖屏下目录走覆盖层
     await page.getByTestId('toggle-toc').click()
     await expect(page.getByTestId('toc-overlay')).toBeVisible()
@@ -419,7 +437,7 @@ test.describe('老旧 WebView 兼容性（task-14）', () => {
    *   （iframes=0、0%、eventCount=0）。
    *
    *   这个 bug 与 builtin、与 deflate 都无关，是**纯 CSS 能力缺失**。
-   *   修法：构建期把 `@layer` 展平（vite.config.ts 的 flattenCssLayersPlugin）。
+   *   修法：构建期用官方 @csstools/postcss-cascade-layers 扁平化（vite.config.ts 的 css.postcss）。
    *
    * 这条测试复刻 91 的行为：addInitScript 在**任何样式表解析之前**把
    * CSSLayerBlockRule / CSSLayerStatementRule 置为 undefined —— 这是

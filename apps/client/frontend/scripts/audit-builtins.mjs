@@ -126,26 +126,40 @@ const CSS_CAPABILITIES = [
   {
     name: '@layer（层叠层）',
     min: 99,
-    pattern: /@layer/,
-    target: 'dist/assets/*.css',
-    why: 'Tailwind v4 把整份样式表包进 @layer；91 上整块被静默丢弃 → 全部工具类失效',
-    handled: 'vite.config.ts 的 flattenCssLayersPlugin 在构建期展平（源码不受影响）',
+    // 注意：必须排除 `.\\@container` 这类**转义后的类名**，否则会误判。
+    // at-rule 只出现在规则边界（开头 / }` 之后 / ;` 之后）。
+    pattern: /(?:^|[};])@layer/,
+    // 这一条是**硬门禁**：命中即失败。
+    blocking: true,
+    why: 'Tailwind v4 把整份样式表包进 @layer；91 上整块被静默丢弃 → 全部工具类失效、整份样式表作废',
+    handled: 'vite.config.ts 用官方 @csstools/postcss-cascade-layers 在构建期扁平化（保留 Tailwind v4）',
   },
   {
     name: '@container（容器查询）',
     min: 105,
-    pattern: /@container\s*[({]/,
-    target: 'dist/assets/*.css',
-    why: 'paginator 的分栏规则在 91 上不生效；但它的作用已被我们显式 max-column-count 属性覆盖',
-    handled: 'src/reader/useReaderLayout.ts 显式算栏数 + useFoliateEngine.setLayout 设属性绕过',
+    pattern: /(?:^|[};])@container\s*[({]/,
+    // 次要项：只影响 paginator 分栏精细度，不影响可读 → 记录但不算失败。
+    blocking: false,
+    // 这条规则其实在 paginator 的 **shadow DOM JS 模板串**里，不在 dist CSS 里 ——
+    // 所以 dist 扫到 0 是正常的，真正要扫的是 vendor 的 paginator.js。
+    jsTarget: 'src/vendor/foliate-js/paginator.js',
+    // JS 里 at-rule 前面是行内缩进（不是 } 或 ;），需要单独的宽松模式
+    jsPattern: /@container\s*[({]/,
+    jsMin: 105,
+    why:
+      'paginator 用 @container(orientation:portrait) 在竖屏把 --_max-column-count-spread 切成 portrait 值（1 栏）；' +
+      '91 上不生效，spread 退回 var(--_max-column-count)',
+    handled:
+      '不影响结果：我们的 useReaderLayout 已按**同一个方向逻辑**算出栏数（竖屏 1 / 横屏 2）并设 max-column-count 属性，' +
+      '而 spread 默认就是 var(--_max-column-count)，所以缺失 @container 时值**恰好相同**',
   },
   {
     name: 'CSS 嵌套（&）',
     min: 120,
     pattern: /&\s*[.:\[>]/,
-    target: 'dist/assets/*.css',
+    blocking: false,
     why: 'paginator 的 &.vertical 等嵌套规则；不生效只影响细节排版，不影响正文渲染',
-    handled: '不处理（实测 91 只丢弃嵌套选择器，不整块失效）',
+    handled: '不处理（实测 91 只丢弃嵌套选择器，不整块失效）—— 见 STATUS 已知限制',
   },
 ]
 
@@ -270,7 +284,7 @@ try {
 if (cssFiles.length > 0) {
   console.log('--- CSS 能力（源码扫不出，必须扫构建产物）---')
   console.log('')
-  console.log(pad('能力', 26) + pad('最低Chrome', 11) + pad('产物命中', 9) + '处理')
+  console.log(pad('能力', 26) + pad('最低Chrome', 11) + pad('产物命中', 11) + '处理')
   console.log('-'.repeat(96))
   let cssOffenders = 0
   for (const capability of CSS_CAPABILITIES) {
@@ -280,17 +294,38 @@ if (cssFiles.length > 0) {
       const matches = text.match(new RegExp(capability.pattern.source, 'g'))
       if (matches) hits += matches.length
     }
-    // 只有"需兜底且未被处理掉"才算违规
-    const isOffender = hits > 0 && capability.min > BASELINE && capability.handled.startsWith('不处理') === false
+    // 只有"硬门禁 + 产物里还有残留"才算违规；次要项只记录不拦。
+    const isOffender = hits > 0 && capability.blocking === true
     if (isOffender) cssOffenders += 1
+    // 若该特性实际存在于 vendor 的 JS（shadow DOM 模板串），如实报出来
+    let jsHits = null
+    if (capability.jsTarget) {
+      try {
+        const jsText = readFileSync(path.resolve(capability.jsTarget), 'utf8')
+        const jsRe = capability.jsPattern ?? capability.pattern
+        jsHits = (jsText.match(new RegExp(jsRe.source, 'g')) || []).length
+      } catch {
+        jsHits = null
+      }
+    }
+    const verdict = hits === 0 ? '✅ 0' : capability.blocking ? '❌ ' + hits : '⚠️  ' + hits
     console.log(
-      pad(capability.name, 26) + pad(capability.min, 11) + pad(hits, 9) + capability.handled,
+      pad(capability.name, 26) + pad(capability.min, 11) + pad(verdict, 11) + capability.handled,
     )
+    if (jsHits !== null) {
+      console.log(
+        '  产物 CSS 中 0 属正常；该规则在 vendor JS 的 shadow DOM 模板里，实命中 ' +
+          jsHits +
+          ' 处（' +
+          capability.jsTarget +
+          '，只读不改）',
+      )
+    }
     console.log('  原因：' + capability.why)
   }
   console.log('')
   if (cssOffenders > 0) {
-    console.log('❌ 构建产物里仍有低于 Chrome ' + BASELINE + ' 且未处理的 CSS 特性，会导致真实设备排版失败。')
+    console.log('❌ 构建产物里仍有低于 Chrome ' + BASELINE + ' 且必须处理的 CSS 特性，会导致真实设备排版失败。')
     process.exit(1)
   }
   console.log('✅ 构建产物 CSS 无未处理的低于 Chrome ' + BASELINE + ' 的特性。')
