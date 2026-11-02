@@ -263,6 +263,50 @@ else
   echo "  （跳过配额耗尽用例：设 QUOTA_TEST=1 且 API 侧 HPF_AI_DAILY_QUOTA=1 时启用）"
 fi
 
+echo "== 6c. 后台任务真执行（M5-2） =="
+# 整书翻译是最贵的路径，必须验证它真的被 worker 消费并推进状态。
+# 断点续跑 / 取消止血的实测需要 kill 进程，不适合放进冒烟，见 STATUS.md §8.10。
+JEMAIL="job-$RANDOM-$$@example.com"
+call POST /v1/auth/register "" "{\"email\":\"$JEMAIL\",\"password\":\"smoke-test-password-9x\",\"deviceName\":\"job\"}"
+check "任务账号注册 = 201" "$STATUS" "201"
+JTOKEN=$(printf "%s" "$BODY" | jget accessToken)
+
+call POST /v1/books "$JTOKEN" '{"title":"Smoke Job Book","format":"epub"}'
+check "建书 = 201" "$STATUS" "201"
+JBOOK=$(printf "%s" "$BODY" | jget id)
+
+# 提交整书翻译任务（不依赖真实 epub 内容：
+# 即使解析失败，也必须「状态机推进 + 错误可解释」，
+# 这正好验证 worker 真的在消费，而不是永远卡 queued）
+JRESP=$(curl -s -X POST "$BASE/v1/ai/jobs" -H "Authorization: Bearer $JTOKEN" -H "Content-Type: application/json" \
+  --data-binary "{\"kind\":\"book_translate\",\"bookId\":\"$JBOOK\",\"options\":{\"targetLang\":\"zh\"}}")
+JOB=$(printf "%s" "$JRESP" | jget id)
+if [ -n "$JOB" ]; then
+  ok "后台任务被受理（jobId 非空）"
+else
+  bad "后台任务未被受理：$JRESP"
+fi
+
+# 轮询到终态（最多 20 秒）：必须离开 queued/running
+i=0; JSTATUS="queued"
+while [ $i -lt 10 ]; do
+  sleep 2
+  JSTATUS=$(curl -s "$BASE/v1/ai/jobs/$JOB" -H "Authorization: Bearer $JTOKEN" | jget status)
+  case "$JSTATUS" in queued|running) i=$((i+1)) ;; *) break ;; esac
+done
+case "$JSTATUS" in
+  succeeded|failed|paused|canceled)
+    ok "任务到达终态（$JSTATUS），不是永远卡在 queued/running" ;;
+  *) bad "任务卡在 $JSTATUS（worker 未消费）" ;;
+esac
+
+# 无论成败都必须带可解释的 result 或 error
+JFINAL=$(curl -s "$BASE/v1/ai/jobs/$JOB" -H "Authorization: Bearer $JTOKEN")
+case "$JFINAL" in
+  *\"result\"*|*\"error\"*) ok "任务带 result 或 error（失败可解释）" ;;
+  *) bad "任务既无 result 也无 error（静默失败）：$JFINAL" ;;
+esac
+
 echo "== 7. 书源 =="
 call GET "/v1/sources/search?q=austen&source=zlibrary" "$TOKEN"
 check "未知书源 = 400" "$STATUS" "400"

@@ -155,6 +155,8 @@ func run() error {
 		Translator:      translator,
 		Storage:         fileStore,
 		Interval:        5 * time.Second,
+		StaleJobAfter:   cfg.AIJobLease,
+		MaxAttempts:     cfg.AIJobMaxAttempts,
 		IdempotencyTTL:  7 * 24 * time.Hour,
 		CleanupInterval: time.Hour,
 	})

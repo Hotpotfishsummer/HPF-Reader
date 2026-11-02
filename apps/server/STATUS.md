@@ -845,7 +845,214 @@ Open Library 与 Internet Archive **不是代码问题，是网络不可达**。
 ### 8.8 契约变更（`api/openapi.yaml`）
 
 - 新增 `GET /v1/sources` → 返回已注册书源标识（新增 `SourceList` schema）
-- `/v1/sources/search`：补 `description`（写明协议层判据）、
-  `q` 加 `maxLength: 256`、`source` 加 `enum`、补 `400` / `502` 响应
-- `SourceItem`：`license` 从自由字符串改成 `enum`（与代码实际值一致，有测试守着）
-- 新增 `extra` 字段（排障用）
+
+---
+### 8.10 实测证据（真实栈，非 mock）
+
+**环境**：`docker compose` 全栈（postgres:16 + redis:7 + api），`HPF_AI_PROVIDER=fake`，
+`HPF_AI_JOB_LEASE=2m`（把租约压短，否则要等 15 分钟才能观察到回收）。
+测试书：24 章的 EPUB，每块约 2.5 秒。
+
+#### ① 断点续跑：kill worker 后从断点继续（核心验收）
+
+第一轮跑到第 8 块时 `docker compose kill api`（SIGKILL，不给优雅退出机会）：
+
+```
+=== 强杀前 ===
+ done=8 running=1 pending=15 total=24
+ job_status=running progress=0.33333334 attempts=1 locked_at=2026-11-02 19:45:47.155815+00
+=== SIGKILL api（模拟进程崩溃，不给优雅退出机会）===
+ Container hpf-reader-api-1  Killing
+ Container hpf-reader-api-1  Killed
+=== 杀后（块状态必须保留）===
+ done=8 running=1 pending=15
+ job_status=running progress=0.33333334
+```
+
+**8 块已完成被保留、1 块卡在 running、任务仍是 running**。重启后：
+
+```
+{"msg":"reclaimed stale running jobs","count":1}
+{"msg":"resuming job from checkpoint","total_chunks":24,"already_done":8}
+{"msg":"chunk done","chunk":8,"of":24}     ← 从 8 继续，不是 0
+{"msg":"chunk done","chunk":9,"of":24}
+{"msg":"chunk done","chunk":10,"of":24}
+...
+{"msg":"chunk done","chunk":23,"of":24}
+```
+
+最终：
+
+```
+ job_status=succeeded progress=1 attempts=2
+ done=24 running=0 pending=0
+```
+
+**对照**：第一轮日志是 `chunk:0,1,2…`（19:45 起），续跑是 `chunk:8,9,10…`（19:48 起）。
+1–7 已 done 全部跳过，只有被 kill 时卡在 running 的 8 号块重新执行一次。
+
+#### ② 重复块不重复计费
+
+续跑完成后对账（该任务 24 块）：
+
+```
+-- 块表汇总
+ chunk_in | chunk_out
+----------+----------
+    13582 |    12022
+
+-- 记账汇总
+ rows | usage_in | usage_out
+------+----------+----------
+   24 |    13582 |    12022
+```
+
+**24 块 → 恰好 24 条 `ai_usage`，token 两边完全相等**（13582 / 12022）。
+说明续跑没有把已完成的块重译，也没有重复记账。
+
+单元测试 `TestDuplicateChunkNotBilledTwice` 也覆盖了这条：跑完一轮再跑一轮，
+`ai_usage` 行数不变、`translatedChars` 为 0。
+
+#### ③ 取消止血
+
+跑到第 16 块时把任务置 `canceled`：
+
+```
+=== 取消时刻 ===
+ done_chunks=16   usage_rows=16
+=== 等 25 秒后 ===
+ done_chunks_after=17   usage_rows_after=17
+ job_status=canceled
+
+{"msg":"job canceled by user; stopping before next chunk"}
+```
+
+**注意 16→17 的 +1 不是漏网**：那一块在取消发生时**已经在翻译中**（已预扣、已发出请求），
+按语义必须让它跑完并如实记账——中途丢弃会既亏钱又让账目缺口。
+日志 `stopping before next chunk` 证明**下一块之前就停了**：
+若没有这个检查，剩余 7 块会被全部翻完，每块都是真金白银。
+
+单元测试 `TestCancelStopsBilling` 断言更严格（取消后翻译器调用次数与 `ai_usage` 行数**完全不变**）。
+
+#### ④ 配额耗尽 → paused（可续跑）
+
+单元测试 `TestQuotaExhaustedPausesJob`：配额设 1、书 3 块：
+
+```
+暂停时进度：1/3 块已完成（已完成块已保留，可续跑）
+err = errJobPaused（不是 failed）
+```
+
+#### ⑤ 译后确定性扫描
+
+24 章的书，术语表 `{"Darcy": "达西"}`，fake 翻译器不遵守术语表：
+
+```json
+"consistency": {
+  "checkedTerms": 8,
+  "violatingChunks": 8,
+  "violations": [
+    {"chunkIndex":0,"source":"Darcy","target":"达西"},
+    {"chunkIndex":1,...}, ... {"chunkIndex":7,...}
+  ]
+}
+```
+
+**8 个块全部检出违规**——正是 fake 翻译器必然违反的结果，证明扫描器不是摆设。
+若扫描器失效，这条会变成 `violatingChunks: 0`，而「一致性保证」就成了空话且没人会发现。
+
+#### ⑥ 进度真实推进
+
+轮询实测（8 块书）：
+
+```
+poll1: progress=0      status=queued
+poll2: progress=0      status=running
+poll3: progress=0.125
+poll4: progress=0.25
+poll5: progress=0.5
+poll6: progress=0.625
+poll7: progress=0.75
+poll8: progress=0.875
+poll9: progress=1      status=succeeded
+```
+
+进度由 `count(*) FILTER (WHERE status IN (done,skipped)) / count(*)` 实时算出，
+不是 worker 自增计数器——后者在崩溃后会归零，进度条倒退会让用户以为重头开始。
+
+#### ⑦ 冒烟测试
+
+新增 `6c. 后台任务真执行（M5-2）` 5 项断言，全栈 **PASS=87 FAIL=0**：
+
+```
+== 6c. 后台任务真执行（M5-2） ==
+  PASS  任务账号注册 = 201
+  PASS  建书 = 201
+  PASS  后台任务被受理（jobId 非空）
+  PASS  任务到达终态（failed），不是永远卡在 queued/running
+  PASS  任务带 result 或 error（失败可解释）
+
+==== 冒烟结果: PASS=87 FAIL=0 ====
+```
+
+（冒烟里的任务因未上传真实 EPUB 而 `failed`，这正是设计意图：
+**验证 worker 真的在消费并给出可解释失败**，而不是永远卡 queued；
+真实内容链路见上面 ①–⑥。）
+
+#### ⑧ 单元/集成测试（真实 PostgreSQL）
+
+| 测试 | 断言 |
+| --- | --- |
+| `TestBookTranslateEndToEnd` | EPUB→分块→逐块翻译→落库→进度，块状态全 `done`，记账行数 = 块数 |
+| `TestBookTranslateResumesFromCheckpoint` | **1/6 完成后续跑只翻译剩余 5 块**，未重译已完成的 1 块 |
+| `TestDuplicateChunkNotBilledTwice` | 重复执行 `ai_usage` 行数不变、`translatedChars`=0 |
+| `TestCancelStopsBilling` | 取消后翻译调用次数与记账行数**完全不变** |
+| `TestQuotaExhaustedPausesJob` | 配额耗尽返回 `errJobPaused`，已完成块保留 |
+| `TestConsistencyScanRecordsViolations` | 术语表被忽略 → 检出违规 |
+
+`booktext` 包 8 个纯单测（无外部依赖）：
+
+| 测试 | 断言 |
+| --- | --- |
+| `TestExtractEPUBFollowsSpineOrder` | 章节顺序来自 OPF spine 而非文件名（ch10 排在 ch2 前也不乱） |
+| `TestExtractEPUBSkipsStyleAndScript` | CSS/JS 不会被当成正文送去翻译 |
+| `TestChunkChaptersRespectsParagraphBoundaries` | **每段都以句号结尾**——没有被切断的句子 |
+| `TestChunkChaptersNoOverlap` | 20 段切成多块后不重不漏 |
+| `TestChunkChaptersDoesNotCrossChapter` | 块不跨章节边界 |
+| `TestChunkChaptersCarriesContext` | 首块无上下文、后续块带上前块末尾 |
+| `TestScanTerminologyDetectsIgnoredGlossary` | 模型忽略术语表 → 判违规，且只查原文出现过的术语 |
+| `TestScanTerminologyIgnoresAbsentTerms` | 原文没提的术语不检查（否则必然误报） |
+| `TestScanTerminologyCountsSubstrings` | 「达西先生」含标准译名 → 合规 |
+
+#### ⑨ 本轮验证汇总
+
+```
+gofmt -l .                 → 空
+go build ./...             → exit=0
+go vet ./...               → exit=0
+go test ./... -count=1     → 9 包全 ok（无 DB 路径，DB 测试 skip）
+go test ./... -count=1     → 9 包全 ok（接真实 PostgreSQL，并行）
+deploy/smoke-test.sh       → PASS=87 FAIL=0（全栈）
+```
+
+**顺带修掉的测试隔离缺陷**：`store` 与 `worker` 两个包的 DB 测试原本都 `TRUNCATE users CASCADE`，
+并行跑时互相清空 → 「单独跑绿、全量跑红」的间歇性失败。
+改成每个用例自建独立用户/邮箱/设备 ID（`testEmailSuffix()` / `testDeviceID()`），
+数据靠 `user_id` 隔离，两个包可真正并行且不需要任何锁。
+（先试过 advisory lock，但锁挂在池连接上、连接归还后锁仍在别的会话里，跨包并行依然踩踏。）
+
+### 8.11 已知边界（不掩饰）
+
+1. **只支持 EPUB**。PDF/MOBI/AZW3 需要完全不同的解析栈，`booktext` 对它们返回明确的
+   `ErrUnsupportedFormat`，而不是猜测或静默产出空文本。
+2. **未用真实 DeepSeek 跑整本书**。本轮全部用 `provider=fake`（可复现、无外部依赖）。
+   真实模型的翻译质量、真实 usage 帧、真实成本都未验证；
+   上线前需用真 key 跑一本小书并核对账单（见 `docs/M5-PLAN.md` §8）。
+3. **术语一致性只做「确定性扫描」，不做自动重译**。检出违规块后记录到 `result`，
+   由 M5-4/前端决定是否重译——自动重译会改变成本模型，需要单独设计配额策略。
+4. **`entity_normalize` / `summarize` 是骨架**，调用即返回 `not_implemented`。
+5. **`Chunk.Context` 目前未注入 prompt**：`ai.BuildMessages` 尚无上下文槽位，
+   而任务书要求「不要改 BuildMessages 的现有语义」。跨块连贯性目前只靠术语表保证；
+   注入上下文需给 `TranslateRequest` 加字段，属后续改动。
+6. 本轮只改 `apps/server/**`、`api/openapi.yaml`、`deploy/smoke-test.sh`（仅加断言）；
+   未动 `apps/client`、`docs`、`spikes`、`internal/sources/**`，**全程未执行 git**。

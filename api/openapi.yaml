@@ -758,11 +758,68 @@ components:
       required: [id, kind, status]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string }
-        status: { type: string, enum: [queued, running, succeeded, failed, canceled] }
-        progress: { type: number, minimum: 0, maximum: 1 }
+        kind: { type: string, enum: [entity_normalize, book_translate, summarize] }
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed, canceled, paused]
+          description: |
+            `paused` 与 `failed` 的区别是**可续跑性**：
+            `paused` 表示额度耗尽，已完成的工作（块级译文）全部保留，
+            额度恢复后（下个周期）可继续；`failed` 表示需要用户重新发起。
+            配额超限必须用 `paused`——用 `failed` 会让用户以为任务坏了，
+            且白扔掉已经付过费的进度。
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: |
+            按**已完成块数 / 总块数**算出，不是 worker 自增计数器。
+            计数器在崩溃后会归零，导致进度条倒退、用户误以为重头开始。
         result: { type: object, additionalProperties: true, nullable: true }
         error: { type: string, nullable: true }
+
+    BookTranslateResult:
+      type: object
+      description: |
+        `book_translate` 任务的 result。
+
+        块级状态落库在 `book_translation_chunks`，因此任务中断重启后
+        会从**第一个未完成的块**继续，已完成的块永不重译（`input_hash` 未变即可复用）。
+      required: [targetLang, model, totalChunks, doneChunks, translatedChars]
+      properties:
+        targetLang: { type: string }
+        model: { type: string, description: 实际使用的模型标识，例如 `openai:deepseek-chat` }
+        totalChunks: { type: integer, description: 块总数（按章节 + 约 6000 token 切分） }
+        doneChunks: { type: integer, description: 已完成块数 }
+        translatedChars: { type: integer, description: 译文总字符数（用于成本核对） }
+        reusedChunks: { type: integer, description: 因 `input_hash` 命中而复用的块数（不重复计费） }
+        paused: { type: boolean, description: 因配额耗尽而暂停（可续跑） }
+        consistency: { $ref: '#/components/schemas/ConsistencyScan' }
+
+    ConsistencyScan:
+      type: object
+      description: |
+        译后确定性扫描结果（零 LLM 成本）。
+
+        对每个标准译名，用**纯字符串统计**检查它在译文里出现的次数：
+        出现 0 次即判定该段忽略了术语表。这把「祈祷模型听话」变成可验证断言。
+
+        判定刻意保守：只查「该用没用」，不查「用了但用错」（后者需语义理解）；
+        也只检查原文里真的出现过的术语，否则必然误报。
+      required: [checkedTerms, violatingChunks]
+      properties:
+        checkedTerms: { type: integer, description: 实际检查过的术语数（原文里出现过的） }
+        violatingChunks: { type: integer, description: 存在违规的块数（按块计，不是按术语计） }
+        violations:
+          type: array
+          description: 违规明细。块序号可用于只重译该段，而不必重跑整本书。
+          items:
+            type: object
+            required: [chunkIndex, source, target]
+            properties:
+              chunkIndex: { type: integer }
+              source: { type: string, description: 原文写法 }
+              target: { type: string, description: 标准译名（译文中未出现） }
 
     QuotaDimension:
       type: object

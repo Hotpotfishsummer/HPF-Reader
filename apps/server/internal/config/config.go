@@ -51,7 +51,15 @@ type Config struct {
 	AIModel      string
 	AITimeout    time.Duration
 	AIMaxPerUser int
-
+	// AIJobLease 是后台任务的租约时长：worker 超过这么久没更新 locked_at，
+	// 任务就被判定为卡死并退回 queued。
+	// 太短会把「慢慢跑的长任务」误判成卡死（重复烧钱），太长则崩溃后要等很久才恢复。
+	// 默认 15 分钟：整书翻译单块通常几秒，15 分钟足够覆盖任何单块；
+	// 同时崩溃后最多等 15 分钟就能自动续跑。
+	AIJobLease time.Duration
+	// AIJobMaxAttempts 是后台任务重试上限：超过就不再退回 queued，
+	// 避免毒任务（例如永远解析失败的坏 EPUB）无限重跑烧钱。
+	AIJobMaxAttempts int
 	// 书源
 	SourcesTimeout time.Duration
 	GutendexURL    string
@@ -128,12 +136,14 @@ func parse() Config {
 		RateLimitAPI:   getInt("HPF_RATE_LIMIT_API", 600),
 		TrustedProxies: getList("HPF_TRUSTED_PROXIES", nil),
 
-		AIProvider:   getStr("HPF_AI_PROVIDER", "fake"),
-		AIBaseURL:    getStr("HPF_AI_BASE_URL", "https://api.deepseek.com/v1"),
-		AIAPIKey:     getStr("HPF_AI_API_KEY", ""),
-		AIModel:      getStr("HPF_AI_MODEL", "deepseek-chat"),
-		AITimeout:    getDur("HPF_AI_TIMEOUT", 60*time.Second),
-		AIMaxPerUser: getInt("HPF_AI_DAILY_QUOTA", 1000),
+		AIProvider:       getStr("HPF_AI_PROVIDER", "fake"),
+		AIBaseURL:        getStr("HPF_AI_BASE_URL", "https://api.deepseek.com/v1"),
+		AIAPIKey:         getStr("HPF_AI_API_KEY", ""),
+		AIModel:          getStr("HPF_AI_MODEL", "deepseek-chat"),
+		AITimeout:        getDur("HPF_AI_TIMEOUT", 60*time.Second),
+		AIMaxPerUser:     getInt("HPF_AI_DAILY_QUOTA", 1000),
+		AIJobLease:       getDur("HPF_AI_JOB_LEASE", 15*time.Minute),
+		AIJobMaxAttempts: getInt("HPF_AI_JOB_MAX_ATTEMPTS", 3),
 
 		SourcesTimeout: getDur("HPF_SOURCES_TIMEOUT", 8*time.Second),
 		GutendexURL:    getStr("HPF_GUTENDEX_URL", "https://gutendex.com"),

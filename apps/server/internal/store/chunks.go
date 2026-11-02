@@ -14,6 +14,10 @@ type TranslationChunk struct {
 	ChapterIndex int
 	InputHash    string
 	SourceText   string
+	// Context 是前一块末尾的原文，用于保持跨块连贯（booktext.Chunk.Context）。
+	// 只放在内存里传递，**不落库**：它是从原文重新算出来的派生数据，
+	// 存进 chunks 表会让表结构依赖 prompt 构造策略，且续跑时可能读到过期值。
+	Context      string
 	OutputText   *string
 	Status       string
 	InputTokens  int

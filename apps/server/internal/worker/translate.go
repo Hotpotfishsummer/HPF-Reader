@@ -269,6 +269,7 @@ func (w *Worker) buildChunks(ctx context.Context, job store.AIJob, opts bookTran
 			ChapterIndex: c.ChapterIndex,
 			InputHash:    chunkInputHash(c, opts),
 			SourceText:   c.Text,
+			Context:      c.Context,
 		})
 	}
 	return out, nil
@@ -290,6 +291,10 @@ func chunkInputHash(c booktext.Chunk, opts bookTranslateOptions) string {
 	b.WriteString(promptVersion)
 	b.WriteString("\x00")
 	b.WriteString(c.Text)
+	b.WriteString("\x00")
+	// Context 会进入 prompt（BuildMessages 把它作为 Previous context 消息），
+	// 所以它必须参与 hash：否则上下文变了、prompt 变了，却会复用旧译文。
+	b.WriteString(c.Context)
 	b.WriteString("\x00")
 	b.WriteString(opts.TargetLang)
 	b.WriteString("\x00")
@@ -326,10 +331,17 @@ func (w *Worker) translateChunk(ctx context.Context, chunk store.TranslationChun
 	if w.deps.Translator == nil {
 		return "", ai.Usage{}, fmt.Errorf("no translator configured")
 	}
+	// 注入前文上下文（chunk.Context 是 buildChunks 已经算好的上一块尾部文本）。
+	//
+	// 注意：BuildMessages 早就支持这个槽位（ai.go 里 if req.Context != "" 的分支
+	// 会把它作为 Previous context (do not translate) 消息插在正文之前），
+	// 所以这里不需要改 ai.go，只是此前没把字段填上——漏接，不是缺槽位。
+	// 补上它才能真正改善跨块连贯性（否则只剩术语表在维持一致）。
 	req := ai.TranslateRequest{
 		Text:       chunk.SourceText,
 		TargetLang: opts.TargetLang,
 		SourceLang: opts.SourceLang,
+		Context:    chunk.Context,
 		Glossary:   opts.Glossary,
 		Model:      opts.Model,
 	}
