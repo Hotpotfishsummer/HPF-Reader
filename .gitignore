@@ -16,6 +16,11 @@ build/bin/
 apps/client/build/bin/
 apps/client/frontend/dist/
 
+# Android / Gradle：以下均由 build/android/Taskfile.yml 在构建时再生（见 generate:android:overlay 与 jniLibs 构建步骤）
+apps/client/build/android/app/src/main/jniLibs/
+apps/client/build/android/gen/
+apps/client/build/android/overlay.json
+
 # Android / Gradle 构建产物
 #   注意：build/android/ 下的**脚手架**（build.gradle、gradlew、MainActivity.java、overlay.json、gradle-wrapper.jar）必须入库，
 #   否则 APK 无法从仓库复现；只忽略 Gradle 生成的产物。
