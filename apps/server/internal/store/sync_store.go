@@ -71,12 +71,67 @@ func (y *SyncStore) LoadPending(ctx context.Context, userID, entity, entityID st
 	case syncengine.EntityBook:
 		return y.loadBook(ctx, userID, entityID)
 	case syncengine.EntityBookConfig:
-		// 书籍级配置（字体/主题/排版）当前直接复用 progress 行承载 book_config 之外的状态；
-		// 一期只保证「字段级 LWW 可合并」，没有独立表。
-		return y.loadProgress(ctx, userID, entityID)
+		// 书籍级配置 / 术语表：entityId 是**任意键名**，不是 UUID，所以不能查 reading_progress。
+		//
+		// 缺陷背景（F-05）：这里原本无条件走 loadProgress，把 entityID 当 book_id 绑进 uuid 列。
+		// 于是任何 `glossary:<bookId>:<key>` 这样的键都会触发 SQLSTATE 22P02，
+		// 而 Push 循环是无条件调用 LoadPending 的——**每一批 push 都会 500**。
+		// ValidateOp 已经豁免了 book_config 的 UUID 校验（见 engine.go:237），
+		// 所以校验层放行了、却在存储层炸掉，这是最糟的组合：客户端看到 5xx 会无限重试。
+		//
+		// 权威状态直接取 change_log 里该键最新的一条：change_log.entity_id 是 TEXT，
+		// 天生支持任意键名，book_config 的语义本来就只有 change_log 承载。
+		return y.loadBookConfig(ctx, userID, entityID)
 	default:
 		return syncengine.PendingState{}, false, fmt.Errorf("unsupported entity %q", entity)
 	}
+}
+
+// loadBookConfig 读取 book_config 类实体的权威状态（任意键名，不是 UUID）。
+//
+// 数据源是 change_log 而不是独立表：book_config 的语义就是「字段级 LWW，
+// 状态由最后一次 op 决定」，而 change_log 恰好按 (user_id, entity, entity_id)
+// 保存了每一次 op 及其 HLC。取最新一条即得到权威状态，无需再维护一份副本
+// （维护副本就多了一致性风险，且术语表键是动态的，建表反而更麻烦）。
+//
+// 已删除（墓碑）的键返回 found=false：remove-wins 语义要求「删除后不复活」，
+// 而 LoadPending 的 found 语义正是「当前是否有权威状态」。
+func (y *SyncStore) loadBookConfig(ctx context.Context, userID, entityID string) (syncengine.PendingState, bool, error) {
+	row := y.s.pool.QueryRow(ctx, `
+		SELECT op, payload, hlc, device_id, server_ts, book_id
+		FROM change_log
+		WHERE user_id = $1 AND entity = $2 AND entity_id = $3
+		ORDER BY seq DESC
+		LIMIT 1`, userID, syncengine.EntityBookConfig, entityID)
+
+	var (
+		op       string
+		payload  []byte
+		hlc      string
+		deviceID *string
+		serverTS time.Time
+		bookID   *string
+	)
+	err := row.Scan(&op, &payload, &hlc, &deviceID, &serverTS, &bookID)
+	if err == pgx.ErrNoRows {
+		return syncengine.PendingState{}, false, nil
+	}
+	if err != nil {
+		return syncengine.PendingState{}, false, wrap(err)
+	}
+	if op == "delete" {
+		// 墓碑：键已被删除，没有权威状态。
+		return syncengine.PendingState{}, false, nil
+	}
+	return syncengine.PendingState{
+		Entity:    syncengine.EntityBookConfig,
+		EntityID:  entityID,
+		BookID:    bookID,
+		Payload:   payload,
+		HLC:       hlc,
+		DeviceID:  strOr(deviceID, ""),
+		UpdatedAt: serverTS,
+	}, true, nil
 }
 
 func (y *SyncStore) loadProgress(ctx context.Context, userID, bookID string) (syncengine.PendingState, bool, error) {
@@ -341,16 +396,12 @@ func applyEntity(ctx context.Context, tx pgx.Tx, userID, deviceID string, op syn
 			payload, op.HLC, dev)
 		return wrap(err)
 
-	case syncengine.EntityBook, syncengine.EntityBookConfig:
+	case syncengine.EntityBook:
 		if op.Kind == syncengine.KindDelete {
 			_, err := tx.Exec(ctx, `
 				UPDATE books SET deleted_at = now(), updated_at = now()
 				WHERE id = $1 AND user_id = $2`, op.EntityID, userID)
 			return wrap(err)
-		}
-		if op.Entity == syncengine.EntityBookConfig {
-			// 配置暂不做独立表：只写 change_log（上面已写），实体状态由客户端本地维护。
-			return nil
 		}
 		var bp bookPayload
 		if err := json.Unmarshal(op.Payload, &bp); err != nil {
@@ -366,6 +417,19 @@ func applyEntity(ctx context.Context, tx pgx.Tx, userID, deviceID string, op syn
 			WHERE id = $1 AND user_id = $2`,
 			op.EntityID, userID, bp.Title, bp.ReadingState, bp.Rating, jsonOrNull(bp.Metadata))
 		return wrap(err)
+
+	case syncengine.EntityBookConfig:
+		// book_config / 术语表**没有独立表**，权威状态就是 change_log 本身
+		// （upsert 与 delete 都已写进 change_log，见 AppendChange）。
+		//
+		// 缺陷背景（F-06）：这里原本和 EntityBook 合并成一个分支，delete 时执行
+		//   UPDATE books WHERE id = $1
+		// 而 book_config 的 entityId 是任意键名（如 glossary:<bookId>:<key>），
+		// 于是删一个术语表条目会触发 SQLSTATE 22P02 —— 和 F-05 是同一类错误，
+		// 只是发生在写入路径而不是读取路径。
+		//
+		// 必须与 EntityBook 拆开：两者 entityId 的类型语义根本不同。
+		return nil
 	}
 	return fmt.Errorf("unsupported entity %q", op.Entity)
 }
