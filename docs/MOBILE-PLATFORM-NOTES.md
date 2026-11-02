@@ -131,3 +131,16 @@
 | Gradle 官方源在本机被墙 | HTTP 307，12 秒内 0 字节 | 用镜像下载，**并用官方 `.sha256` 校验一致**后写入 wrapper 缓存；校验和记入 `gradle-wrapper.properties` |
 | gradle wrapper 读超时 | `networkTimeout=10000` 对 135MB 分发包必挂 | 调到 `120000` |
 | Android 绑定生成损坏前端 | `wails3 generate bindings -f '-tags android' -clean=true` 缺 `-ts` 且带 `-clean` → 清掉 `.ts` 绑定，前端报 TS7016；另外 `env: GOOS=android` 会让分析器解析不到 GOROOT stdlib，产出**空 bindings**（`1 Package, 0 Services, 0 Methods`） | 改为 `wails3 generate bindings -ts -i -f '-tags android' -clean=true`，并删除该 env（保留 `CGO_ENABLED=0`） |
+### 7.6 Android 构建与产物（实测 2026-11-03）
+
+| 项 | 值 |
+|---|---|
+| 交付 APK | `apps/client/bin/hpfreader-android-debug.apk`，**22,170,673 B**，sha256 `2A956406E1EA3C3D783EE91A268482B8BACADE2B7235EB7E024D7FE015EB0100` |
+| ABI | `arm64-v8a` + `x86_64`（多 ABI 通用包，非 split） |
+| 验证方式 | 交付 APK 本身 + `adb root` 把真书放进私有目录，**未改动 APK** |
+| 真书验收 | alice（16 章）、frankenstein（32 章）、pride（**63 章**）全部打开、翻页、跳章、横竖屏正常 |
+
+**⚠️ 发布前必做两件事**：
+
+1. **始终 `gradlew clean assembleDebug`**。实测增量构建会残留**孤儿 zip 条目**：旧包有 1002 个 local file header 但只有 882 个 central directory 条目（120 个孤儿），`clean` 后恢复 891/883，体积从 22,777,553 降到 22,394,587 B。
+2. **arm64 未在真机验证**（本机无 arm64 设备）。已证明的只是「APK 结构正确 + `.so` 是合法 ELF aarch64（`e_machine=183`）」——**这不等于 arm64 真机可用**。首次上真机必须实测。
