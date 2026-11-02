@@ -1,0 +1,15 @@
+=== go build arm64 (GOARCH=arm64, CC=aarch64) ===
+exit=0
+OK: 15396896 B  11/03/2026 01:41:50
+=== ELF header parse (independent of ile) ===
+arm64  lib: size=15396896
+  magic      = ELF
+  ei_class   = 2 (2 = ELFCLASS64)
+  ei_data    = 1 (1 = little-endian)
+  e_type     = 3 (3 = ET_DYN, shared lib)
+  e_machine  = 183 (183 = EM_AARCH64)
+x86_64 lib: size=16635448
+  e_machine  = 62 (62 = EM_X86_64)
+=== jniLibs tree ===
+arm64-v8a\libwails.so                        15,396,896 B
+x86_64\libwails.so                           16,635,448 B

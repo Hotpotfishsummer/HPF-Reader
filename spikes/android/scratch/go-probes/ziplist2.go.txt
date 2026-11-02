@@ -1,0 +1,21 @@
+package main
+import ("archive/zip";"fmt";"os";"sort")
+func main(){
+  for _,p:=range os.Args[1:]{
+    r,err:=zip.OpenReader(p); if err!=nil{fmt.Println(p,"ERR",err);continue}
+    type e struct{n string; c,u uint64; m uint16}
+    var list []e
+    var tot uint64
+    for _,f:=range r.File{ tot+=f.CompressedSize64; list=append(list,e{f.Name,f.CompressedSize64,f.UncompressedSize64,f.Method}) }
+    st,_:=os.Stat(p)
+    fmt.Printf("=== %s ===\n  entries=%d sum(comp)=%d fileSize=%d gap=%d\n",p,len(r.File),tot,st.Size(),int64(st.Size())-int64(tot))
+    sort.Slice(list,func(i,j int)bool{return list[i].c>list[j].c})
+    fmt.Println("  -- top 8 by compressed size --")
+    for i:=0;i<8&&i<len(list);i++{ fmt.Printf("   %-52s comp=%10d uncomp=%10d method=%d\n",list[i].n,list[i].c,list[i].u,list[i].m) }
+    // count entries whose compressed != uncompressed (stored)
+    var stored int; var storedBytes uint64
+    for _,x:=range list{ if x.m==0 { stored++; storedBytes+=x.u } }
+    fmt.Printf("  stored(method=0) entries=%d bytes=%d\n",stored,storedBytes)
+    r.Close()
+  }
+}

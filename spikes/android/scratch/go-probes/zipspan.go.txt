@@ -1,0 +1,28 @@
+package main
+import ("archive/zip";"fmt";"os";"sort")
+func main(){
+  for _,p:=range os.Args[1:]{
+    r,err:=zip.OpenReader(p); if err!=nil{panic(err)}
+    st,_:=os.Stat(p)
+    // find largest end offset of any entry's data
+    var maxEnd int64
+    type span struct{name string; off, end int64}
+    var spans []span
+    for _,f:=range r.File{
+      off:=int64(f.HeaderOffset)
+      end:=off+30+int64(len(f.Name))+int64(len(f.Extra))+int64(f.CompressedSize64)
+      if end>maxEnd{maxEnd=end}
+      spans=append(spans,span{f.Name,off,end})
+    }
+    fmt.Printf("=== %s ===\n  fileSize=%d  maxEntryEnd=%d  trailing=%d\n",p,st.Size(),maxEnd,st.Size()-maxEnd)
+    sort.Slice(spans,func(i,j int)bool{return spans[i].off<spans[j].off})
+    // find gaps between consecutive entries
+    var gaps int64; var gapCount int
+    prev:=int64(0)
+    for _,s:=range spans{ if s.off-prev>0 { gaps+=s.off-prev; gapCount++ }; prev=s.end }
+    fmt.Printf("  gapsBetweenEntries=%d count=%d  tailAfterLast=%d\n",gaps,gapCount,st.Size()-prev)
+    // central directory start
+    fmt.Printf("  centralDirStart=%d\n",r.File[0].HeaderOffset)
+    r.Close()
+  }
+}

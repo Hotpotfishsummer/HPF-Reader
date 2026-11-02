@@ -1,0 +1,22 @@
+package main
+import ("archive/zip";"fmt";"os";"sort")
+func main(){
+  for _,p:=range os.Args[1:]{
+    r,err:=zip.OpenReader(p); if err!=nil{panic(err)}
+    var off int64=0; var n int
+    type it struct{name string; span int64}
+    var items []it
+    for _,f:=range r.File{
+      span:=int64(30+len(f.Name)+len(f.Extra))+int64(f.CompressedSize64)+int64(f.Extra)
+      // count only real compressed payload
+      span=int64(30+len(f.Name)+len(f.Extra))+int64(f.CompressedSize64)
+      off+=span; n++
+      items=append(items,it{f.Name,span})
+    }
+    st,_:=os.Stat(p)
+    fmt.Printf("=== %s ===\n  entries=%d computedDataRegion=%d fileSize=%d overhead=%d\n",p,n,off,st.Size(),st.Size()-off)
+    sort.Slice(items,func(i,j int)bool{return items[i].span>items[j].span})
+    for i:=0;i<3&&i<len(items);i++{ fmt.Printf("   %-46s span=%d\n",items[i].name,items[i].span) }
+    r.Close()
+  }
+}

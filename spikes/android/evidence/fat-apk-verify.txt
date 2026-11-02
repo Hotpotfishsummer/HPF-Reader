@@ -1,0 +1,11 @@
+=== install fat APK on x86_64 emulator (5556) ===
+Performing Streamed Install
+Success
+
+=== installed native libs on device ===
+codePath=/data/app/~~b6HER6BLY_IJsig2gezzkA==/com.wails.app-S-2Qp1OL1ggq_iHVOQH_KA==
+legacyNativeLibraryDir=/data/app/~~b6HER6BLY_IJsig2gezzkA==/com.wails.app-S-2Qp1OL1ggq_iHVOQH_KA==/lib
+primaryCpuAbi=x86_64
+=== app still launches & renders? ===
+pid after launch = 5304 (empty = crashed)
+{"title":"HPF Reader","href":"https://wails.localhost/#/","bodyLen":129,"fvH":null}

@@ -1,0 +1,25 @@
+package main
+import ("archive/zip";"fmt";"os";"sort")
+func names(p string) map[string][2]uint64 {
+  r,err:=zip.OpenReader(p); if err!=nil{panic(err)}; defer r.Close()
+  m:=map[string][2]uint64{}
+  for _,f:=range r.File{ m[f.Name]=[2]uint64{f.CompressedSize64,f.UncompressedSize64} }
+  return m
+}
+func main(){
+  a:=names(os.Args[1]); b:=names(os.Args[2])
+  var onlyA,onlyB []string
+  for k:=range a{ if _,ok:=b[k];!ok{ onlyA=append(onlyA,k) } }
+  for k:=range b{ if _,ok:=a[k];!ok{ onlyB=append(onlyB,k) } }
+  sort.Strings(onlyA); sort.Strings(onlyB)
+  fmt.Println("--- only in OLD (bin/) ---")
+  var sa uint64
+  for _,k:=range onlyA{ fmt.Printf("  %-60s comp=%d\n",k,a[k][0]); sa+=a[k][0] }
+  fmt.Println("  sum=",sa)
+  fmt.Println("--- only in NEW (build/) ---")
+  var sb uint64
+  for _,k:=range onlyB{ fmt.Printf("  %-60s comp=%d\n",k,b[k][0]); sb+=b[k][0] }
+  fmt.Println("  sum=",sb)
+  fmt.Println("--- size diffs on shared entries >100KB ---")
+  for k,v:=range a{ if w,ok:=b[k];ok && (v[0]>100000||w[0]>100000){ if v[0]!=w[0]{ fmt.Printf("  %-56s old=%d new=%d\n",k,v[0],w[0]) } } }
+}

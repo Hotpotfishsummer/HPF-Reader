@@ -1,0 +1,12 @@
+=== clean + assembleDebug ===
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+[Incubating] Problems report is available at: file:///C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/apps/client/build/android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 11s
+36 actionable tasks: 36 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html
+APK: 22170673 B  11/03/2026 01:49:58
+bin APK: 22170673 B  sha256 2A956406E1EA3C3D783EE91A268482B8BACADE2B7235EB7E024D7FE015EB0100
+native-code: 'arm64-v8a' 'x86_64'

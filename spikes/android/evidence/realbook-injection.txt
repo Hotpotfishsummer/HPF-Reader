@@ -1,0 +1,27 @@
+=== compute hash of frankenstein ===
+sha256=bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662
+=== place book file in books/ ===
+
+total 292
+-rw-rw-rw- 1 root root 294175 2026-11-02 17:52 bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662.epub
+=== write library.json ===
+C:\Users\HOTPOT~1\AppData\Local\Temp\library.json: 1 file pushed, 0 skipped. 0.5 MB/s (286 bytes in 0.001s)
+
+{"books":{"frankenstein":{"id":"frankenstein","title":"Frankenstein; or, the Modern Prometheus","author":"Mary Wollstonecraft Shelley","format":"epub","contentHash":"bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","sizeBytes":294175,"addedAt":"2026-11-03T01:50:00Z"}}}
+=== restart app ===
+HPF Reader | 书库 | 设置 | 我的书库 | 打开本地文件 |  | 书库还是空的 |  | 导入一本 EPUB 就能开始阅读。也可以先打开内置示例书。 |  | 把 EPUB 拖到这里也可以打开 |  | 打开本地文件 | 打开示例书 |  | 还没入库？直接选一个 EPUB 文件就能读，不需要联网。
+=== correct id = bf04d57cf243314a ===
+total 292
+-rw-r--r-- 1 root root 294175 2026-11-02 17:52 bf04d57cf243314a.epub
+{"books":{"bf04d57cf243314a":{"id":"bf04d57cf243314a","title":"Frankenstein; or, the Modern Prometheus","author":"Mary Wollstonecraft Shelley","format":"epub","contentHash":"bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662","sizeBytes":294175,"addedAt":"2026-11-03T01:50:00Z"}}}
+HPF Reader | 书库 | 设置 | 我的书库 |  | 共 1 本 |  | 打开本地文件 | F | Frankenstein; or, the Modern Prometheus |  | Mary Wollstonecraft Shelley · EPUB · 287.3 KB |  | 阅读 | 移除 |  | 还没入库？直接选一个 EPUB 文件就能读，不需要联网。
+[{"t":"打开本地文件","x":341,"y":103},{"t":"移除","x":163,"y":479}]
+=== find clickable element containing 阅读 ===
+[{"tag":"DIV","t":"阅读\n移除","x":108,"y":479,"w":150,"h":28},{"tag":"A","t":"阅读","x":57,"y":479,"w":48,"h":28}]
+=== real book state (shipped APK, WebView 91, styled) ===
+{"href":"#/reader/bf04d57cf243314a","innerH":843,"fv":{"w":412,"h":795},"hasBook":true,"lastLoc":{"fraction":0.0009,"cfi":"epubcfi(/6/2!/4/2,,/2)"},"tocCount":32,"text":"← | ☰ | 阅读 | 0% | ◐ | ‹ | ›"}
+=== open TOC ===
+{"tocItems":"← | ☰ | 阅读 | 0% | ◐ | ‹ | ›","links":[]}
+{"jumpedTo":"Chapter 10","href":"OEBPS/4328224471496264690_84-h-15.htm.html#pgepubid00016","fraction":0.3841,"cfi":"epubcfi(/6/34!/4/2[pgepubid00016],/2,/4/1:733)","innerH":843,"fvH":795,"text":"← | ☰ | Chapter 10 | 38% | ◐ | ‹ | ›"}
+=== landscape real book (WebView 91, styled) ===
+{"innerW":867,"innerH":388,"fv":{"w":867,"h":340},"text":"←返回书库 | ☰目录 | Chapter 10 | 38% | ◐纸白 | ‹上一页 | ›下一页"}

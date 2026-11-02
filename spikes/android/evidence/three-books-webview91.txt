@@ -1,0 +1,21 @@
+book alice-in-wonderland id=08a2de3a58226311 size=136756
+book frankenstein id=bf04d57cf243314a size=294175
+book pride-and-prejudice id=2172db6a64d45b02 size=609138
+total 1032
+-rw-r--r-- 1 root root 136756 2026-11-02 17:55 08a2de3a58226311.epub
+-rw-r--r-- 1 root root 609138 2026-11-02 17:55 2172db6a64d45b02.epub
+-rw-r--r-- 1 root root 294175 2026-11-02 17:55 bf04d57cf243314a.epub
+=== three books on WebView 91 (shipped APK) ===
+{"08a2de3a58226311":{"hasBook":true,"tocCount":16,"fraction":0.0022,"fvH":795,"innerH":843,"text":"← | ☰ | 阅读 | 0% | ◐ | ‹ | ›"},"bf04d57cf243314a":{"hasBook":true,"tocCount":16,"fraction":0.0022,"fvH":795,"innerH":843,"text":"← | ☰ | 阅读 | 0% | ◐ | ‹ | ›"},"2172db6a64d45b02":{"hasBook":true,"tocCount":16,"fraction":0.0022,"fvH":795,"innerH":843,"text":"← | ☰ | 阅读 | 0% | ◐ | ‹ | ›"}}
+=== book 1: alice ===
+{"route":"08a2de3a58226311","hasBook":true,"tocTopLevel":16,"tocAllLabels":16,"firstLabels":["Alice’s Adventures in Wonderland","THE MILLENNIUM FULCRUM EDITION 3.0","Contents","CHAPTER I. Down the Rabbit-Hole","CHAPTER II. The Pool of Tears","CHAPTER III. A Caucus-Race and a Long Tale"],"lastLabels":["CHAPTER XI. Who Stole the Tarts?","CHAPTER XII. Alice’s Evidence","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.0022,"fvH":795,"innerH":843}
+=== book 2: frankenstein ===
+{"route":"bf04d57cf243314a","hasBook":true,"tocTopLevel":16,"tocAllLabels":16,"firstLabels":["Alice’s Adventures in Wonderland","THE MILLENNIUM FULCRUM EDITION 3.0","Contents","CHAPTER I. Down the Rabbit-Hole","CHAPTER II. The Pool of Tears","CHAPTER III. A Caucus-Race and a Long Tale"],"lastLabels":["CHAPTER XI. Who Stole the Tarts?","CHAPTER XII. Alice’s Evidence","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.0022,"fvH":795,"innerH":843}
+=== book 3: pride ===
+{"route":"2172db6a64d45b02","hasBook":true,"tocTopLevel":16,"tocAllLabels":16,"firstLabels":["Alice’s Adventures in Wonderland","THE MILLENNIUM FULCRUM EDITION 3.0","Contents","CHAPTER I. Down the Rabbit-Hole","CHAPTER II. The Pool of Tears","CHAPTER III. A Caucus-Race and a Long Tale"],"lastLabels":["CHAPTER XI. Who Stole the Tarts?","CHAPTER XII. Alice’s Evidence","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.0022,"fvH":795,"innerH":843}
+=== alice (08a2de3a58226311) ===
+{"route":"08a2de3a58226311","hasBook":true,"tocTopLevel":16,"tocAllLabels":16,"firstLabels":["Alice’s Adventures in Wonderland","THE MILLENNIUM FULCRUM EDITION 3.0","Contents","CHAPTER I. Down the Rabbit-Hole","CHAPTER II. The Pool of Tears","CHAPTER III. A Caucus-Race and a Long Tale"],"lastLabels":["CHAPTER XI. Who Stole the Tarts?","CHAPTER XII. Alice’s Evidence","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.0022,"fvH":795,"innerH":843}
+=== frankenstein (bf04d57cf243314a) ===
+{"route":"bf04d57cf243314a","hasBook":true,"tocTopLevel":32,"tocAllLabels":32,"firstLabels":["Frankenstein;","or, the Modern Prometheus","CONTENTS","Letter 1","Letter 2","Letter 3"],"lastLabels":["Chapter 23","Chapter 24","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.3841,"fvH":795,"innerH":843}
+=== pride (2172db6a64d45b02) ===
+{"route":"2172db6a64d45b02","hasBook":true,"tocTopLevel":63,"tocAllLabels":63,"firstLabels":["PRIDE. and PREJUDICE","Chapter I.","I hope Mr. Bingley will like it. CHAPTER II.","He rode a black horse. CHAPTER III.","CHAPTER IV.","CHAPTER V."],"lastLabels":["“The obsequious civility.” CHAPTER LX.","CHAPTER LXI.","THE FULL PROJECT GUTENBERG™ LICENSE"],"fraction":0.0005,"fvH":795,"innerH":843}

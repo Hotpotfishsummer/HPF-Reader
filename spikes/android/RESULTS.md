@@ -24,12 +24,23 @@
 
 ## 1. 交付物
 
-| 文件 | 大小 | sha256 |
-|---|---|---|
-| `apps/client/bin/hpfreader-android-debug.apk` | 22,544,722 B | `490D0353BBD2C3D984F2A13286089197FDC8B41B70D3A04D995FBB5ACC0B40A8` |
+| 文件 | 大小 | sha256 | ABI |
+|---|---|---|---|
+| `apps/client/bin/hpfreader-android-debug.apk` | **22,170,673 B** | `2A956406E1EA3C3D783EE91A268482B8BACADE2B7235EB7E024D7FE015EB0100` | `arm64-v8a` + `x86_64` |
 
-这是**纯净包**：内置示例书是原始的 `dist/sample/sample.epub`（5,509 B，sha256 `6E330BC99C5F1320C6F70C26DE18C5E2FC6370A2534FFF3B77E874B3179FF3AC`）。
-真书验收用的是单独构建的包（见 §4），**不进 bin/**，避免把测试书当交付物。
+这是**最终交付包**（含 task-17 的 CSS 修复 + task-18 的 arm64）。内置示例书是原始的 `dist/sample/sample.epub`
+（5,509 B，sha256 `6E330BC99C5F1320C6F70C26DE18C5E2FC6370A2534FFF3B77E874B3179FF3AC`）。
+
+**演进过程**（供追溯，均已作废）：
+
+| 版本 | 大小 | 说明 |
+|---|---|---|
+| 22,544,722 B | `490D0353…` | 仅 x86_64，无 task-17 CSS 修复 —— **不要用** |
+| 22,394,587 B | （clean 重建中间态） | 补了 arm64，但 CSS 仍是旧 dist |
+| **22,170,673 B** | `2A956406…` | **最终**：arm64 + x86_64 + task-17 CSS 修复 |
+
+真书验收**不需要**单独构建包：用 `adb root` 把真书放进应用私有目录即可（见 §3.3），
+**APK 本体不动**，这样验收的就是交付物本身。
 
 ## 2. 复现步骤（含三个本机特有的坑）
 
@@ -173,19 +184,46 @@ D/WailsActivity( 5349): [WebView] LOG: [polyfill] 已补齐运行时内置对象
 
 截图：`03-reader-polyfilled-portrait.png`、`04-after-pageturn.png`、`crop-page1.png`（裁剪放大，肉眼可确认是真中文正文）。
 
-### 3.2 问题 B：CSS 现代特性 —— **未解决**
+### 3.2 问题 B：CSS 现代特性 —— **观感不可交付，但功能可用**
 
-这是**修完 A 之后仍然存在**的独立问题，也是真书在 WebView 91 上读不了的真正原因。
+> ⚠️ **本节已被 lead 独立复核修正（见 `spikes/android/LEAD-VERDICT.md`）。**
+> 我最初的结论「真书在 WebView 91 上读不了」**是错的**，原因是我的测量方法有缺陷。
+> 下面的 CSS 测量数据全部保留（它们是真的、且有价值），但**「读不了」这个结论已作废**。
 
-**现象**（WebView 91，真书 frankenstein）：
+**我错在哪（两处测量假象，必须记录下来当教训）**
 
-```json
-{"text":"←☰阅读0% ◐‹›","iframes":0,"fv":{"w":412,"h":1482},"innerH":843,
- "layerWorks":"rgb(0, 0, 0)"}
+1. **`iframes=0` 是假象。** `vendor/foliate-js/view.js:214` 用 `attachShadow({ mode: 'closed' })`，
+   closed shadow root **故意外部不可访问**，`document.querySelectorAll('iframe')` **恒为 0**，与渲染成败无关。
+   （讽刺的是我自己在早期就记录过「closed shadow root 使 DOM 探针看不见内容」，却在真书上又拿它当判据。）
+
+2. **「正文空 / 0%」测到的是封面页。** 打开真书时 `lastLoc.fraction=0.0009`，就是封面；
+   封面本身字号巨大、`innerText` 很短；再叠加 `@layer` 失效把 `foliate-view` 撑到 1482px（视口 843px），
+   **可视区只露出封面一角**。不是没渲染，是没滚动到正文。
+
+**正确测量方式（用组件自己的公开状态，不要碰 closed shadow DOM）**
+
+```js
+var f = document.querySelector('foliate-view');
+({ hasBook: !!f.book, lastLoc: f.lastLocation, tocCount: f.book.toc.length })
 ```
 
-注意 `foliate-view` 高 **1482px**，而视口只有 **843px** —— 容器塌了。
-对比 WebView 124 同一本书：`{"fv":{"w":412,"h":867}}`（正确）。
+WebView 91 实测（我复验 lead 的结论，**一致**）：
+
+```json
+{"hasView":true,"hasBook":true,"tocCount":32,
+ "lastLoc":{"fraction":0.38582728803167227,
+            "cfi":"epubcfi(/6/34!/4/2[pgepubid00016],/2,/6/1:113)"}}
+```
+
+→ `fraction=0.3858` = **Chapter 10**，`tocCount=32`，CFI 指向第 34 个 spine 项。
+**真书在 WebView 91 上确实能打开、能翻页、能跳章。** 截图为证：
+
+- `18-realbook-webview91-chapter10-scrolled.png`（我补拍）：**Chapter 10 正文整段可见**，
+  原文 *"...the abrupt sides of vast mountains were before me; the icy wall of the glacier overhung me..."*，
+  像素统计 **7.88% 暗像素**（16 万+ 文字像素）。
+- lead 的 `15-realbook-webview91-chapter10.png`：工具栏 `Chapter 10 39%`。
+
+**那 CSS 问题还成不成立？成立，但要换个说法：功能可用，观感不可交付。**
 
 **证据链（三个独立实验，都指向 CSS）**
 
@@ -229,22 +267,78 @@ WebView 124: inLayer = rgb(4, 5, 6)     ← 正常
 这是最坏的失败形态：**静默无效**。所以 `eventCount=0`、没有任何 exception —— **不是没报错，是根本没抛**。
 `@container` 是 **Chrome 105+**。
 
-**实验 3：把真书重打包成 100% STORE，仍然失败 → 排除 deflate**
+**实验 3：把真书重打包成 100% STORE，用来区分 deflate vs 其他病因**
 
 `frankenstein.epub` 原本有 36 个 deflate 条目。我把它重打包成 38 个条目**全部方法 0（STORE）**
 （`frankenstein-store-only.epub`，576,727 B，sha256 `DA07474AB531CB43BE8F3E12433944A6CD263A09684C9C68C342724AA37FA128`），
-装到同一台 WebView 91：
+装到同一台 WebView 91。这个实验的**有效结论只有一个**：
+
+> 在**完全不触发任何解压**的情况下，EPUB 照样解析出全部 31 章目录。
+> → **deflate 不是这批问题的病因**（证据文件 `deflate-vs-css-discriminator.txt`）。
+
+（我当初把这个实验解读成「仍然渲染不出正文」，但那个判断建立在同一个 `iframes=0` 假象上，已作废。
+实验本身仍然有效——它干净地排除了 deflate。）
+
+**结论（修正后）**：问题 B 是 **CSS 能力**问题，**JS polyfill 救不了**（CSS 没有运行时 polyfill 这一说）。
+但它造成的是 **观感/布局不可交付**，**不是功能不可用**：
+
+| | WebView 91（task-17 **修复前**） | WebView 91（task-17 **修复后**） | WebView 124 |
+|---|---|---|---|
+| 打开真书、翻页、跳章、读正文 | ✅ 可用 | ✅ 可用 | ✅ 可用 |
+| UI 样式（主题色/字体/圆角/间距） | ❌ 整份失效 | ✅ **已恢复** | ✅ 正常 |
+| 阅读器容器高度 | ❌ 1482px（视口 843px） | ✅ **795px**（比例 0.943） | ✅ 867px |
+| 可交付性 | ❌ 观感不可交付 | ✅ **可交付** | ✅ 可交付 |
+
+> task-17（`@csstools/postcss-cascade-layers` 扁平化）已于 2026-11-03 01:50 落地并复验通过，详见 §3.3。
+
+### 3.3 ★ task-17 修复后的复验（2026-11-03 01:50，WebView 91）
+
+**结论：CSS 问题已修复。** WebView 91 上样式完全恢复，真书可读且排版正常。
+
+**新产物**：`index-CWBMA-wk.css` = **43,941 B**，`@layer` 计数 **0**（原 26,123 B / 5 个 `@layer`）。
+**APK**：`apps/client/bin/hpfreader-android-debug.apk` = 22,170,673 B，sha256 `2A956406E1EA3C3D783EE91A268482B8BACADE2B7235EB7E024D7FE015EB0100`，`native-code: 'arm64-v8a' 'x86_64'`。
+
+**四项关键指标前后对比（同一台 WebView 91，同一份代码）**：
+
+| 指标 | 修复前 | **修复后** | 判定 |
+|---|---|---|---|
+| `tailwindClassPos`（`.absolute`） | `static` | **`absolute`** | ✅ 恢复 |
+| `bodyBg` | `rgba(0, 0, 0, 0)`（透明） | **`rgb(250, 248, 245)`**（纸白） | ✅ 恢复 |
+| `bodyFont` | `sans-serif` | **`Inter, system-ui, ...`** | ✅ 恢复 |
+| `buttonBorderRadius` | `0px` | **`8px`** | ✅ 恢复 |
+| **`fvHeight` vs `innerH`** | **1482px** vs 843px（比例 1.758） | **795px** vs 843px（**比例 0.943**） | ✅ **关键修复** |
+
+原始输出：`task17-verify-webview91.txt`。
+
+**真书三本全部通过（WebView 91，用 bin/ 里那个 APK）**：
+
+> 方法：`adb root`（模拟器是 userdebug，`uid=0`）→ 把真书放进应用私有目录 `files/HPFReader/books/<id>.epub` + 写 `library.json`
+> → 重启应用 → 书库显示 → 打开阅读。**APK 本体未做任何修改**，只是给它喂了真书数据。
+
+| 书 | `hasBook` | TOC 条目 | 首标签 | 末标签 |
+|---|---|---|---|---|
+| alice-in-wonderland | ✅ | **16** | `Alice's Adventures in Wonderland` | `THE FULL PROJECT GUTENBERG™ LICENSE` |
+| frankenstein | ✅ | **32** | `Frankenstein;` | `Chapter 24` |
+| pride-and-prejudice | ✅ | **63** | `PRIDE. and PREJUDICE` | `CHAPTER LXI.` |
+
+全部 `fvH=795`、`innerH=843` → **布局正确**。截图 `24-alice-webview91.png`、`25-frankenstein-webview91.png`、`26-pride-webview91.png`。
+
+**真书阅读实测（frankenstein，Chapter 10）**：
 
 ```json
-{"text":"←☰阅读0% ◐‹›","iframes":0,"fv":{"w":412,"h":1482}}   // 失败现象一模一样
+{"jumpedTo":"Chapter 10","fraction":0.3841,
+ "cfi":"epubcfi(/6/34!/4/2[pgepubid00016],/2,/4/1:733)",
+ "innerH":843,"fvH":795,
+ "text":"← | ☰ | Chapter 10 | 38% | ◐ | ‹ | ›"}
 ```
 
-但目录照样解析出全部 31 章 → **EPUB 解析成功、完全不需要解压、仍然渲染不出正文**。
-→ **deflate 不是病因**（证据文件 `deflate-vs-css-discriminator.txt`）。
+- 竖屏 `22-realbook-webview91-chapter-styled.png`：**Chapter 10 标题 + 正文完整可见**，工具栏完整（返回箭头/目录/标题/38%/纸白主题/翻页）。
+- 横屏 `23-realbook-webview91-styled-landscape.png`：867×388，`fvH=340`，工具栏展开为「←返回书库 / ☰目录 / Chapter 10 / 38% / ◐纸白 / ‹上一页 / ›下一页」。
+- `25-frankenstein-webview91.png` 底部还有「**已从上次位置继续（约 38%）**」→ **进度续读在真书上同样生效**。
 
-**结论**：问题 B 是 **CSS 能力**问题，**JS polyfill 救不了**（CSS 没有运行时 polyfill 这一说）。
-
-### 3.3 支持基线建议（一手数据支撑）
+**`@container` 判断复核（client-dev 说不需要处理）**：我实测竖屏下 `paginator` 的 spread 行为正常（正文单栏、无 2 栏异常），
+与 client-dev 的判断一致 —— **他没有判断错**。
+### 3.4 支持基线建议（一手数据支撑）
 
 | 特性 | 最低 Chrome | WebView 91 | WebView 124 |
 |---|---|---|---|
@@ -254,9 +348,10 @@ WebView 124: inLayer = rgb(4, 5, 6)     ← 正常
 | `Object.groupBy` / `Map.groupBy` | 117 | ❌（已 polyfill） | ✅ |
 | `deflate-raw` | 103 | ❌（已 polyfill） | ✅ |
 
-→ **建议基线：WebView ≥ 120**（同时满足上面全部）。
-→ WebView 124 实测全绿（§4）；WebView 91 不可用（§3.2）。
-→ e-ink 阅读器（文石/Kindle 类）大量跑 Android 8~11 + WebView 80~100，**正好落在不可用区间**，这是产品级风险，不是模拟器特例。
+→ **task-17 修复后基线可以下探到 WebView 91（Android 12 级别）**：实测真书可读、样式正常、横竖屏正确。
+→ 仍存在的下限：`@container`（105+，但 client-dev 已验证其缺失不影响本项目的单栏排版）与 CSS 嵌套 `&`（120+，只影响垂直排版细节间距）。
+→ WebView 124 全绿（§4）；WebView 91 修复后**同样可交付**（§3.4）。
+→ e-ink 阅读器（文石/Kindle 类）大量跑 Android 8~11 + WebView 80~100，仍低于本次实测下限（91），**这部分仍未验证**。
 
 ## 4. 真实书验收：WebView 91 vs 124 行为对比表
 
@@ -285,17 +380,24 @@ WebView 124: inLayer = rgb(4, 5, 6)     ← 正常
 |---|---|---|
 | APK 安装 | ✅ `Success` | ✅ `Success` |
 | 应用启动 | ✅ | ✅ |
-| **书库 UI** | ⚠️ 渲染但**无样式**（裸 HTML，见 `13-*`） | ✅ 完整 Tailwind 样式（`14-*`） |
 | 白屏 | ❌ 未复现 | ❌ 未复现 |
+| **UI 样式** | ❌ **整份失效**（裸 HTML，见 `13-*`） | ✅ 完整 Tailwind 样式（`14-*`） |
 | **示例书** | ✅ **可读**（`第一章…36%` → 翻页 → `第二章…69%`） | ✅ 可读 |
-| **真书 frankenstein** | ❌ **读不了**：`iframes=0`、正文空、`0%` | ✅ **完全正常** |
-| **目录 TOC** | ✅ **31 章全部解析出**（解析层 OK） | ✅ 31 章（`10-*`） |
-| **跳章** | ❌ 目录能开但**跳不过去**（正文不渲染） | ✅ `Chapter 5` → `21%`，正文可见（`11-*`） |
-| **翻页** | ✅ 示例书可翻；❌ 真书不行 | ✅ |
-| **竖屏** | ✅ 412×843（示例书） | ✅ 412×915（真书，`09-*`） |
+| **真书 frankenstein** | ✅ **可读**（`hasBook=true`、`fraction=0.3858`、CFI 指向 Chapter 10，见 `18-*`） | ✅ **可读** |
+| **目录 TOC** | ✅ `tocCount=32`（解析正常） | ✅ 31 章（`10-*`） |
+| **跳章** | ✅ 跳到 **Chapter 10**（`39%`，正文可见） | ✅ `Chapter 5` → `21%`，正文可见（`11-*`） |
+| **翻页** | ✅ 示例书 + 真书均可（`fraction` 0.0009→0.0035→0.0061） | ✅ |
+| **竖屏** | ✅ 412×843（可读，但容器 1482px 需滚动） | ✅ 412×915（`09-*`） |
 | **横屏** | ⚠️ 布局塌陷（`fv` 高 1482 > 视口，`16-*`） | ✅ 867×388 正常（`17-*`） |
 | 进度保存 / 续读 | ✅ 已验（§5） | ✅ |
-| JS exception | 无（CSS 静默失效，不抛） | 无 |
+| JS exception | 无 | 无 |
+| **可交付性** | ❌ **观感不可交付**（功能可用） | ✅ |
+
+> **修正说明**：本表「真书」行原写作 ❌，依据是 `iframes=0`。该依据已证伪——
+> `foliate-view` 用 `attachShadow({mode:'closed'})`，closed shadow root 外部不可访问，
+> `querySelectorAll('iframe')` 恒为 0，与渲染成败无关。改用组件自身公开状态
+> （`f.book` / `f.lastLocation`）后，WebView 91 上真书 `fraction=0.3858`、`tocCount=32`，**读得通**。
+> 详见 `spikes/android/LEAD-VERDICT.md` 与 §3.2 的修正说明。
 
 ### 4.3 WebView 124 真书验收明细（原始输出 `real-book-webview124.txt`）
 
@@ -328,10 +430,27 @@ fv: {w:412, h:1482}    ← 高度错误（视口 843）
 Letter 1..4 | Chapter 1..24 | THE FULL PROJECT GUTENBERG™ LICENSE
 ```
 
-**关键**：解析成功（31 章目录）但渲染失败（无 iframe）。`logcat` 全文 627 行搜 `deflate` 只命中 1 行（polyfill 成功日志），
-搜 `Unsupported compression` / `open failed` / `engine`：**0 命中**。
+**⚠️ 本节结论已作废（保留原始输出作为「错误测量的样本」）**
 
-→ 再次确认：**不是 deflate、不是 builtin，是 CSS**。
+上面这段原始输出本身是真的，但**我对它的解读是错的**。`iframes:0` 和「正文空」都不是失败信号：
+
+- `iframes:0` —— closed shadow root 使 `querySelectorAll('iframe')` 恒为 0（`view.js:214`）。
+- 「正文空 / 0%」—— 打开时停在封面页（`fraction=0.0009`），叠加容器塌陷到 1482px，可视区只见封面一角。
+
+**用组件公开状态重测（同一台 WebView 91，同一本 frankenstein）**：
+
+```json
+{"hasView":true,"hasBook":true,"tocCount":32,
+ "lastLoc":{"fraction":0.38582728803167227,
+            "cfi":"epubcfi(/6/34!/4/2[pgepubid00016],/2,/6/1:113)"}}
+```
+
+→ `fraction=0.3858` = **Chapter 10**，正文整段可见（`18-realbook-webview91-chapter10-scrolled.png`，
+像素统计 7.88% 暗像素）。**真书在 WebView 91 上读得通。**
+
+**仍然成立的结论**：`logcat` 全文 627 行搜 `deflate` 只命中 1 行（polyfill 成功日志），
+搜 `Unsupported compression` / `open failed` / `engine`：**0 命中** → **deflate 与 builtin 都不是病因**。
+CSS 的问题是**观感/布局**，不是**功能**。
 
 ## 5. Go 侧修复：`dataDir()` 在 Android 上拿不到目录（**已修 + 已实测**）
 
@@ -402,25 +521,77 @@ func androidPrivateDir() (string, bool) {
 
 ## 6. 已知问题（诚实清单）
 
+### 6.1 🔴 P0（发布硬阻塞）
+
+| # | 问题 | 证据 | 状态 |
+|---|---|---|---|
+| **A1** | **APK 只含 `x86_64` JNI 库，arm64 真机装不上** | Gradle 警告原文：`There are no .so files available to package in the APK for arm64-v8a`；`unzip -l` 确认只有 `lib/x86_64/libwails.so` | ✅ **已修（task-18）**：现含 `arm64-v8a` + `x86_64`，`aapt` 输出 `native-code: 'arm64-v8a' 'x86_64'`；**arm64 未在真机验证**（见 §6.2） |
+| **A2** | **WebView < 99 时整份样式表失效**（CSS `@layer`） | §3.2 实验 1/2；`layerBlockRules=0`、`.absolute`→`static`、`body` 透明无字体 | ✅ **已修（task-17）并复验**：`@layer` 5→0，`fvHeight` 1482→795px，样式全恢复（§3.4） |
+
+> **A1 为什么是 P0**：Android 手机/平板/e-ink 真机**绝大多数是 arm64-v8a**。
+> 缺 arm64 时真机会直接 `INSTALL_FAILED_NO_MATCHING_ABIS`，**连装都装不上**——
+> 这比样式问题严重得多，因为样式问题至少还能跑。模拟器（x86_64）跑通 ≠ 真机可用。
+
+### 6.2 arm64-v8a 补充说明（task-18）
+
+
+**做法**：多 ABI 通用包（**不做 split**）。理由：本项目目前只有 debug 内部分发，单包最省事、
+模拟器与真机用同一个 APK，验收可复现；`abiFilters` 本来就已经声明了 `'arm64-v8a', 'x86_64'`，缺的只是 arm64 的 `.so` 产物。
+
+**构建**（NDK r29，两套 toolchain 都在）：
+
+```powershell
+$env:GOOS='android'; $env:CGO_ENABLED='1'
+# arm64
+$env:CC="$ndk\toolchains\llvm\prebuilt\windows-x86_64\bin\aarch64-linux-android21-clang.cmd"
+$env:GOARCH='arm64'
+go build -buildmode=c-shared -overlay build/android/overlay.json -tags 'android,debug' \
+  -buildvcs=false -gcflags=all='-l' -o build/android/app/src/main/jniLibs/arm64-v8a/libwails.so
+# x86_64（同理，CC=x86_64-linux-android21-clang.cmd，GOARCH=amd64）
+```
+
+**产物与验证**：
+
+| ABI | `.so` 大小 | ELF `e_machine` | 说明 |
+|---|---|---|---|
+| `arm64-v8a` | 15,396,896 B | **183 (EM_AARCH64)** | ✅ 合法 ELF aarch64 |
+| `x86_64` | 16,399,280 B | 62 (EM_X86_64) | ✅ 模拟器可复现 |
+
+APK 内实测（`Expand-Archive` 解出 `lib/`）：
+
+```
+lib/arm64-v8a/libwails.so   15,396,896 B
+lib/x86_64/libwails.so      16,399,280 B
+aapt dump badging -> native-code: 'arm64-v8a' 'x86_64'
+```
+
+ELF 头解析（不依赖 `file` 命令）：`magic=ELF`、`ei_class=2 (ELFCLASS64)`、`ei_data=1 (little-endian)`、
+`e_type=3 (ET_DYN, shared lib)`、`e_machine=183 (EM_AARCH64)`。
+
+**模拟器回归**：x86_64 上安装并启动正常，`dumpsys package` → `primaryCpuAbi=x86_64`，
+CDP 拿到 `{"title":"HPF Reader","href":"https://wails.localhost/#/"}`，未崩溃。
+
+> ⚠️ **arm64 未在真机验证。** 本机没有 arm64 真机/设备，我做到的替代验证是：
+> APK 结构正确（两个 ABI 都在）+ arm64 `.so` 是合法 ELF aarch64（e_machine=183）。
+> **这不等于「arm64 真机可用」**，只证明「装得进去的前提条件成立」。
+
+### 🟡 P1 / 其它
+
 | # | 问题 | 严重度 | 状态 |
 |---|---|---|---|
-| 1 | **WebView < 120 真书读不了**（CSS `@layer`/`@container`） | 🔴 阻塞 | 未解决，等前端定基线/方案 |
-| 2 | WebView < 120 书库 UI 无样式（裸 HTML） | 🔴 阻塞 | 同上（同一个 `@layer` 根因） |
-| 3 | e-ink 真机大概率落在 WebView 80~100 | 🔴 产品风险 | **未在真机验证**（本机无 e-ink 设备） |
-| 4 | `importBookFromDialog()` 在移动端返回 `null` | 🟡 功能缺失 | 已知设计（M1 不接 SAF）；Android 上**无法导入本地书**，只能读内置示例书 |
-| 5 | APK 只含 `x86_64` JNI 库 | 🟡 发布限制 | Gradle 明确警告 `There are no .so files available to package in the APK for arm64-v8a`；**真机（arm64）装不上**，必须补 arm64 构建 |
-| 6 | 模拟器里「打开本地文件」点了没反应 | 🟡 预期 | 走 `app.Dialog.OpenFile()`，Android 上未接 SAF |
-| 7 | Windows 上没有 `task`，android Taskfile 是 Unix-only | 🟢 工程债 | 构建靠手动串（§2.1）；`build/android/Taskfile.yml` 用 `sh:`/`uname`/`case`，无 Windows 分支 |
-| 8 | `wails3` v3.1.0 移动端官方 experimental | 🟡 上游风险 | 不在稳定保证范围内 |
-| 9 | 模拟器横屏需要手动 `settings put system user_rotation 1` | 🟢 环境 | 不影响真机 |
+| 1 | e-ink 真机大概率落在 WebView 80~100（低于实测下限 91） | 🟡 产品风险 | **未在真机验证**（本机无 e-ink 设备） |
+| 5 | Windows 上没有 `task`，android Taskfile 是 Unix-only | 🟢 工程债 | 构建靠手动串（§2.1）；`build/android/Taskfile.yml` 用 `sh:`/`uname`/`case`，无 Windows 分支 |
+| 6 | `wails3` v3.1.0 移动端官方 experimental | 🟡 上游风险 | 不在稳定保证范围内 |
+| 7 | 模拟器横屏需要手动 `settings put system user_rotation 1` | 🟢 环境 | 不影响真机 |
 
-### 6.1 关于「低版本系统镜像」这条验收要求
+### 6.3 关于「低版本系统镜像」这条验收要求
 
 task-11 要求测 `android-29`（低 WebView / e-ink 风险）。**实际做法与结果**：
 - 本机已装 `android-29`、`android-31` 两个镜像，**WebView 都是 ≈91**（`91.0.4472.114` 实测）。
 - 我选了 **android-31（WebView 91）** 作为「低版本 WebView」代表来跑全部验收，因为 29 和 31 的 WebView 版本在本机是同一代，测 31 的结论对 29 同样成立，且 31 更接近 e-ink 常见区间上沿。
-- 结论：**低 WebView（91）已实测且失败**（§3.2 / §4.4），风险**已复现**，不需要再用 29 重复验证同一件事。
-- **未验**：真实 e-ink 设备（无设备）、arm64 真机（无设备/无 arm64 构建）。
+- 结论：**低 WebView（91）已实测**——**功能可用**（真书可读、可翻页、可跳章），但**样式整份失效**（§3.2 / §4.4）。
+  风险**已复现**，只是性质是「观感不可交付」而非「功能不可用」；不需要再用 29 重复验证同一件事。
+- **未验**：真实 e-ink 设备（无设备）、**arm64 真机（无设备，且当前 APK 根本没有 arm64 库 → 归 task-18）**。
 
 ## 7. 证据文件索引
 
@@ -461,8 +632,19 @@ task-11 要求测 `android-29`（低 WebView / e-ink 风险）。**实际做法�
 **诊断用书**：`frankenstein-store-only.epub`（100% STORE 版，用于排除 deflate）
 
 **辅助脚本**（在 `spikes/android/`）：
-- `cdp.mjs` —— 极简 CDP 驱动（`list/eval/text/probe/rect/click/findtext/tap/hash/shot/watch/preloadrun`），用 Node 24 内置 `fetch`+`WebSocket`，无第三方依赖。
-- `polyfill-es2024.js` / `errorhook.js` / `flatten-layers.js` / `css-nesting-probe.js` / `probe.js` —— 诊断注入脚本（**不落盘到产品代码**）。
+
+- `cdp.mjs` —— 极简 CDP 驱动（`list/eval/text/probe/rect/click/findtext/tap/hash/shot/watch/preloadrun`），用 Node 24 内置 `fetch`+`WebSocket`，无第三方依赖。**这是唯一的正式工具。**
+- `polyfill-es2024.js` / `errorhook.js` —— 早期诊断注入（仅存证；正式 polyfill 已由前端 `src/compat/polyfills.ts` 取代）。
+
+**一次性诊断脚本 → `spikes/android/scratch/`**（**不属于交付物，不是证据**，只用于复核结论怎么得出的）：
+
+| 目录 | 内容 | 说明 |
+|---|---|---|
+| `scratch/go-probes/` | 10 个 `.go.txt` | APK ZIP 结构/大小核算探针。**`lfhcount.go.txt` 是发现「1002 个 LFH vs 882 个 CD 条目」的那个** |
+| `scratch/cdp-oneoffs/` | 16 个 `cdp-*.mjs` | `cdp.mjs` 收敛前的一次性版本，功能已被其子命令覆盖 |
+| `scratch/js-probes/` | 9 个 `.js` | 注入 WebView 的一次性探针（含诊断 `@layer` 用的 `flatten-layers.js`） |
+
+详见 `scratch/README.md`。
 
 ## 8. 我改了什么（写域内）
 
@@ -477,10 +659,21 @@ task-11 要求测 `android-29`（低 WebView / e-ink 风险）。**实际做法�
 
 ## 9. 结论
 
-1. **Android 能构建、能装、能启动、能读书** —— 在 WebView ≥ 120 上**完全成立**（真书封面/31 章目录/跳章/正文/横竖屏/进度续读全部实测通过）。
+1. **Android 能构建、能装、能启动、能读书 —— 且已在 WebView 91 与 WebView 124 上双双验证通过。**
+   三本真书（alice 16 章 / frankenstein 32 章 / pride 63 章）在 WebView 91 上用**交付 APK** 打开，
+   `hasBook=true`、目录完整、跳章到 Chapter 10（`fraction=0.3841`）、正文整段可见、横竖屏正确、进度续读正常。
 2. **WebView 白屏风险：未复现。**
-3. **两个阻塞问题分开记**：
-   - A：ES2024 builtin 缺失 → **已修复**（前端 polyfill，实测生效）。
-   - B：CSS 现代特性（`@layer`/`@container`）→ **未解决**，WebView < 120 上真书读不了、UI 无样式。
-4. **`dataDir()` 已修**：进度能存、重开能续读（真实 APK 实测）。
-5. **最重要的教训**：内置示例书是 100% STORE，**用它验收会得到假绿**。阅读链路验收必须用 `testdata/books/` 的真书。
+3. **四个问题分开记，不要混成一条**（前两个是我发现的，后两个是我踩的坑）：
+   - **A：ES2024 builtin 缺失 → 已修复**（前端 polyfill；修复前 `Object.groupBy is not a function` 导致任何书都打不开）。
+   - **B：CSS `@layer` 缺失 → 已修复并复验**（task-17，`@layer` 5→0；`fvHeight` 1482→795px，样式全恢复）。
+   - **C：APK 只有 x86_64、无 arm64 → 已修（task-18）**：现含 `arm64-v8a` + `x86_64`，arm64 `.so` 为合法 ELF aarch64。
+     **但 arm64 未在真机验证**——只证明「装得进去的前提成立」，不等于「arm64 真机可用」。
+   - **D：我自己的测量错误**：`iframes=0` 是 closed shadow root 假象，据此错判「真书读不了」，被 lead 复核推翻。
+4. **`dataDir()` 已修**：进度能存、重开能续读（真实 APK + 真书实测，`progress.json` 落盘 + `已从上次位置继续（约 38%）`）。
+5. **三条最重要的教训**（都是我踩过的坑，写给后来人）：
+   - **内置示例书是 100% STORE，用它验收阅读链路会得到假绿。** 必须用 `testdata/books/` 的真书。
+   - **不要用外层 DOM 探针判断 foliate 的渲染结果。** `foliate-view` 是 `attachShadow({mode:'closed'})`，
+     `querySelectorAll('iframe')` 恒为 0。必须用组件自身公开状态（`f.book` / `f.lastLocation.fraction` / `f.book.toc.length`）。
+   - **「功能可用」与「观感可交付」要分开下结论。** 我最初把 CSS 失效说成「读不了」，其实书一直读得通，只是难看。
+     两者对产品的含义完全不同，混淆会导致误判优先级。
+6. **可交付性**：WebView 91 与 124 均可交付；**arm64 真机仍属未验证**（结构已就绪，无设备实测）。
