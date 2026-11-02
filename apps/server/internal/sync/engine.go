@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/hpf-reader/hpf-reader/apps/server/internal/idgen"
 )
 
 // 实体类型（与 api/openapi.yaml 的 SyncOp.entity 枚举一致）。
@@ -196,27 +198,59 @@ func (e *Engine) ServerHLC() string {
 // ClockDevice 暴露设备前缀（写入审计用）。
 func (e *Engine) ClockDevice() string { return e.clock.Device() }
 
+// InvalidOpError 是字段级的 op 校验错误。
+//
+// 带 Field 是为了让 HTTP 层能明确告诉客户端「是哪一列错了、错在哪」——
+// 只回一句 "sync push failed" 会让客户端无从修复。
+type InvalidOpError struct {
+	Field string
+	Msg   string
+}
+
+func (e *InvalidOpError) Error() string { return e.Field + " " + e.Msg }
+
+func invalidOp(field, msg string) error { return &InvalidOpError{Field: field, Msg: msg} }
+
 // ValidateOp 校验单条 op 的字段合法性。
+//
+// 必须在**进入数据库之前**挡住所有会让 SQL 类型转换失败的输入：
+// 把非 UUID 字符串绑进 uuid 列会得到 SQLSTATE 22P02，之前它会冒成 500，
+// 而客户端把 5xx 当可重试错误 —— 一条永远不可能成功的 op 会被无限重试。
+//
+// 注意 entityId 的形态随实体而定：book_config 只写 change_log（不进 uuid 列，
+// 键名可以是任意配置键），其余实体的 entityId 都是 uuid 主键。
 func ValidateOp(op Op) error {
 	if op.OpID == "" {
-		return errors.New("opId is required")
+		return invalidOp("opId", "is required")
+	}
+	if !idgen.IsUUID(op.OpID) {
+		return invalidOp("opId", "must be a UUID")
 	}
 	switch op.Entity {
 	case EntityProgress, EntityAnnotation, EntityBook, EntityBookConfig:
 	default:
-		return fmt.Errorf("unknown entity %q", op.Entity)
+		return invalidOp("entity", fmt.Sprintf("unknown entity %q", op.Entity))
 	}
 	if op.EntityID == "" {
-		return errors.New("entityId is required")
+		return invalidOp("entityId", "is required")
+	}
+	if op.Entity != EntityBookConfig && !idgen.IsUUID(op.EntityID) {
+		return invalidOp("entityId", "must be a UUID")
+	}
+	if op.BookID != nil && *op.BookID != "" && !idgen.IsUUID(*op.BookID) {
+		return invalidOp("bookId", "must be a UUID")
 	}
 	switch op.Kind {
 	case KindUpsert, KindDelete:
 	default:
-		return fmt.Errorf("unknown kind %q", op.Kind)
+		return invalidOp("kind", fmt.Sprintf("unknown kind %q", op.Kind))
 	}
 	if !IsValidHLC(op.HLC) {
-		return fmt.Errorf("malformed hlc %q", op.HLC)
+		return invalidOp("hlc", fmt.Sprintf("malformed hlc %q", op.HLC))
 	}
+	// 注意：这里不校验 op.DeviceID 的形态。引擎从不把它直接绑进 uuid 列
+	// （实体的 device_id 一律取本批的 deviceID），设备 ID 的校验由 HTTP 入口负责。
+	// 这样既守住了「不产生 22P02」，也不会把客户端历史上用过的短设备前缀一刀切掉。
 	return nil
 }
 

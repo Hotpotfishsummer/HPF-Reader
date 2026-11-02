@@ -199,3 +199,228 @@ docker run --rm --network hpf-reader_edge -v "${PWD}/smoke-test.sh:/smoke.sh:ro"
 5. Windows 上删除「已被打开」的文件会失败：存储测试与实现都已先关闭句柄，生产路径（临时文件 + rename）不受影响。
 6. `go.mod` 声明 `go 1.26.0`：本机 Go 1.22.10 + `GOTOOLCHAIN=auto` 自动切换（已验证）；离线环境需预热工具链。
 7. 全程**未执行任何 git 命令**，提交由 lead 统一完成。
+
+---
+
+## 6. 缺陷修复（task-16）：同步联调暴露的 3 个服务端缺陷 + 契约缺口
+
+> 来源：`spikes/sync/RESULTS.md` 与 `spikes/sync/evidence/{http-trace.jsonl,db-evidence.txt}`（task-13 联调）。
+> 改动范围：只在 `apps/server/**` 与 `api/openapi.yaml`（契约补齐，明细见 §6.5）。
+
+### 6.1 F-01 · deviceId 被其它账号占用时：404 + 孤儿用户行
+
+**根因**：register 先 `CreateUser`（独立提交），再 `ensureDevice` 绑设备。第二步撞上
+`devices` 的「已属他人」分支时返回 0 行 → `pgx.ErrNoRows` → `wrap()` 翻成 `ErrNotFound`，
+于是 HTTP 层回 **404**，而用户行**已经提交**，留下 `devices=0` 的孤儿账号
+（`db-evidence.txt` §5：`spike-f1b-…@example.com | 0`）。
+
+**修复**：
+- `store.RegisterAccount(ctx, email, passwordHash, displayName, dev)`：Begin → 插用户 → 绑设备 → Commit，任一步失败整体回滚（`defer tx.Rollback`）。
+- `upsertDevice` 抽成吃 `rowQuerier`（`*pgxpool.Pool` / `pgx.Tx` 都满足），冲突时显式返回 `ErrDeviceTaken`，不再靠 `ErrNoRows` 猜。
+- HTTP：`ErrDeviceTaken` → **409** `code=conflict`；与「邮箱已注册」同为 409，但 message 可区分（客户端能判断该换设备 ID 还是换账号）。
+
+**实测（真实 PostgreSQL 16 + pgvector；API 用 `go run ./cmd/api` 起在 127.0.0.1:18081）**
+
+```
+--- F-01 步骤1：A 正常注册（占用 deviceId）
+POST /v1/auth/register
+request : {"email":"f01-a-010637-3035@example.com","platform":"windows","deviceId":"6f889003-…-823856a0d472","password":"…","deviceName":"spike-device-A"}
+status  : 201
+response: {"accessToken":"…","refreshToken":"…","expiresIn":900,"user":{"id":"a236a340-…","email":"f01-a-010637-3035@example.com",…}}
+
+--- F-01 步骤2：B 用同一个 deviceId 注册
+POST /v1/auth/register
+request : {"password":"…","deviceId":"6f889003-…-823856a0d472","deviceName":"spike-device-B","platform":"android","email":"f01-b-010637-3035@example.com"}
+status  : 409                              ← 修复前是 404
+response: {"code":"conflict","message":"deviceId is already registered to another account"}
+
+--- F-01 断言：B 的孤儿用户行数（expect 0；修复前为 1）
+0
+--- F-01 断言：A 的设备绑定仍然完好（expect 1）
+1
+```
+
+### 6.2 F-02 · 非法 opId（非 UUID）→ 500，客户端无限重试
+
+**根因**：`POST /v1/sync/push` 不校验 op 字段，`opId` 原样绑进 `uuid` 列，PostgreSQL 抛
+SQLSTATE 22P02 → `handleSyncPush` 无条件回 **500**。客户端把 5xx 当可重试，于是
+「一条永远不可能成功的 op」被永久重试（`http-trace.jsonl` line 22）。
+
+**修复（策略：整批 400 + 逐条指明，不跳过坏 op）**：
+- `sync.ValidateOp` 增加字段级校验：`opId` / `entityId` / `bookId` 必须 UUID、`entity` / `kind` 必须在枚举内、HLC 必须合法，返回结构化 `*InvalidOpError{Field}`。（`entity=book_config` 的 `entityId` 是配置键，**故意豁免** UUID 校验。）
+- `handleSyncPush` 在**任何触库动作之前**逐条校验；有任一不合法 → **400** + `details.ops[]`（`index` / `opId` / `field` / `message`），整批不写入。
+- 兜底：`store.wrap()` 把 22P02 与 23503 映射为 `ErrInvalidInput`，HTTP 层 → **400**，保证任何入口漏校验也不会变成 500。
+
+**为什么整批拒绝，而不是跳过坏 op 继续**：
+1. HTTP 200 的语义必须是「本批每条 op 都拿到了服务端裁决」。若有 op 根本没被处理仍回 200，客户端会把它当已出队 → **静默丢数据**；
+2. 非法 opId/entityId 是客户端 bug，重放一百次也不会成功，一次列全比让它盲目重试高效；
+3. 400 时没有任何半成品状态（校验先于所有写操作），客户端修好该条后可安全重放整批。
+
+**实测**：
+
+```
+--- F-02：非法 UUID 的 opId
+POST /v1/sync/push
+request : {"deviceId":"6f889003-…","ops":[{"opId":"01a19d1b-66b3-000-7b27-85780e478194",
+           "entity":"progress","entityId":"a4eb913c-…","kind":"upsert",
+           "hlc":"001a19d234913-00000000-a1a1a1a1","payload":{"totalProgression":0.01}}]}
+status  : 400                              ← 修复前是 500
+response: {"code":"invalid_request","message":"1 of 1 ops are invalid; the batch was not applied",
+           "details":{"ops":[{"index":0,"opId":"01a19d1b-66b3-000-7b27-85780e478194",
+           "field":"opId","message":"opId must be a UUID"}]}}
+
+--- F-02 对照：合法 op 仍然正常（证明修复没有误伤正常链路）
+status  : 200
+response: {"results":[{"opId":"22222222-…","status":"applied"}],"cursor":1}
+```
+
+**顺带修掉的第二条 5xx（同类缺陷）**：push 的 progress 引用了不存在的书时，PostgreSQL 抛
+23503（外键违例），旧代码同样冒成 500。现在 `wrap()` 把它归为 `ErrInvalidInput`，且
+`handleSyncPush` 不再无条件 500，而是走 `writeStoreError`：
+
+```
+--- 引用不存在的书（修复前=500 FK 23503，修复后=400）
+POST /v1/sync/push
+request : {"deviceId":"6f889003-…","ops":[{"opId":"44444444-…",
+           "entity":"progress","entityId":"99999999-9999-4999-8999-999999999999",…}]}
+status  : 400                              ← 修复前是 500
+response: {"code":"invalid_request","message":"request contains a value the server cannot interpret"}
+```
+
+### 6.3 F-03 · GET /v1/devices 的 name 恒为空字符串
+
+**根因**：`ensureDevice` 调用 `UpsertDevice(ctx, id, userID, "", platform, appVersion)` —— 设备名
+位置写死空串，注册/登录里的 `deviceName` 从未落库；`ListDevices` 又用 `COALESCE(name,'')`，
+把 NULL 也压成空串，于是「没有名字」和「名字是空字符串」无法区分。
+
+**修复**：`Device.Name` 改 `*string`；register/login 把 `deviceName` 原样传入；
+`ListDevices` 不再 `COALESCE`；DTO 的 `name` 也是 `*string`，未提供时 JSON 输出 **null**。
+
+**实测**：
+
+```
+--- F-03：GET /v1/devices（修复前 name 恒为空字符串）
+GET /v1/devices
+status  : 200
+response: [{"id":"6f889003-…","name":"spike-device-A","platform":"windows",
+            "lastSeenAt":"2026-11-02T17:06:38Z"}]
+
+--- 数据库侧 device name（expect spike-device-A）
+spike-device-A
+
+--- 第二例：登录时未提供 deviceName 的设备应回显 null 而不是空串
+POST /v1/auth/login   request: {"email":"f01-a-…","deviceId":"7f198979-…","platform":"linux","password":"…"}
+status  : 200
+GET /v1/devices
+status  : 200
+response: [{"id":"7f198979-…","name":null,"platform":"linux","lastSeenAt":"2026-11-02T17:06:39Z"},
+           {"id":"6f889003-…","name":"spike-device-A","platform":"windows",…}]
+```
+### 6.4 回归测试（防止缺陷复活）
+
+| 测试 | 位置 | 断言 | 需要数据库 |
+| --- | --- | --- | --- |
+| `TestRegisterAccountDeviceConflictLeavesNoOrphanUser` | `internal/store/register_account_test.go` | deviceId 冲突 → `ErrDeviceTaken`；**users 表无该邮箱行**（事务回滚）；原账号绑定未破坏 | 是 |
+| `TestUpsertDeviceRejectsForeignDevice` | 同上 | 直接抢占他人 deviceId → `ErrDeviceTaken` | 是 |
+| `TestDeviceNameIsPersistedAndEchoed` | 同上 | 注册传的 `deviceName` 落库且 `ListDevices` 读回 | 是 |
+| `TestDeviceNameNullWhenNotProvided` | 同上 | 未提供名字 → `Name == nil`（不是空串） | 是 |
+| `TestPushForeignKeyViolationIsClientError` | 同上 | 引用不存在的书 → `ErrInvalidInput`（不是未知错误） | 是 |
+| `TestSyncPushInvalidOpIDReturns400Not500` | `internal/httpapi/sync_validate_test.go` | 非法 opId → **400**（若校验晚于触库，此测试会因 nil pool panic 变 500 而失败） | 否 |
+| `TestSyncPushBatchReportsEveryInvalidOp` | 同上 | 坏 op 与好 op 混批 → 400 且 `details.ops[]` 逐条列出 index/field | 否 |
+
+**关键设计**：F-02 的两个 httpapi 测试**刻意不接数据库**（`newTestServer` 不建 pool）。
+如果哪天有人把校验挪到触库之后，测试服务器会直接 panic → recover 中间件 → 500 → 测试失败。
+也就是说，这两个用例同时守住了「返回 400」和「校验先于一切写操作」两条性质。
+
+F-01 的用例必须连真实库才有意义（mock 断言不出「没有孤儿行」），因此通过环境变量开启：
+
+```powershell
+$env:HPF_TEST_DATABASE_URL = "postgres://hpf:<password>@127.0.0.1:5432/hpf_reader?sslmode=disable"
+go test ./internal/store/ -count=1 -run TestRegisterAccount -v
+```
+
+未设置该变量时这些用例 `t.Skip`，CI 默认路径（无 DB）依旧全绿。
+**注意**：这些用例会 `TRUNCATE users CASCADE`，只能指向空的专用测试库。
+
+本机实测结果（真实库）：
+
+```
+--- PASS: TestRegisterAccountDeviceConflictLeavesNoOrphanUser (0.15s)
+--- PASS: TestUpsertDeviceRejectsForeignDevice (0.13s)
+--- PASS: TestDeviceNameIsPersistedAndEchoed (0.14s)
+--- PASS: TestDeviceNameNullWhenNotProvided (0.15s)
+--- PASS: TestPushForeignKeyViolationIsClientError (0.15s)
+PASS
+```
+
+### 6.5 契约缺口（`api/openapi.yaml`，本次唯一改动的非服务端文件）
+
+改动文件：**`api/openapi.yaml`**（611 → 约 730 行）。逐处如下：
+
+**① `PUT /v1/books/{bookId}/file` 的 200/201 没有 schema**
+- 原：`200: {description: 已存在（去重命中）}` / `201: {description: 已上传}`，无 `content`。
+- 现：两者都指向新增的 `components.schemas.BookFileUploadResult`，
+  字段为 `contentHash` / `sizeBytes` / `deduplicated`；并补 `400` / `409` 响应引用。
+- 该结构与真实实现逐字一致（曾写成含 `bookId`/`storageKey` 的版本，实测后按实际响应纠正）。
+- **语义澄清**：200 与 201 返回**同一结构**，只能靠 `deduplicated` 区分（200⟺`true`，201⟺`false`）。
+  实测：
+  ```
+  PUT …?contentHash=sha256:20a7ec…  → 201 {"contentHash":"sha256:20a7ec…","deduplicated":false,"sizeBytes":64}
+  再传同一 hash（已有字节）        → 200 {"contentHash":"sha256:20a7ec…","deduplicated":true,"sizeBytes":64}
+  ```
+
+**② push 响应的 `reason` 是可选还是必填**
+- 结论：**可选（optional）**。原 schema 已是 `nullable: true` 但没写何时出现，客户端无从判断。
+- 现：在 schema 与 `SyncPushResponse.results[]` 上写明——普通 `applied` **不带** `reason`；
+  只在裁决非平凡时出现：`newer_hlc` / `explicit_rewind` / `monotonic_forward` / `new_entity` /
+  `duplicate` / `older_hlc` / `stale_no_rewind` / `tombstone_wins`（拒绝原因另带 `rejected:` 前缀）。
+- 因此 `required` 列表里**不含** `reason`，客户端不要依赖它存在。
+
+**③ push 响应 `cursor` 的语义**
+- 结论：是「**推送提交后**的服务端游标」，**不是**下一次 pull 的起点。
+- 现已在 schema 里写明：本批提交成功后 `change_log` 的最大 `seq`；整批没有写入时等于该用户当前的 `MAX(seq)`。
+- 客户端应保存**最近一次 pull 响应**里的 `cursor` 用于续拉；直接拿 push 的 `cursor` 去 pull 会跳过尚未拉取的变更。
+- 同时把 `GET /v1/sync/pull` 的 `cursor` 参数写成半开区间 `(cursor, +∞)`，并说明 `nextCursor` 直接回传、**不要自行 +1**。
+
+**④ 其它因本次修复而必须同步的契约点**
+- `GET /v1/sync/push` 新增 `400` 响应：说明「整批不写入 + `details.ops[]` 逐条指明」，标明这是不可重试的客户端错误。
+- `POST /v1/auth/register`：补 `deviceName` / `platform` / `deviceId`（`format: uuid`）三个请求字段（原来只有 email/password/displayName，联调方只能靠猜）；补 `400`；`409` 写明两种冲突及「事务回滚、不留孤儿用户」。
+- `GET /v1/devices` 的 `Device.name` 改 `nullable: true`，并说明「没有设备名时为 null，不是空串」。
+- 新增 `components.responses.BadRequest`（原来只有 Unauthorized/NotFound/Conflict），供上面各处复用。
+
+校验：用 PyYAML 解析通过，26 个 `$ref` 全部可解析、无悬空引用。
+
+### 6.6 本轮验证汇总
+
+```
+gofmt -l .                 → 空（无未格式化文件）
+go build ./...             → exit=0
+go vet ./...               → exit=0
+go test ./... -count=1     → 7 个包全 ok（无 DB 路径）
+go test ./internal/store -run "TestRegisterAccount|TestUpsertDevice|TestDeviceName|TestPushForeignKey"
+                           → 5 个集成用例全 PASS（接真实 PostgreSQL）
+```
+
+**全栈实测**（`docker compose`：postgres:16 + redis:7 + api + caddy + web，镜像 `hpf-reader-api:verify`）：
+
+```
+docker compose up -d postgres redis && docker compose run --rm migrate
+  → migrations up to date
+docker compose up -d --no-deps api caddy web
+  → api healthy / caddy healthy / web running
+deploy/smoke-test.sh（69 项断言，在 compose 网络内真实调用 HTTP）
+  → ==== 冒烟结果: PASS=69 FAIL=0 ====
+```
+
+三个缺陷在**部署栈**上的复现验证（§6.1–§6.3 的 curl 即来自该栈；
+其中 F-01 的数据库侧断言直接查容器内 postgres）：
+
+```
+SELECT count(*) FROM users WHERE email LIKE 'f01-b-%'   → 0    ← 无孤儿用户行
+SELECT email,(SELECT count(*) FROM devices d WHERE d.user_id=u.id) devices
+  FROM users u WHERE email LIKE 'f01-b-%'                 → (0 rows)
+```
+
+**部署环境说明**：`deploy/.env` 为本轮验证临时生成（未被提交，含验证用随机密钥），
+`HPF_API_IMAGE=hpf-reader-api:verify`；验证结束后容器与镜像保留在本地，
+「已知问题」§5 第 1 条所述 minio 限制仍适用（本轮走 `HPF_STORAGE_DRIVER=local`）。

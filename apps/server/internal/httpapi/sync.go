@@ -2,9 +2,12 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/hpf-reader/hpf-reader/apps/server/internal/idgen"
+	"github.com/hpf-reader/hpf-reader/apps/server/internal/store"
 	syncengine "github.com/hpf-reader/hpf-reader/apps/server/internal/sync"
 )
 
@@ -24,6 +27,21 @@ type syncOpDTO struct {
 type syncPushRequest struct {
 	DeviceID string      `json:"deviceId"`
 	Ops      []syncOpDTO `json:"ops"`
+}
+
+// isClientInputError 判断引擎返回的错误是否属于「客户端数据本身有问题」。
+//
+// 这类错误重试永远不会成功，必须回 4xx；其余（连接断开、磁盘故障……）才是 5xx。
+func isClientInputError(err error) bool {
+	return errors.Is(err, store.ErrInvalidInput) || errors.Is(err, store.ErrConflict)
+}
+
+// invalidOpDetail 逐条说明哪一条 op 的哪个字段不合法（HTTP 400 的 details.ops[]）。
+type invalidOpDetail struct {
+	Index   int    `json:"index"`
+	OpID    string `json:"opId,omitempty"`
+	Field   string `json:"field,omitempty"`
+	Message string `json:"message"`
 }
 
 type syncPushResultDTO struct {
@@ -85,15 +103,20 @@ func (s *Server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, codeInvalidRequest, "deviceId must be a UUID", nil)
 		return
 	}
-	if deviceID != "" {
-		// 记录设备活跃时间；设备不存在不算致命错误（客户端可能刚重装）。
-		if err := s.store.TouchDevice(r.Context(), claims.UserID, deviceID); err != nil {
-			s.log.Debug("touch device", "error", err, "device_id", deviceID)
-		}
-	}
-
+	// 入参校验必须全部发生在触库之前。
+	//
+	// 之前的缺陷：opId 不是合法 UUID 时会一路走到 `WHERE op_id = $1`（uuid 列），
+	// PostgreSQL 抛 SQLSTATE 22P02 → 500；而客户端把 5xx 当可重试错误，
+	// 于是「一条永远不可能成功的 op」被无限重试。现在：先校验，任何一条不合法
+	// 就整批 400 并逐条指明 index/opId/field，数据库一行都不碰。
+	//
+	// 为什么选「整批 400」而不是「跳过坏 op 继续」：
+	// HTTP 200 表示本批每条 op 都拿到了服务端裁决；若有 op 根本没被处理却回 200，
+	// 客户端会误以为它已出队而丢数据。返回 400 则保证「200 == 全部有裁决」，
+	// 且 400 时没有任何半成品状态，客户端修好该条后可安全重放整批。
+	invalid := make([]invalidOpDetail, 0)
 	ops := make([]syncengine.Op, 0, len(req.Ops))
-	for _, o := range req.Ops {
+	for i, o := range req.Ops {
 		op := syncengine.Op{
 			OpID:     o.OpID,
 			Entity:   o.Entity,
@@ -104,11 +127,47 @@ func (s *Server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 			DeviceID: firstNonEmptyStr(o.DeviceID, deviceID),
 			Payload:  o.Payload,
 		}
+		if err := syncengine.ValidateOp(op); err != nil {
+			item := invalidOpDetail{Index: i, OpID: o.OpID, Message: err.Error()}
+			var fieldErr *syncengine.InvalidOpError
+			if errors.As(err, &fieldErr) {
+				item.Field = fieldErr.Field
+			}
+			invalid = append(invalid, item)
+			continue
+		}
+		if op.DeviceID == "" {
+			// 批量级与单条 op 都没有 deviceId：写入 uuid 列必然失败，提前拦下。
+			invalid = append(invalid, invalidOpDetail{Index: i, OpID: o.OpID, Field: "deviceId",
+				Message: "deviceId is required (batch-level or per-op)"})
+			continue
+		}
 		ops = append(ops, op)
+	}
+	if len(invalid) > 0 {
+		writeError(w, http.StatusBadRequest, codeInvalidRequest,
+			fmt.Sprintf("%d of %d ops are invalid; the batch was not applied", len(invalid), len(req.Ops)),
+			map[string]any{"ops": invalid})
+		return
+	}
+
+	if deviceID != "" {
+		// 记录设备活跃时间；设备不存在不算致命错误（客户端可能刚重装）。
+		// 放在校验之后：任何触库动作都不能早于入参校验。
+		if err := s.store.TouchDevice(r.Context(), claims.UserID, deviceID); err != nil {
+			s.log.Debug("touch device", "error", err, "device_id", deviceID)
+		}
 	}
 
 	res, err := s.syncEngine.Push(r.Context(), claims.UserID, deviceID, ops)
 	if err != nil {
+		// 这里不能无条件回 500：引擎/存储层的入参类错误（22P02、23503 等）必须
+		// 翻译成 400。客户端把 5xx 当可重试错误，一条永远不可能成功的请求
+		// 会被无限重试，而 400 能让它停下来并修正数据。
+		if isClientInputError(err) {
+			writeStoreError(w, err)
+			return
+		}
 		s.log.Error("sync push failed", "error", err, "user_id", claims.UserID)
 		writeError(w, http.StatusInternalServerError, codeInternal, "sync push failed", nil)
 		return

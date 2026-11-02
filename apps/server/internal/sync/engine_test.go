@@ -72,7 +72,7 @@ func TestIgnoredOpRecordedAsIdempotent(t *testing.T) {
 	if res.Outcomes[0].Reason != ReasonOlderHLC {
 		t.Fatalf("reason = %q, want %q", res.Outcomes[0].Reason, ReasonOlderHLC)
 	}
-	if _, ok, _ := st.LookupOp(context.Background(), "user-1", "op-old"); !ok {
+	if _, ok, _ := st.LookupOp(context.Background(), "user-1", opUUID("op-old")); !ok {
 		t.Fatal("ignored op must be recorded for idempotency")
 	}
 }
@@ -397,9 +397,9 @@ func TestPushRejectsInvalidOps(t *testing.T) {
 	st := newMemStore()
 	e := testEngine(t, st, "devA", 1_700_000_000_000)
 	res := seq(t, e,
-		Op{OpID: "op-1", Entity: "bogus", EntityID: bookA, Kind: KindUpsert, HLC: makeHLC(1, 1, "devA0001")},
-		Op{OpID: "op-2", Entity: EntityProgress, EntityID: bookA, Kind: "nope", HLC: makeHLC(1, 1, "devA0001")},
-		Op{OpID: "op-3", Entity: EntityProgress, EntityID: bookA, Kind: KindUpsert, HLC: "not-an-hlc"},
+		Op{OpID: opUUID("op-1"), Entity: "bogus", EntityID: bookA, Kind: KindUpsert, HLC: makeHLC(1, 1, "devA0001")},
+		Op{OpID: opUUID("op-2"), Entity: EntityProgress, EntityID: bookA, Kind: "nope", HLC: makeHLC(1, 1, "devA0001")},
+		Op{OpID: opUUID("op-3"), Entity: EntityProgress, EntityID: bookA, Kind: KindUpsert, HLC: "not-an-hlc"},
 	)
 	for i, o := range res.Outcomes {
 		if o.Status == StatusApplied {

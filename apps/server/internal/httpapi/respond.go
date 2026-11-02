@@ -58,8 +58,19 @@ func writeStoreError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		writeError(w, http.StatusNotFound, codeNotFound, "resource not found", nil)
+	case errors.Is(err, store.ErrDeviceTaken):
+		// 409：deviceId 属于别的账号。与「邮箱已注册」区分开，
+		// 客户端才能给出「该设备已绑定其它账号」这种可操作的提示。
+		writeError(w, http.StatusConflict, codeConflict,
+			"deviceId is already registered to another account", nil)
 	case errors.Is(err, store.ErrConflict):
 		writeError(w, http.StatusConflict, codeConflict, "resource already exists", nil)
+	case errors.Is(err, store.ErrInvalidInput):
+		// 数据库层面的入参问题（典型 SQLSTATE 22P02）：这是客户端错误，
+		// 必须 400 而不是 500 —— 5xx 会被客户端当作可重试错误无限重试。
+		slog.Default().Warn("invalid input rejected", "error", err)
+		writeError(w, http.StatusBadRequest, codeInvalidRequest,
+			"request contains a value the server cannot interpret", nil)
 	default:
 		slog.Default().Error("store error", "error", err)
 		writeError(w, http.StatusInternalServerError, codeInternal, "internal error", nil)

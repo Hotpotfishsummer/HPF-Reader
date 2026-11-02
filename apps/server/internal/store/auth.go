@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -86,19 +88,49 @@ func (s *Store) ResetLoginFailures(ctx context.Context, userID string) error {
 }
 
 // Device 是 devices 表映射。
+//
+// Name 是 *string：devices.name 可空，空值必须以 null 回给客户端，
+// 不能用一个空字符串冒充「有名字」。
 type Device struct {
 	ID         string
 	UserID     string
-	Name       string
+	Name       *string
 	Platform   string
 	AppVersion string
 	LastSeenAt *time.Time
 	CreatedAt  time.Time
 }
 
-// UpsertDevice 注册设备或刷新 last_seen_at。clientID 由客户端提供（稳定标识）。
+// DeviceRegistration 是绑定设备时要写入的字段。
+type DeviceRegistration struct {
+	ID         string
+	Name       string
+	Platform   string
+	AppVersion string
+}
+
+// rowQuerier 同时被 *pgxpool.Pool 与 pgx.Tx 满足，便于让同一段 SQL 既能独立执行也能进事务。
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// UpsertDevice 注册设备或刷新 last_seen_at。id 由客户端提供（稳定标识）。
+//
+// deviceId 已属于另一个账号时返回 ErrDeviceTaken（而不是让 UPDATE 静默影响 0 行后
+// 冒出一个语义错误的 ErrNotFound）。
 func (s *Store) UpsertDevice(ctx context.Context, id, userID, name, platform, appVersion string) (Device, error) {
-	row := s.pool.QueryRow(ctx, `
+	return upsertDevice(ctx, s.pool, userID, DeviceRegistration{
+		ID: id, Name: name, Platform: platform, AppVersion: appVersion,
+	})
+}
+
+// upsertDevice 是 UpsertDevice 的事务内版本：q 可以是连接池，也可以是 pgx.Tx。
+//
+// 关键在 ON CONFLICT ... WHERE devices.user_id = EXCLUDED.user_id：
+// 冲突且属于同一用户时更新，属于别的用户时**不更新且不返回行**——
+// 这里把「没有返回行」明确翻译成 ErrDeviceTaken，供上层返回 409。
+func upsertDevice(ctx context.Context, q rowQuerier, userID string, dev DeviceRegistration) (Device, error) {
+	row := q.QueryRow(ctx, `
 		INSERT INTO devices (id, user_id, name, platform, app_version, last_seen_at)
 		VALUES ($1, $2, $3, $4, $5, now())
 		ON CONFLICT (id) DO UPDATE SET
@@ -107,17 +139,62 @@ func (s *Store) UpsertDevice(ctx context.Context, id, userID, name, platform, ap
 		    app_version = COALESCE(EXCLUDED.app_version, devices.app_version),
 		    last_seen_at = now()
 		WHERE devices.user_id = EXCLUDED.user_id
-		RETURNING id, user_id, COALESCE(name, ''), COALESCE(platform, ''), COALESCE(app_version, ''), last_seen_at, created_at`,
-		id, userID, nullStr(name), nullStr(platform), nullStr(appVersion))
+		RETURNING id, user_id, name, COALESCE(platform, ''), COALESCE(app_version, ''), last_seen_at, created_at`,
+		dev.ID, userID, nullStr(dev.Name), nullStr(dev.Platform), nullStr(dev.AppVersion))
 	var d Device
 	err := row.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.AppVersion, &d.LastSeenAt, &d.CreatedAt)
-	return d, wrap(err)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Device{}, ErrDeviceTaken
+	}
+	if err != nil {
+		return Device{}, wrap(err)
+	}
+	return d, nil
+}
+
+// RegisterAccount 在**单个事务**里创建用户并绑定设备。
+//
+// 为什么必须是一个事务：注册要同时写 users 和 devices 两张表。
+// 之前分两步执行时，deviceId 冲突会让第二步失败、第一步已经提交，
+// 于是库里留下一个没有任何设备的「孤儿用户」——邮箱被占用且无法重新注册。
+//
+// 失败语义：
+//   - 邮箱已存在      → ErrConflict
+//   - deviceId 归他人 → ErrDeviceTaken（事务回滚，不留用户行）
+func (s *Store) RegisterAccount(ctx context.Context, email, passwordHash, displayName string, dev DeviceRegistration) (User, Device, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return User{}, Device{}, wrap(err)
+	}
+	// Commit 之后再 Rollback 会返回 ErrTxClosed，忽略即可。
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	row := tx.QueryRow(ctx, `
+		INSERT INTO users (id, email, password_hash, display_name)
+		VALUES (gen_random_uuid(), $1, $2, $3)
+		RETURNING `+userColumns, email, passwordHash, nullStr(displayName))
+	user, err := scanUser(row)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return User{}, Device{}, fmt.Errorf("%w: %v", ErrConflict, err)
+		}
+		return User{}, Device{}, wrap(err)
+	}
+	device, err := upsertDevice(ctx, tx, user.ID, dev)
+	if err != nil {
+		// ErrDeviceTaken 也会走到这里：直接返回，事务由 defer 回滚。
+		return User{}, Device{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return User{}, Device{}, wrap(err)
+	}
+	return user, device, nil
 }
 
 // ListDevices 返回用户的设备（最近活跃优先）。
 func (s *Store) ListDevices(ctx context.Context, userID string) ([]Device, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, user_id, COALESCE(name, ''), COALESCE(platform, ''), COALESCE(app_version, ''), last_seen_at, created_at
+		SELECT id, user_id, name, COALESCE(platform, ''), COALESCE(app_version, ''), last_seen_at, created_at
 		FROM devices WHERE user_id = $1
 		ORDER BY COALESCE(last_seen_at, created_at) DESC, id`, userID)
 	if err != nil {

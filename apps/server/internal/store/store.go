@@ -25,6 +25,18 @@ var ErrNotFound = errors.New("store: not found")
 // ErrConflict 表示唯一约束冲突（例如邮箱已注册、同 hash 文件已存在）。
 var ErrConflict = errors.New("store: conflict")
 
+// ErrDeviceTaken 表示该 deviceId 已经绑定在另一个账号下。
+//
+// 与 ErrConflict 区分开：同样是 409，但客户端能据此判断「换个设备 ID 或换账号」，
+// 而不是以为邮箱重复。
+var ErrDeviceTaken = errors.New("store: device already registered to another account")
+
+// ErrInvalidInput 表示入参在数据库层面无法解释（例如把 "abc" 当 UUID 传进来，SQLSTATE 22P02）。
+//
+// 这是**客户端**问题，必须映射成 400，绝不能变成 500：
+// 客户端会把 5xx 当可重试错误，于是一条永远不可能成功的请求会被无限重试。
+var ErrInvalidInput = errors.New("store: invalid input")
+
 // Store 暴露全部数据访问方法。
 type Store struct {
 	pool *pgxpool.Pool
@@ -44,6 +56,20 @@ func isUniqueViolation(err error) bool {
 	return false
 }
 
+// isInvalidTextRepresentation 判断是不是 PostgreSQL 的 22P02
+// （invalid input syntax for type ...，典型场景：非 UUID 字符串塞进 uuid 列）。
+func isInvalidTextRepresentation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "22P02"
+	}
+	return false
+}
+
+// isForeignKeyViolation 判断是不是 PostgreSQL 的 23503（引用了不存在的父行）。
+//
+// 在同步链路上，这通常意味着客户端推送的 progress/annotation 引用了一本
+// 还没上传的书——这是客户端可以先修复的前置条件问题，不是服务端故障。
 func isForeignKeyViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
@@ -61,6 +87,13 @@ func wrap(err error) error {
 		return ErrNotFound
 	case isUniqueViolation(err):
 		return fmt.Errorf("%w: %v", ErrConflict, err)
+	case isInvalidTextRepresentation(err):
+		// 兜底：即便某个入口漏了 UUID 校验，也只暴露成 400，而不是 500。
+		return fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	case isForeignKeyViolation(err):
+		// 引用了不存在的父行（典型：push 的 progress 指向一本还没上传的书）。
+		// 同样不能是 500：客户端 5xx 会无限重试，而这里重试永远不会成功。
+		return fmt.Errorf("%w: %v", ErrInvalidInput, err)
 	default:
 		return err
 	}

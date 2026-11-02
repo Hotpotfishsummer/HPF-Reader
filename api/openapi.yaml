@@ -52,13 +52,28 @@ paths:
                 email: { type: string, format: email }
                 password: { type: string, minLength: 8, maxLength: 200 }
                 displayName: { type: string, maxLength: 64 }
+                deviceName: { type: string, maxLength: 64, description: 会原样回显在 GET /v1/devices 的 name }
+                platform: { type: string, enum: [web, windows, macos, linux, android, ios] }
+                deviceId:
+                  type: string
+                  format: uuid
+                  description: |
+                    客户端生成的设备 ID。省略则服务端生成一个；
+                    若已被其它账号占用返回 409（code=conflict），此时**不会**创建用户。
       responses:
         '201':
-          description: 已创建
+          description: 已创建（用户与设备在同一事务内写入）
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuthTokens' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409':
+          description: |
+            两种冲突，用 message 区分：邮箱已注册 / deviceId 已绑定其它账号。
+            deviceId 冲突时整个注册事务回滚，不会留下没有设备的用户。
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /v1/auth/login:
     post:
@@ -207,8 +222,18 @@ paths:
           application/octet-stream:
             schema: { type: string, format: binary }
       responses:
-        '200': { description: 已存在（去重命中） }
-        '201': { description: 已上传 }
+        '200':
+          description: 已存在（去重命中）：该 contentHash 对应的文件已在此账号下，未重复写入
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookFileUploadResult' }
+        '201':
+          description: 已上传：文件已落盘，书籍记录已绑定 storageKey
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookFileUploadResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
     get:
       tags: [books]
       summary: 下载书籍文件（支持 Range）
@@ -231,10 +256,20 @@ paths:
             schema: { $ref: '#/components/schemas/SyncPushRequest' }
       responses:
         '200':
-          description: OK
+          description: |
+            整批全部拿到服务端裁决。每个 op 一定有一条 result，status 只会是 applied / duplicate / rejected。
+            reason 只在裁决非平凡时出现（duplicate / older_hlc / stale_no_rewind 等），普通 applied 不带 reason。
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SyncPushResponse' }
+        '400':
+          description: |
+            整批被拒绝：至少一条 op 自身不合法（opId/entityId 非 UUID、entity/kind 未知、HLC 格式错误等）。
+            该批**没有任何一条被写入**（无半成品状态），details.ops[] 逐条指出 index/opId/field/message。
+            这是客户端数据问题，重试不会成功——必须先修正再重放整批。
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /v1/sync/pull:
@@ -242,11 +277,18 @@ paths:
       tags: [sync]
       summary: 拉取自 cursor 之后的变更（服务端权威结果）
       parameters:
-        - { name: cursor, in: query, required: true, schema: { type: integer, format: int64, minimum: 0 } }
+        - name: cursor
+          in: query
+          required: true
+          schema: { type: integer, format: int64, minimum: 0 }
+          description: |
+            严格大于该 seq 的变更才会返回（半开区间 cursor, +∞）。
+            首次拉取传 0；之后每次都用上一次响应里的 cursor（不是 push 响应里的那个）。
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 500 } }
       responses:
         '200':
-          description: OK
+          description: |
+            服务端权威变更页。cursor 是**本页最后一条变更的 seq**；hasMore=true 时立即用该 cursor 续拉。
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SyncPullResponse' }
@@ -359,8 +401,13 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+    BadRequest:
+      description: 请求内容不合法（客户端数据问题，重试不会成功）
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Conflict:
-      description: 冲突
+      description: 冲突（邮箱已注册 / deviceId 已绑定其它账号）
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -392,12 +439,29 @@ components:
         displayName: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
 
+    BookFileUploadResult:
+      type: object
+      description: |
+        上传接口的响应体：200（去重命中 / 秒传）与 201（新写入）返回**同一结构**，
+        只能用 deduplicated 区分，不要依赖状态码以外的差异。
+        书籍与文件的绑定关系体现在该 bookId 资源上，不在响应里重复。
+      required: [contentHash, sizeBytes, deduplicated]
+      properties:
+        contentHash: { type: string, description: 归一化后的 sha256:<64 hex> }
+        sizeBytes: { type: integer, format: int64, description: 实际落盘字节数（与声明 hash 一致） }
+        deduplicated:
+          type: boolean
+          description: 200 时为 true（服务端已有该 hash 的字节，秒传），201 时为 false（首次写入）
+
     Device:
       type: object
       required: [id, name, platform]
+      description: |
+        name 可为 null：设备名是可选信息，注册/登录时没提供就是 null。
+        客户端应把 null 显示为「未命名设备」，不要与空字符串混淆。
       properties:
         id: { type: string, description: 设备 ID（HLC 前缀来源） }
-        name: { type: string }
+        name: { type: string, nullable: true, description: 未提供设备名时为 null }
         platform: { type: string, enum: [web, windows, macos, linux, android, ios] }
         lastSeenAt: { type: string, format: date-time }
 
@@ -517,10 +581,24 @@ components:
             type: object
             required: [opId, status]
             properties:
-              opId: { type: string }
+              opId: { type: string, format: uuid }
               status: { type: string, enum: [applied, duplicate, rejected] }
-              reason: { type: string, nullable: true }
-        cursor: { type: integer, format: int64, description: 服务端已分配到的最新游标 }
+              reason:
+                type: string
+                nullable: true
+                description: |
+                  可选字段，只在裁决非平凡时出现，普通 applied 不带它（不是必填，客户端不要依赖它存在）：
+                    - applied + newer_hlc / explicit_rewind / monotonic_forward / new_entity
+                    - duplicate（幂等命中，重复的 opId）
+                    - rejected + older_hlc / stale_no_rewind / tombstone_wins（以及 rejected:&lt;原因&gt; 形式）
+        cursor:
+          type: integer
+          format: int64
+          description: |
+            **推送提交后的服务端游标**，不是下一次 pull 的起始游标。
+            语义：本批提交成功后 change_log 的最大 seq；整批没有任何写入时等于该用户当前的 MAX(seq)。
+            客户端应保存「最近一次 pull 响应里的 cursor」用于续拉；
+            push 返回的 cursor 只用于观察进度，直接拿它去 pull 会跳过尚未拉取的变更。
 
     SyncChange:
       type: object
@@ -542,8 +620,13 @@ components:
         changes:
           type: array
           items: { $ref: '#/components/schemas/SyncChange' }
-        nextCursor: { type: integer, format: int64 }
-        hasMore: { type: boolean }
+        nextCursor:
+          type: integer
+          format: int64
+          description: |
+            下一页起点 = 本页最后一条变更的 seq（无变更时等于请求里的 cursor）。
+            直接作为下一次请求的 cursor 传入，不要自行 +1。
+        hasMore: { type: boolean, description: true 表示还有更多变更，应立即用 nextCursor 续拉 }
 
     AnnotationCreate:
       type: object

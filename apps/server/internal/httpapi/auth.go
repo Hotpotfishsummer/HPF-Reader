@@ -32,9 +32,10 @@ type authTokensResponse struct {
 }
 
 type deviceResponse struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Platform   string `json:"platform"`
+	ID       string  `json:"id"`
+	Name     *string `json:"name"`
+	Platform string  `json:"platform"`
+	// 设备名没有记录时返回 null，而不是空字符串（空字符串会假装「有名字，只是空的」）。
 	LastSeenAt string `json:"lastSeenAt,omitempty"`
 }
 
@@ -97,17 +98,28 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, codeInternal, "could not create user", nil)
 		return
 	}
-	user, err := s.store.CreateUser(r.Context(), email, hash, req.DisplayName)
+	dev, err := deviceFrom(req.DeviceID, req.DeviceName, req.Platform, req.AppVersion)
+	if err != nil {
+		writeDeviceError(w, err)
+		return
+	}
+	if dev.ID == "" {
+		// 注册必须落一条设备：客户端没给 deviceId 时服务端生成一个。
+		dev.ID = idgen.NewUUID()
+	}
+	// 用户与设备在**同一事务**里创建：deviceId 冲突时整体回滚，
+	// 不会像以前那样留下一个没有任何设备的孤儿用户行。
+	user, device, err := s.store.RegisterAccount(r.Context(), email, hash, req.DisplayName, dev)
 	if err != nil {
 		if errors.Is(err, store.ErrConflict) {
 			writeError(w, http.StatusConflict, codeConflict, "email already registered", nil)
 			return
 		}
-		writeStoreError(w, err)
+		writeDeviceError(w, err)
 		return
 	}
 	s.audit(r, &user.ID, "auth.register", user.ID, nil)
-	s.issueTokens(w, r, http.StatusCreated, user.ID, user.Email, req.DisplayName, user.Role, req.DeviceID, req.Platform, req.AppVersion)
+	s.issueTokens(w, r, http.StatusCreated, user, device)
 }
 
 // handleLogin 校验口令；含失败计数与账号锁定。
@@ -159,7 +171,18 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.log.Warn("reset login failures", "error", err)
 	}
 	s.audit(r, &user.ID, "auth.login", user.ID, nil)
-	s.issueTokens(w, r, http.StatusOK, user.ID, user.Email, derefStr(user.DisplayName), user.Role, req.DeviceID, req.Platform, req.AppVersion)
+	binding := deviceBinding{
+		ID:         strings.TrimSpace(req.DeviceID),
+		Name:       strings.TrimSpace(req.DeviceName),
+		Platform:   strings.TrimSpace(req.Platform),
+		AppVersion: strings.TrimSpace(req.AppVersion),
+	}
+	device, err := s.bindDevice(r.Context(), user.ID, binding)
+	if err != nil {
+		writeDeviceError(w, err)
+		return
+	}
+	s.issueTokens(w, r, http.StatusOK, user, device)
 }
 
 // handleRefresh 轮换 refresh token；检测到重用时吊销整个家族。
@@ -310,6 +333,38 @@ func (s *Server) audit(r *http.Request, userID *string, action, target string, d
 	if err := s.store.WriteAudit(r.Context(), userID, action, target,
 		ClientIP(r, s.cfg.TrustedProxies), r.UserAgent(), raw); err != nil {
 		s.log.Warn("write audit log", "error", err, "action", action)
+	}
+}
+
+// deviceFrom 校验并组装注册用的设备信息。
+//
+// deviceId 是 uuid 列：这里拦住非法形态，避免它一路走到 SQL 变成 22P02（500）。
+func deviceFrom(id, name, platform, appVersion string) (store.DeviceRegistration, error) {
+	dev := store.DeviceRegistration{
+		ID:         strings.TrimSpace(id),
+		Name:       strings.TrimSpace(name),
+		Platform:   strings.TrimSpace(platform),
+		AppVersion: strings.TrimSpace(appVersion),
+	}
+	if dev.ID != "" && !idgen.IsUUID(dev.ID) {
+		return store.DeviceRegistration{}, errDeviceIDNotUUID
+	}
+	return dev, nil
+}
+
+// writeDeviceError 把设备相关错误翻译成明确的状态码。
+//
+// deviceId 属于别的账号时必须 409（不是 404）：资源是「冲突」而不是「不存在」，
+// 客户端据此知道该换设备 ID / 换账号，而不是傻等重试。
+func writeDeviceError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, errDeviceIDNotUUID):
+		writeError(w, http.StatusBadRequest, codeInvalidRequest, err.Error(), nil)
+	case errors.Is(err, store.ErrDeviceTaken):
+		writeError(w, http.StatusConflict, codeConflict,
+			"deviceId is already registered to another account", nil)
+	default:
+		writeStoreError(w, err)
 	}
 }
 

@@ -2,7 +2,9 @@ package sync
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
@@ -255,6 +257,17 @@ func makeHLC(ms int64, seq uint32, dev string) string {
 	return h.String()
 }
 
+// opUUID 把测试里的可读名字（"op-1"）映射成合法 UUID。
+//
+// 引擎的 ValidateOp 要求 opId 是 UUID（否则会被 SQL 当成 uuid 列绑参而报 22P02），
+// 因此夹具也必须给合法值；用确定性映射保证「同名 == 同一 opId」，幂等测试依赖这一点。
+func opUUID(name string) string {
+	sum := sha256.Sum256([]byte(name))
+	sum[6] = (sum[6] & 0x0f) | 0x40 // version 4
+	sum[8] = (sum[8] & 0x3f) | 0x80 // variant RFC 4122
+	return fmt.Sprintf("%x-%x-%x-%x-%x", sum[0:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16])
+}
+
 func progressOp(opID, bookID, hlc, device string, total float64, hash string, rewind bool) Op {
 	payload, _ := json.Marshal(map[string]any{
 		"locator": map[string]any{
@@ -270,7 +283,7 @@ func progressOp(opID, bookID, hlc, device string, total float64, hash string, re
 		"explicitRewind":   rewind,
 		"contentHash":      hash,
 	})
-	return Op{OpID: opID, Entity: EntityProgress, EntityID: bookID, Kind: KindUpsert, HLC: hlc, DeviceID: device, Payload: payload}
+	return Op{OpID: opUUID(opID), Entity: EntityProgress, EntityID: bookID, Kind: KindUpsert, HLC: hlc, DeviceID: device, Payload: payload}
 }
 
 func annotationOp(opID, annID string, hlc, device, color string) Op {
@@ -279,11 +292,11 @@ func annotationOp(opID, annID string, hlc, device, color string) Op {
 		"color":   color,
 		"locator": map[string]any{"href": "chapter-1.xhtml", "type": "application/xhtml+xml"},
 	})
-	return Op{OpID: opID, Entity: EntityAnnotation, EntityID: annID, Kind: KindUpsert, HLC: hlc, DeviceID: device, Payload: payload}
+	return Op{OpID: opUUID(opID), Entity: EntityAnnotation, EntityID: annID, Kind: KindUpsert, HLC: hlc, DeviceID: device, Payload: payload}
 }
 
 func deleteOp(opID, entity, id, hlc, device string) Op {
-	return Op{OpID: opID, Entity: entity, EntityID: id, Kind: KindDelete, HLC: hlc, DeviceID: device}
+	return Op{OpID: opUUID(opID), Entity: entity, EntityID: id, Kind: KindDelete, HLC: hlc, DeviceID: device}
 }
 
 func mustPush(t *testing.T, e *Engine, user, device string, ops ...Op) PushResult {
