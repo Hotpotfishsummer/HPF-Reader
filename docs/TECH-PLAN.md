@@ -301,6 +301,8 @@ interface PlatformSecureStore { get(k): Promise<string|null>; set(k, v): Promise
 | 5 | 多列分页下 `Range.getClientRects()` 会返回**不可见列**的矩形，必须过滤 |
 | 6 | 主题必须**双写**：主文档 CSS 变量 + `renderer.setStyles()` 注入 iframe head；高亮用上游 `--overlayer-highlight-*` 变量 |
 | 7 | 同步引擎用**独立单例 + `shallowRef`**，不进 Pinia、不进 Query 缓存 |
+| 8 | **不要依赖 ES2024+ 内置对象，或必须在入口自带 polyfill**。foliate-js 的 `epub.js` 使用了 `Object.groupBy` / `Map.groupBy`（需 Chrome 117+），而 Android 系统 WebView 实测可为 **Chrome 91**（Android 12 模拟器镜像）→ 点开书直接抛 `Object.groupBy is not a function`。**运行时 builtin 缺失无法靠打包器降级修复**，必须 polyfill，并在 `vite.config.ts` 下调 `build.target` |
+| 9 | 兼容性下限按 **Chrome 91 / Android 12** 设计（见 [MOBILE-PLATFORM-NOTES](MOBILE-PLATFORM-NOTES.md) 第 7 节）；新增依赖前先查其 ES 版本要求，启动时若检测到 WebView 过旧应给出可读提示而非白屏 |
 
 ### 3.5.4 平台能力抽象（三实现，借鉴 Readest 的 AppService 模式）
 

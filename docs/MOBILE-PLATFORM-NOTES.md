@@ -72,3 +72,46 @@
 | xcodebuild 缺失 | 本机 `Get-Command xcodebuild` 实测 |
 | iOS 需 Xcode 与 macOS | Wails 官方文档与常识约束（构建链路需 Apple 工具链） |
 | Android 桥对所有 frame 暴露 | docs/research/40-wails-v3.md（v3.0.0 官方 Known limitations 原文） |
+---
+
+## 7. ⚠️ 实测发现的兼容性下限：WebView 91（2026-11-03，Android 模拟器真机复现）
+
+这是「移动端不在稳定性承诺内」之外、**我们自己代码层面**的真实缺陷，已在真实 APK 上复现并定位。
+
+### 7.1 现象与根因
+
+| 项 | 实测值 |
+|---|---|
+| 模拟器 WebView | **`Chrome/91.0.4472.114`**（Pixel_6 AVD，Android 12 / API 31 系统镜像） |
+| 触发点 | 点「打开示例书」后 `Object.groupBy is not a function` |
+| 源码位置 | vendored `foliate-js/epub.js` 第 178 / 200 / 204 / 206 / 258 行，使用 ES2024 `Object.groupBy` / `Map.groupBy`（需 Chrome 117+） |
+| logcat 原文 | `D/WailsActivity(4927): [WebView] ERROR: [engine] open failed TypeError: Object.groupBy is not a function (.../ReaderView-Bb7x_oFD.js:2)` |
+| 影响面 | **Android 上「打开书」必挂**；桌面 WebView2 版本新，所以**在 Windows 上完全没暴露** |
+
+### 7.2 为什么这不是「降级构建目标」能解决的
+
+`Object.groupBy` 是**运行时内置方法**，不是语法。esbuild / rolldown 之类的打包器只做语法降级，**不会** polyfill 内置对象。必须自己补 polyfill（或引入 core-js 这类运行时）。
+
+### 7.3 处置
+
+| # | 措施 |
+|---|---|
+| 1 | 在 `src/compat/polyfills.ts` 补齐缺失的 ES2024+ 内置对象，并在 `src/main.ts` **最顶部最先导入**（必须先于任何业务与 foliate-js 代码执行） |
+| 2 | 全量审计（不只是这两个）：`Object.groupBy`、`Map.groupBy`、`Promise.withResolvers`、`Array.prototype.with`、`Object.hasOwn`、`structuredClone`、`findLast`/`findLastIndex`、`String.prototype.replaceAll`、`Array.prototype.at` 等 |
+| 3 | `vite.config.ts` 下调 `build.target` 到保守基线，防止将来新语法再踩 |
+| 4 | **不改 vendored 的上游源码**——补丁记在 `VENDOR.md`；polyfill 属于我们自己的兼容层 |
+
+### 7.4 支持基线（连带结论）
+
+- 移动端**最低支持 WebView 91 / Android 12**（补 polyfill 后）；
+- 真机上 WebView 一般可由应用商店更新到很新，但**国产 ROM 与 e-ink 设备常年不更新**，所以不能假设；
+- 启动时若检测到 WebView 低于基线，应给出**可读提示**，而不是白屏或静默失败。
+
+### 7.5 其它已解决的环境坑（复现时照做）
+
+| 坑 | 现象 | 处置 |
+|---|---|---|
+| 模拟器带窗口启动 | `Failed to load opengl32sw` → QEMU 线程 hang → exit 1 | **必须 `-no-window`**（`sys.boot_completed=1` 可正常起） |
+| Gradle 官方源在本机被墙 | HTTP 307，12 秒内 0 字节 | 用镜像下载，**并用官方 `.sha256` 校验一致**后写入 wrapper 缓存；校验和记入 `gradle-wrapper.properties` |
+| gradle wrapper 读超时 | `networkTimeout=10000` 对 135MB 分发包必挂 | 调到 `120000` |
+| Android 绑定生成损坏前端 | `wails3 generate bindings -f '-tags android' -clean=true` 缺 `-ts` 且带 `-clean` → 清掉 `.ts` 绑定，前端报 TS7016；另外 `env: GOOS=android` 会让分析器解析不到 GOROOT stdlib，产出**空 bindings**（`1 Package, 0 Services, 0 Methods`） | 改为 `wails3 generate bindings -ts -i -f '-tags android' -clean=true`，并删除该 env（保留 `CGO_ENABLED=0`） |
