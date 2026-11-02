@@ -31,9 +31,9 @@ import (
 )
 
 var (
-	evMu          sync.Mutex
-	evDirOnce     string
-	spikeNonce    string
+	evMu           sync.Mutex
+	evDirOnce      string
+	spikeNonce     string
 	denyWindowName string
 	denyReason     = "nonce policy"
 )
@@ -128,7 +128,7 @@ func ipcMiddleware(next http.Handler) http.Handler {
 			denyReason = "window-name policy"
 		}
 		appendJSONL("requests.jsonl", map[string]any{
-			"ts": time.Now().Format(time.RFC3339Nano),
+			"ts":      time.Now().Format(time.RFC3339Nano),
 			"handler": "middleware", "kind": "request",
 			"method": r.Method, "path": r.URL.Path, "is_runtime_call": rt,
 			"decision": decision, "block_mode": spikeBlockMode(),
