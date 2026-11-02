@@ -1,8 +1,11 @@
-# HPF-Reader 自托管栈：api + postgres + redis + minio + caddy。
+# HPF-Reader 自托管栈：api + postgres + redis + caddy（+ 可选 minio）。
 #
-#   cd deploy && cp .env.example .env   # 改掉所有 change-me
+#   cd deploy && cp .env.example .env   # 改掉所有 CHANGE_ME_*
 #   docker compose up -d
 #   docker compose run --rm migrate     # 单独执行迁移（api 启动时也会自动跑）
+#
+# 对象存储是可选的：默认 HPF_STORAGE_DRIVER=local，书籍直接存在 bookfiles 卷里。
+# 需要 S3/MinIO 时加 profile：  docker compose --profile minio up -d
 #
 # 所有密码来自 .env，不在本文件里硬编码任何生产密钥。
 
@@ -41,7 +44,10 @@ services:
       retries: 5
     networks: [backend]
 
+  # MinIO 是**可选**组件（profile: minio）。HPF 默认用本地文件系统存书（HPF_STORAGE_DRIVER=local），
+  # 没有对象存储也能完整运行；仅在将来要接 S3 时用 `--profile minio` 启用。
   minio:
+    profiles: ["minio"]
     image: minio/minio:latest
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
@@ -64,6 +70,7 @@ services:
 
   # 创建书籍桶并设为私有；对象存储接入（S3 driver）是后续里程碑，这里先把桶与权限备好。
   minio-init:
+    profiles: ["minio"]
     image: minio/mc:latest
     depends_on:
       minio:
@@ -128,8 +135,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      # 注意：minio 是可选 profile，这里**故意不写 depends_on**，否则没有对象存储时整栈起不来。
     networks: [backend, edge]
     healthcheck:
       test: ["CMD", "/app/api", "healthcheck", "--url", "http://127.0.0.1:8080/healthz"]

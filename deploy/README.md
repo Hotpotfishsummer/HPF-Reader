@@ -1,6 +1,9 @@
 # HPF-Reader 部署（Docker Compose）
 
-一条命令起服务：**api + postgres16(+pgvector) + redis7 + minio + caddy**。
+一条命令起服务：**api + postgres16(+pgvector) + redis7 + caddy**（MinIO 为可选 profile，默认不启动）。
+
+> 存储默认是**本地文件系统**（`HPF_STORAGE_DRIVER=local`，书存在 `bookfiles` 卷），**没有对象存储也能完整运行**。
+> 需要 S3/MinIO 时：`docker compose --profile minio up -d`。
 
 ## 快速开始
 
@@ -8,7 +11,7 @@
 cd deploy
 cp .env.example .env
 
-# 必改：所有 change-me（尤其 HPF_JWT_SECRET / POSTGRES_PASSWORD / MINIO_ROOT_PASSWORD）
+# 必改：所有 CHANGE_ME_*（尤其 HPF_JWT_SECRET / POSTGRES_PASSWORD；MINIO_* 仅启用 minio profile 时需要）
 #   openssl rand -base64 32
 # 也把 HPF_DOMAIN 改成你的域名；本地调试可填 localhost
 ${EDITOR:-vi} .env
@@ -66,7 +69,7 @@ curl -sS "http://127.0.0.1/v1/sync/pull?cursor=0&limit=50" -H "Authorization: Be
 | api | 8080（仅内网） | 不发布到宿主机 |
 | postgres | 5432（仅内网） | `backend` 网络是 internal |
 | redis | 6379（仅内网） | 队列预留 |
-| minio | 9000 / 9001（仅 127.0.0.1） | 控制台仅本机可访问 |
+| minio（可选） | 9000 / 9001（仅 127.0.0.1） | 仅在 `--profile minio` 时启动；HPF 默认不用它 |
 
 本地调试需要直连 api 时，在 `docker-compose.yml` 的 api 服务下临时加 `ports: ["127.0.0.1:8080:8080"]`。
 
@@ -128,8 +131,58 @@ docker compose build --no-cache api  # 重建镜像
 
 ## 安全清单
 
-- [ ] `.env` 里的 change-me 已全部替换为随机值
+- [ ] `.env` 里的 `CHANGE_ME_*` 已全部替换为随机值（`grep CHANGE_ME .env` 应为空）
 - [ ] `HPF_DOMAIN` 指向真实域名且 80/443 可达（否则 Caddy 签不出证书）
 - [ ] 公网只暴露 80/443；postgres/redis/minio 保持 internal 网络
 - [ ] `/metrics` 与 `/healthz` 已限制为内网访问：用**公网来源**验证返回 403（从 Docker 网络内部访问会按设计放行，属正常）
 - [ ] 已配置备份任务，并完成一次恢复演练
+---
+
+## 部署到 kr-server（用户的服务器）
+
+目标环境（用户已确认）：**kr-server**，通过本地 SSH 访问；**没有对象存储**；部署是最后一步。
+
+### 前置：服务器上需要什么
+
+| 项 | 要求 | 说明 |
+|---|---|---|
+| Docker Engine | 24+ | 带 compose v2 插件 |
+| 端口 | 80 / 443 可入 | Caddy 自动签 TLS 用 |
+| 资源 | 建议 ≥ 2C4G / ≥ 20G 可用磁盘 | postgres + api + caddy 的实际占用很小；`pgdata` 与 `bookfiles` 会随书增长 |
+| 对象存储 | **不需要** | 默认 `HPF_STORAGE_DRIVER=local` |
+
+### 步骤
+
+```bash
+# 1) 把仓库同步到服务器（任选其一）
+rsync -av --exclude node_modules --exclude .git ./ kr-server:~/hpf-reader/
+#   或  git clone <你的远端> ~/hpf-reader
+
+# 2) 准备 .env（在服务器上编辑，不要在本地提交）
+cd ~/hpf-reader/deploy
+cp .env.example .env
+grep CHANGE_ME .env            # 必须为空，否则继续改
+#   HPF_DOMAIN=你的域名   ACME_EMAIL=你的邮箱
+#   HPF_JWT_SECRET / POSTGRES_PASSWORD 用 openssl rand -base64 32 生成
+#   HPF_ENV=prod，HPF_REGISTER_OPEN 视需要关闭
+
+# 3) 起栈（首次会构建 api 镜像）
+docker compose up -d --build
+docker compose run --rm migrate       # api 也会自动迁移，这一步用于单独确认
+
+# 4) 验证
+curl -sS https://$HPF_DOMAIN/healthz    # {"status":"ok"}
+curl -sS https://$HPF_DOMAIN/readyz     # 应真 ping 数据库
+docker compose ps                       # 全部 healthy
+```
+
+### 首次部署后立刻要做的两件事
+
+1. **改默认域名与邮箱**：`HPF_DOMAIN` 不对，Caddy 会反复重试签证书并可能触发 Let\'s Encrypt 限流。
+2. **验证注册开关**：`HPF_REGISTER_OPEN=true` 时任何人都能注册。公网部署建议先设 `false`，用第一次注册的管理员账号，再决定是否开放。
+
+### 无对象存储的注意事项
+
+- 书籍文件存在 `bookfiles` 卷：**它和 `pgdata` 必须一起备份**（库里只存 sha256 → key 映射，缺一个就是坏状态）。
+- 单机磁盘就是容量上限。磁盘将满时最稳妥的做法是扩容卷，而不是把老书删掉（进度记录会指向不存在的文件）。
+- 迁移到 S3/MinIO 是**后续里程碑**：服务端的 S3 driver 尚未实现（设 `HPF_STORAGE_DRIVER=s3` 会启动即报错），所以现在不要启用 `--profile minio` 后就去改 driver。
