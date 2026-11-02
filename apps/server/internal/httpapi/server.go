@@ -126,6 +126,10 @@ func (s *Server) routes() http.Handler {
 	// ---- ai ----
 	mux.HandleFunc("POST /v1/ai/translate", s.requireAuth(s.handleTranslate))
 	mux.HandleFunc("GET /v1/ai/usage", s.requireAuth(s.handleGetAIUsage))
+
+	// 术语表（M5-3）：按书 + 目标语言读写，支持批量。
+	mux.HandleFunc("GET /v1/books/{bookId}/glossary", s.requireAuth(s.handleGetGlossary))
+	mux.HandleFunc("PUT /v1/books/{bookId}/glossary", s.requireAuth(s.handlePutGlossary))
 	mux.HandleFunc("POST /v1/ai/jobs", s.requireAuth(s.handleCreateAIJob))
 	mux.HandleFunc("GET /v1/ai/jobs/{jobId}", s.requireAuth(s.handleGetAIJob))
 

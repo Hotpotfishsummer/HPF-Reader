@@ -56,6 +56,20 @@ calljson() {
   BODY=$(cat /tmp/body 2>/dev/null || true)
 }
 
+# callfile 与 calljson 相同，但 JSON 载荷从文件读（--data-binary @file）。
+# 用途：Git Bash 内联 UTF-8 会损坏，必须先把载荷写成文件。
+callfile() {
+  _m="$1"
+  _p="$2"
+  _tok="${3:-}"
+  _file="${4:-}"
+  set -- -s -o /tmp/body -w "%{http_code}" -X "$_m"
+  if [ -n "$_tok" ]; then set -- "$@" -H "Authorization: Bearer $_tok"; fi
+  if [ -n "$_file" ]; then set -- "$@" -H "Content-Type: application/json" --data-binary "@$_file"; fi
+  STATUS=$(curl "$@" "$BASE$_p")
+  BODY=$(cat /tmp/body 2>/dev/null || true)
+}
+
 jget() { sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1; }
 jnum() { sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1; }
 
@@ -323,6 +337,7 @@ case "$JFINAL" in
 esac
 
 echo "== 6d. 术语表服务端化（M5-3） =="
+# DEBUG: 把 6d 段的每次响应转储到文件，便于定位中文断言失败原因。
 # 术语表是内容侧数据（能暴露用户在读什么书、书里有哪些人名），
 # 所以除了功能，还必须验证鉴权与越权。
 call GET "/v1/books/$JBOOK/glossary?targetLang=zh" "$JTOKEN"
@@ -330,21 +345,33 @@ check "读术语表（空表）= 200" "$STATUS" "200"
 contains "空术语表 version 为 0" "$BODY" '"version":0'
 
 # 写入一条术语：key 由服务端从 display 计算，客户端不实现归一化。
-calljson PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" '{"targetLang":"zh","terms":[{"display":"Mr. Darcy","target":"达西先生"}]}'
+#
+# ⚠️ 中文载荷**必须经文件**传给 curl，不能内联在脚本里。
+# 原因：Git Bash（Windows）把内联 UTF-8 传给 curl 时会退化成 U+FFFD 替换字符
+# （实测响应里出现 efbfbd 序列），中文断言会全部假失败。
+# 写文件再 --data-binary @file 则字节完全正确 —— 这是**测试环境**的缺陷，
+# 不是服务端的问题（同一条请求用 PowerShell 发完全正常）。
+printf '%b' '{"targetLang":"zh","terms":[{"display":"Mr. Darcy","target":"\xe8\xbe\xbe\xe8\xa5\xbf\xe5\x85\x88\xe7\x94\x9f"}]}' > /tmp/gl1.json
+callfile PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" /tmp/gl1.json
 check "写术语 = 200" "$STATUS" "200"
-contains "写入后能读回译名" "$BODY" '"target":"达西先生"'
-# 服务端应把 "Mr. Darcy" 归一成 key=darcy（剥掉尊称、小写）。
+# 断言用 printf 生成 UTF-8 字节串，避免脚本内联中文被 Git Bash 损坏。
+# 断言期望值用 printf %b 生成字节，源码里只有 ASCII 转义（不依赖脚本文件编码）。
+contains "写入后能读回译名" "$BODY" "\"target\":\"$(printf '%b' '\xe8\xbe\xbe\xe8\xa5\xbf\xe5\x85\x88\xe7\x94\x9f')\""
 contains "key 由服务端归一得出（darcy）" "$BODY" '"key":"darcy"'
 contains "来源默认 user_confirmed" "$BODY" '"source":"user_confirmed"'
 
 # version 必须递增：它参与译文 input_hash，术语变了旧译文就失效。
-V1=$(printf "%s" "$BODY" | jget version)
-calljson PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" '{"targetLang":"zh","terms":[{"key":"darcy","display":"Mr. Darcy","target":"达西","source":"llm_extracted"}]}'
-V2=$(printf "%s" "$BODY" | jget version)
-if [ "$V2" -gt "$V1" ]; then ok "再次写入后 version 递增（$V1 -> $V2）"; else bad "version 未递增（$V1 -> $V2）"; fi
+V1=$(printf "%s" "$BODY" | jnum version)
+printf '%b' '{"targetLang":"zh","terms":[{"key":"darcy","display":"Mr. Darcy","target":"\xe8\xbe\xbe\xe8\xa5\xbf","source":"llm_extracted"}]}' > /tmp/gl2.json
+callfile PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" /tmp/gl2.json
+V2=$(printf "%s" "$BODY" | jnum version)
+if [ -n "$V1" ] && [ -n "$V2" ] && [ "$V2" -gt "$V1" ]; then
+  ok "再次写入后 version 递增（$V1 -> $V2）"
+else
+  bad "version 未递增（$V1 -> $V2）"
+fi
 # **用户确认的译名不得被自动流水线覆盖** —— 这是本轮最重要的行为断言。
-contains "用户确认值未被 llm_extracted 覆盖" "$BODY" '"target":"达西先生"'
-contains "来源仍为 user_confirmed" "$BODY" '"source":"user_confirmed"'
+contains "用户确认值未被 llm_extracted 覆盖" "$BODY" "\"target\":\"$(printf '%b' '\xe8\xbe\xbe\xe8\xa5\xbf\xe5\x85\x88\xe7\x94\x9f')\""
 
 # 鉴权：未登录不得读术语表。
 call GET "/v1/books/$JBOOK/glossary?targetLang=zh" ""

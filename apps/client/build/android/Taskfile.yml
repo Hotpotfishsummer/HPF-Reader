@@ -79,14 +79,28 @@ tasks:
         # 此前只有 Darwin/Linux 分支，Windows 直接 "Unsupported host OS" 退出，
         # 导致 Windows 上**根本无法构建 Android APK**（这是真缺陷，不是配置问题）。
         #
-        # NDK 在 Windows 上的 prebuilt 目录名仍是 linux-x86_64（NDK r23+ 统一用这个名，
-        # 因为内部工具链本就是 Linux 二进制 + Windows 的 .exe 包装），所以映射到 linux-x86_64。
+        # ⚠️ Windows 上的目录名是 windows-x86_64，**不是** linux-x86_64。
+        # 这一点实测确认过（本机 13 个 NDK 中带 prebuilt 的两个 —— 27.0.12077973 与
+        # 29.0.14206865 —— 目录名都是 windows-x86_64，没有任何一个存在 linux-x86_64）。
+        # 曾错误地假设「NDK r23+ 统一用 linux-x86_64」，结果 cgo 报
+        #   C compiler ".../prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang" not found
+        # 只改这个变量、不核对目录是否真实存在，是**验证方法本身的错误**
+        # （验证了 uname 的输出，却没验证工具链路径），别重蹈覆辙。
         case "$(uname -s)" in
           Darwin) HOST_TAG="darwin-x86_64" ;;
           Linux)  HOST_TAG="linux-x86_64" ;;
-          MINGW*|MSYS*|CYGWIN*) HOST_TAG="linux-x86_64" ;;
+          MINGW*|MSYS*|CYGWIN*) HOST_TAG="windows-x86_64" ;;
           *)      echo "Unsupported host OS: $(uname -s)"; exit 1 ;;
         esac
+
+        # 断言工具链真实存在，而不是只信上面的分支逻辑。
+        # 这样平台映射写错时会立刻给出可读的错误，而不是让 cgo 报一堆找不到编译器的信息。
+        if [ ! -d "$NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG" ]; then
+          echo "Error: NDK prebuilt toolchain not found: $NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG"
+          echo "  host OS: $(uname -s)  expected HOST_TAG: $HOST_TAG"
+          echo "  available: $(ls "$NDK_ROOT/toolchains/llvm/prebuilt" 2>/dev/null | tr '\n' ' ')"
+          exit 1
+        fi
 
         TOOLCHAIN="$NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG"
 
@@ -195,8 +209,18 @@ tasks:
         cd build/android
         # The exec bit is lost when gradlew is extracted from the embedded
         # build assets, so restore it before invoking the wrapper.
-        chmod +x ./gradlew
-        ./gradlew assembleDebug
+        chmod +x ./gradlew 2>/dev/null || true
+        # Windows 上必须调 gradlew.bat：cmd.exe 不认 `./` 前缀，直接跑 ./gradlew 会得到
+        #   '.' is not recognized as an internal or external command
+        # （这是修完 HOST_TAG 之后才暴露的第二处缺陷，因为它卡在打包阶段）。
+        # 注意：Windows 上必须用反斜杠前缀的 .\gradlew.bat，
+        # 写成 ./gradlew.bat 依然会被 cmd.exe 拒（它不认正斜杠开头的路径），
+        # 报错同样是 "'.' is not recognized as an internal or external command"。
+        case "$(uname -s)" in
+          MINGW*|MSYS*|CYGWIN*) GRADLEW=".\\gradlew.bat" ;;
+          *)                    GRADLEW="./gradlew" ;;
+        esac
+        "$GRADLEW" assembleDebug
         cp app/build/outputs/apk/debug/app-debug.apk "../../{{.BIN_DIR}}/{{.APP_NAME}}.apk"
         echo "APK created: {{.BIN_DIR}}/{{.APP_NAME}}.apk"
 
@@ -210,8 +234,18 @@ tasks:
         cd build/android
         # The exec bit is lost when gradlew is extracted from the embedded
         # build assets, so restore it before invoking the wrapper.
-        chmod +x ./gradlew
-        ./gradlew assembleRelease
+        chmod +x ./gradlew 2>/dev/null || true
+        # Windows 上必须调 gradlew.bat：cmd.exe 不认 `./` 前缀，直接跑 ./gradlew 会得到
+        #   '.' is not recognized as an internal or external command
+        # （这是修完 HOST_TAG 之后才暴露的第二处缺陷，因为它卡在打包阶段）。
+        # 注意：Windows 上必须用反斜杠前缀的 .\gradlew.bat，
+        # 写成 ./gradlew.bat 依然会被 cmd.exe 拒（它不认正斜杠开头的路径），
+        # 报错同样是 "'.' is not recognized as an internal or external command"。
+        case "$(uname -s)" in
+          MINGW*|MSYS*|CYGWIN*) GRADLEW=".\\gradlew.bat" ;;
+          *)                    GRADLEW="./gradlew" ;;
+        esac
+        "$GRADLEW" assembleRelease
         cp app/build/outputs/apk/release/app-release.apk "../../{{.BIN_DIR}}/{{.APP_NAME}}.apk"
         echo "Release APK created: {{.BIN_DIR}}/{{.APP_NAME}}.apk"
 
@@ -225,8 +259,18 @@ tasks:
         cd build/android
         # The exec bit is lost when gradlew is extracted from the embedded
         # build assets, so restore it before invoking the wrapper.
-        chmod +x ./gradlew
-        ./gradlew bundleDebug
+        chmod +x ./gradlew 2>/dev/null || true
+        # Windows 上必须调 gradlew.bat：cmd.exe 不认 `./` 前缀，直接跑 ./gradlew 会得到
+        #   '.' is not recognized as an internal or external command
+        # （这是修完 HOST_TAG 之后才暴露的第二处缺陷，因为它卡在打包阶段）。
+        # 注意：Windows 上必须用反斜杠前缀的 .\gradlew.bat，
+        # 写成 ./gradlew.bat 依然会被 cmd.exe 拒（它不认正斜杠开头的路径），
+        # 报错同样是 "'.' is not recognized as an internal or external command"。
+        case "$(uname -s)" in
+          MINGW*|MSYS*|CYGWIN*) GRADLEW=".\\gradlew.bat" ;;
+          *)                    GRADLEW="./gradlew" ;;
+        esac
+        "$GRADLEW" bundleDebug
         cp app/build/outputs/bundle/debug/app-debug.aab "../../{{.BIN_DIR}}/{{.APP_NAME}}.aab"
         echo "AAB created: {{.BIN_DIR}}/{{.APP_NAME}}.aab"
 
@@ -249,8 +293,18 @@ tasks:
         cd build/android
         # The exec bit is lost when gradlew is extracted from the embedded
         # build assets, so restore it before invoking the wrapper.
-        chmod +x ./gradlew
-        ./gradlew bundleRelease
+        chmod +x ./gradlew 2>/dev/null || true
+        # Windows 上必须调 gradlew.bat：cmd.exe 不认 `./` 前缀，直接跑 ./gradlew 会得到
+        #   '.' is not recognized as an internal or external command
+        # （这是修完 HOST_TAG 之后才暴露的第二处缺陷，因为它卡在打包阶段）。
+        # 注意：Windows 上必须用反斜杠前缀的 .\gradlew.bat，
+        # 写成 ./gradlew.bat 依然会被 cmd.exe 拒（它不认正斜杠开头的路径），
+        # 报错同样是 "'.' is not recognized as an internal or external command"。
+        case "$(uname -s)" in
+          MINGW*|MSYS*|CYGWIN*) GRADLEW=".\\gradlew.bat" ;;
+          *)                    GRADLEW="./gradlew" ;;
+        esac
+        "$GRADLEW" bundleRelease
         cp app/build/outputs/bundle/release/app-release.aab "../../{{.BIN_DIR}}/{{.APP_NAME}}.aab"
         echo "Release AAB created: {{.BIN_DIR}}/{{.APP_NAME}}.aab"
 

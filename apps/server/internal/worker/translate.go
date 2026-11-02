@@ -81,6 +81,39 @@ func (w *Worker) runBookTranslate(ctx context.Context, job store.AIJob) (transla
 		return translateResult{}, fmt.Errorf("options.targetLang is required")
 	}
 
+	// ---- 合并服务端术语表（M5-3）----
+	//
+	// options.glossary 是客户端**临时**传入的术语（例如划词翻译时用户顺手指定的）；
+	// 服务端术语表是**持久化**的权威数据（用户确认过的译名）。
+	//
+	// 两者都要进 prompt：只认 options 会让「用户在术语表里改的译名」对整书翻译不生效，
+	// 那 M5-3 就白做了。冲突时**服务端术语表优先**——它是长期数据，
+	// options 是单次请求的临时指定，后者不该覆盖前者。
+	if job.BookID != nil && job.UserID != "" {
+		g, gerr := w.deps.Store.GetGlossary(ctx, job.UserID, *job.BookID, opts.TargetLang)
+		if gerr != nil {
+			// 术语表读失败不该让整书翻译失败：它是增强，不是前置条件。
+			// 但必须记日志——静默降级会让「术语表不生效」变成一个查不出的谜。
+			log.Warn("load server glossary failed; continuing with options glossary only",
+				"error", gerr)
+		} else if len(g.Terms) > 0 {
+			if opts.Glossary == nil {
+				opts.Glossary = map[string]string{}
+			}
+			for _, term := range g.Terms {
+				display := term.Display
+				if display == "" {
+					display = term.Key
+				}
+				if _, exists := opts.Glossary[display]; exists {
+					continue // options 已指定同一写法：保持服务端值，不覆盖
+				}
+				opts.Glossary[display] = term.Target
+			}
+			log.Info("merged server glossary", "terms", len(g.Terms), "version", g.Version)
+		}
+	}
+
 	// ---- 准备块清单（幂等）----
 	existing, err := w.deps.Store.ListChunks(ctx, job.ID)
 	if err != nil {

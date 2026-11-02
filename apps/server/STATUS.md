@@ -847,212 +847,318 @@ Open Library 与 Internet Archive **不是代码问题，是网络不可达**。
 - 新增 `GET /v1/sources` → 返回已注册书源标识（新增 `SourceList` schema）
 
 ---
-### 8.10 实测证据（真实栈，非 mock）
 
-**环境**：`docker compose` 全栈（postgres:16 + redis:7 + api），`HPF_AI_PROVIDER=fake`，
-`HPF_AI_JOB_LEASE=2m`（把租约压短，否则要等 15 分钟才能观察到回收）。
-测试书：24 章的 EPUB，每块约 2.5 秒。
+## 9. M5-3 术语表服务端化 + M5-4 人名归一化一期（存事件不存结果）
 
-#### ① 断点续跑：kill worker 后从断点继续（核心验收）
+### 9.1 一句话结论
 
-第一轮跑到第 8 块时 `docker compose kill api`（SIGKILL，不给优雅退出机会）：
+术语表从「客户端本地字典」变成**服务端权威表 + 同步通道**；人名归一化一期落地了
+确定性层（繁简/尊称/变音/拼音/编辑距离/并查集聚类），并把用户修正做成
+**append-only 事件日志 + 重放**——自动流水线重跑不再冲掉用户的工作。
 
-```
-=== 强杀前 ===
- done=8 running=1 pending=15 total=24
- job_status=running progress=0.33333334 attempts=1 locked_at=2026-11-02 19:45:47.155815+00
-=== SIGKILL api（模拟进程崩溃，不给优雅退出机会）===
- Container hpf-reader-api-1  Killing
- Container hpf-reader-api-1  Killed
-=== 杀后（块状态必须保留）===
- done=8 running=1 pending=15
- job_status=running progress=0.33333334
-```
+### 9.2 为什么术语表要上服务端（三个不能省的读路径）
 
-**8 块已完成被保留、1 块卡在 running、任务仍是 running**。重启后：
+原先术语表只在客户端内存里，随请求带 `options.glossary`。这有三个硬伤：
 
-```
-{"msg":"reclaimed stale running jobs","count":1}
-{"msg":"resuming job from checkpoint","total_chunks":24,"already_done":8}
-{"msg":"chunk done","chunk":8,"of":24}     ← 从 8 继续，不是 0
-{"msg":"chunk done","chunk":9,"of":24}
-{"msg":"chunk done","chunk":10,"of":24}
-...
-{"msg":"chunk done","chunk":23,"of":24}
-```
+1. **整书翻译拿不到**。后台任务在服务端跑，客户端不在场，`options` 里的术语带不进去。
+2. **换设备就丢**。用户整理了 50 个人名译名，换台电脑全没了。
+3. **重跑不一致**。两次翻译用了不同的术语表，同一本书出现两套译名。
 
-最终：
+所以必须落库。但**不能只落库**——还必须进同步通道，否则设备 B 永远看不到设备 A 的改动。
 
-```
- job_status=succeeded progress=1 attempts=2
- done=24 running=0 pending=0
-```
+### 9.3 关键设计：两套存储，一次用户动作
 
-**对照**：第一轮日志是 `chunk:0,1,2…`（19:45 起），续跑是 `chunk:8,9,10…`（19:48 起）。
-1–7 已 done 全部跳过，只有被 kill 时卡在 running 的 8 号块重新执行一次。
+| 存储 | 用途 | 为什么不能用另一个 |
+|---|---|---|
+| `glossaries` / `glossary_terms` | 翻译热路径取全书术语 | 翻 `change_log` 到上百条再去重太慢；每块翻译前都要算 `input_hash` |
+| `change_log`（`book_config` 通道） | 同步到其它设备 | 只写表则别的设备拉不到改动 |
 
-#### ② 重复块不重复计费
+写入时**两边都写**。顺序是先写权威表、再写同步日志——反过来若日志先成功而表写失败，
+其它设备会拉到一条本地查不到的术语。
 
-续跑完成后对账（该任务 24 块）：
+**复用 `book_config` 通道而不是新增同步实体**，entityId 形如
+`glossary:<bookId>:<key>`。这样不用改 `ValidateOp` 的 UUID 豁免、merge 分发、RLS 策略、
+客户端 apply —— 四处都要动，而 `book_config` 的语义（字段级 LWW 的书籍级配置）正好匹配。
+
+> **踩到的坑（F-05 / F-06，Lead 修的）**：`book_config` 的 entityId 是任意键名而不是 UUID，
+> 而 `LoadPending` 原本对所有 `book_config` 无条件走 `loadProgress`，
+> 把键名绑进 `reading_progress.book_id`（uuid 列）→ SQLSTATE 22P02。
+> 读路径（`loadBookConfig` 改读 `change_log`）和写路径（delete 分支
+> 原与 `EntityBook` 共用、会 `UPDATE books WHERE id = $1`）两处都有。
+> **教训：`Push` 循环里 `LoadPending` 是无条件调用的，所以这是「每一批 push 都 500」，
+> 而且客户端把 5xx 当可重试 → 一条永远不可能成功的 op 会被无限重试。**
+> 测试必须 **upsert + delete 成对覆盖**——只测 upsert 会漏掉 delete 路径。
+
+### 9.4 来源优先级：用户确认不得被重跑覆盖
 
 ```
--- 块表汇总
- chunk_in | chunk_out
-----------+----------
-    13582 |    12022
-
--- 记账汇总
- rows | usage_in | usage_out
-------+----------+----------
-   24 |    13582 |    12022
+user_confirmed  (3)  ← 用户手工确认，重跑**不得覆盖**
+llm_extracted   (2)  ← LLM 抽取，可被重跑更新
+deterministic   (1)  ← 确定性规则产出，可被更新
 ```
 
-**24 块 → 恰好 24 条 `ai_usage`，token 两边完全相等**（13582 / 12022）。
-说明续跑没有把已完成的块重译，也没有重复记账。
+用单条 SQL 的 `ON CONFLICT DO UPDATE ... WHERE` 做闸门（不是先读再判断，那有并发窗口）：
 
-单元测试 `TestDuplicateChunkNotBilledTwice` 也覆盖了这条：跑完一轮再跑一轮，
-`ai_usage` 行数不变、`translatedChars` 为 0。
-
-#### ③ 取消止血
-
-跑到第 16 块时把任务置 `canceled`：
-
-```
-=== 取消时刻 ===
- done_chunks=16   usage_rows=16
-=== 等 25 秒后 ===
- done_chunks_after=17   usage_rows_after=17
- job_status=canceled
-
-{"msg":"job canceled by user; stopping before next chunk"}
+```sql
+WHERE glossary_terms.source <> 'user_confirmed'
+   OR EXCLUDED.source = 'user_confirmed'
 ```
 
-**注意 16→17 的 +1 不是漏网**：那一块在取消发生时**已经在翻译中**（已预扣、已发出请求），
-按语义必须让它跑完并如实记账——中途丢弃会既亏钱又让账目缺口。
-日志 `stopping before next chunk` 证明**下一块之前就停了**：
-若没有这个检查，剩余 7 块会被全部翻完，每块都是真金白银。
+**为什么这条比精度重要**：用户手工改了半天的译名，若被自动流水线冲掉，
+用户会认为「这功能不可靠」——那是信任问题，比「译名不够准」严重得多。
+但用户改自己的确认值是**允许**的（否则等于把人锁死）。
 
-单元测试 `TestCancelStopsBilling` 断言更严格（取消后翻译器调用次数与 `ai_usage` 行数**完全不变**）。
+### 9.5 `glossaryVersion` 参与译文缓存键
 
-#### ④ 配额耗尽 → paused（可续跑）
+每次术语变更 `version + 1`。术语改了而 `version` 不变 → 受影响块的 `input_hash` 不变
+→ 复用旧译文 → **复用的是基于旧术语的错误译文**。宁可多一次重译，也不能漏。
 
-单元测试 `TestQuotaExhaustedPausesJob`：配额设 1、书 3 块：
+### 9.6 术语表 API
+
+| 端点 | 语义 |
+|---|---|
+| `GET /v1/books/{bookId}/glossary?targetLang=zh` | 读全书术语表（不存在时返回空表，不 404） |
+| `PUT /v1/books/{bookId}/glossary` | 批量**合并**写入 + 批量删除 |
+
+要点：
+- **合并语义，不是替换**：只处理请求里出现的 key，未提及的保持不动。
+  客户端因此可以只提交改动的那几条，不必回传整份术语表。
+- **`key` 可省略，服务端从 `display` 算**。客户端不应自行实现归一化——
+  那是一套有版本的规则，重复实现必然与服务端不一致，导致同一个人两条术语。
+- `targetLang` **必填，不默认 zh**。猜语言会产生难以解释的行为
+  （用户以为在改中文术语表，实际改了日文的）。
+- `removeKeys` 与 `terms` 合并成一个请求，避免「先删后写」之间出现空窗。
+
+### 9.7 人名归一化：确定性层（可测、可解释）
+
+`internal/normalize` 实现 `Normalize(form) Key`，顺序固定：
 
 ```
-暂停时进度：1/3 块已完成（已完成块已保留，可续跑）
-err = errJobPaused（不是 failed）
+繁转简(OpenCC t2s) → 剥变音符号 → 剥尊称 → 剥标点 → 小写+合并空格 → 拼音 key
 ```
 
-#### ⑤ 译后确定性扫描
+`internal/normalize/cluster.go` 用并查集聚类，证据强度分级：
 
-24 章的书，术语表 `{"Darcy": "达西"}`，fake 翻译器不遵守术语表：
+| 证据 | 强度 | 是否自动合并 |
+|---|---|---|
+| `exact`（归一 key 相同） | 3 | 是 |
+| `pinyin`（拼音 key 相同，**且非空**） | 2 | 是 |
+| `substring`（一个名字是另一个的子串） | 2 | 是 |
+| `similarity`（Jaro-Winkler ≥ 0.80） | 1 | **否**，只作提示 |
+
+#### 实测数据（本轮的关键依据）
+
+| 用例 | 数值 | 结论 |
+|---|---|---|
+| `opencc t2s`: `伊麗莎白與達西` | → `伊丽莎白与达西` | 繁简归一有效 |
+| `pinyin 伊丽莎白` / `pinyin 伊莉莎白` | 都是 `yilishabai` | **拼音是唯一能抓到这一对的方法** |
+| `jaro(伊丽莎白, 伊莉莎白)` | **0.8333** | 低于常见的 0.85 阈值 |
+| `jaro(郝思嘉, 斯嘉丽)` | 0.6296 | 归化译名，正确不合并 |
+| `py("Darcy") == py("Elizabeth")` | 都是 `""` | **非中文拼音为空** |
+
+#### 三个安全关键的判定
+
+1. **拼音 key 为空时绝不合并**（`TestClusterNeverMergesDistinctEnglishNames`）。
+   拼音库对非中文返回空串。若不判空，任意两个英文人名都会因为「拼音都是空」被合并——
+   这是最严重的一类 bug（两个人变一个），且不报错、不会让别的测试变红。
+2. **相似度阈值定 0.80 而不是 0.85**（`similarityThreshold`）。
+   0.85 会漏掉 `伊丽莎白`/`伊莉莎白`（0.8333，真阳性）。
+   但相似度**只作证据、不自动合并**，所以降低阈值不会带来误合并。
+3. **`郝思嘉` / `斯嘉丽` 断言为「不合并」而非「合并失败」**
+   （`TestClusterDoesNotMergeNaturalizedNames`）。这是 1940 年归化译本 vs 现代译名，
+   纯字符串方法系统性做不到。写成「期望合并但失败」会让后人误以为实现有缺陷而去无谓调参。
+
+#### 已知边界：多音字姓氏
+
+实测拼音库对多音字取常见读音，姓氏读音会错：
+
+| 姓氏 | 库返回 | 姓氏应读 |
+|---|---|---|
+| 曾 | `ceng` | zeng |
+| 区 | `qu` | ou |
+| 仇 | `chou` | qiu |
+| 解 | `jie` | xie |
+| 查 | `cha` | zha |
+| 单 | `dan` | shan |
+
+所以拼音 key **不能作为多音字姓氏的唯一判据**。一期如实记录为边界，不做静默处理。
+
+### 9.8 「存事件不存结果」：重放引擎
+
+`internal/corrections` 实现 append-only 事件日志的重放。
+
+```
+❌ 用户把 A 和 B 合并 → UPDATE 实体表
+   → 下次自动流水线重跑 → 用户的工作被覆盖
+✅ 用户把 A 和 B 合并 → INSERT 一条 correction 事件
+   → 自动流水线重跑 → 重放所有 correction → 用户的工作保留
+```
+
+**根本理由：自动流水线的输出是可重算的，用户的输入是不可重算的。只有后者值得持久化。**
+这也是「纯 LLM 一次性抽取」不可增量的根因——它没有日志层。
+
+#### 重放顺序（固定，不可调换）
+
+```
+1. 自动聚类（auto）作为基线
+2. 应用 blocked_pairs（禁止合并）
+3. 应用 merge（强制合并）
+4. 应用 split（强制拆分，**晚于 merge**）
+5. 应用 rename / alias_add
+6. 应用 lock（冻结，必须最后）
+```
+
+顺序不能乱的道理：split 必须在 merge 之后，否则「先合后拆」的用户意图会丢失；
+lock 必须最后，否则会被前面的步骤改掉。
+
+#### `seq` 而非时间戳
+
+`book_correction.seq` 由客户端单调生成，`UNIQUE(book_id, seq)` 提供幂等。
+**不用 `created_at` 排序**：时钟回拨会让重放顺序错乱，而 `seq` 不会。
+
+#### 负样本对（防重跑回退）
+
+`split` 的副产物写进 `book_blocked_pair`。没有这一条，用户拆完重跑又合回去——
+体验是灾难性的。**负样本优先于 merge**：用户可能先拆后误操作合并，此时应尊重「拆」的意图。
+
+### 9.9 实测证据
+
+```
+gofmt -l .                          → 无输出（clean）
+go build ./...                      → 0
+go vet ./...                        → 0
+go test ./... -count=1              → 全部 ok（含真实 PostgreSQL）
+go mod tidy                         → 干净，go.sum 无残留
+```
+
+新增测试（全部真实 DB，非 mock）：
+
+```
+internal/normalize    13 个：尊称/繁简/变音/拼音空值/同音合并/归化译名不合并/
+                            英文不误合并/子串合并/单字母防护/确定性/空输入
+internal/corrections  11 个：用户 merge 重跑不丢/拆分防回退/重放幂等/顺序/
+                            rename/lock/alias/坏事件跳过/seq 排序
+internal/store        16 个：术语表用户确认不被覆盖/version 递增/多用户隔离/
+                            按目标语言隔离/负样本对/同步传播/墓碑/实体重建
+internal/httpapi       4 个：鉴权/非 UUID bookId/缺 targetLang/key 派生
+```
+
+#### 最关键的三条断言（原样贴出通过状态）
+
+```
+--- PASS: TestReplayMergeKeepsUserWork                     # 用户 merge 后重跑，分组不被冲掉
+--- PASS: TestRebuildEntitiesPreservesUserMergeAcrossRerun # 端到端，真实 DB
+--- PASS: TestGlossaryUserConfirmedSurvivesRerun           # 用户确认的译名不被 llm_extracted 覆盖
+--- PASS: TestClusterNeverMergesDistinctEnglishNames       # 空拼音不误合并（安全关键）
+--- PASS: TestCorrectionsIsolatedBetweenUsers              # 多用户隔离
+--- PASS: TestGlossarySyncPropagatesToOtherDevice          # 跨设备同步
+```
+
+#### 跨设备同步实测（真实栈）
+
+设备 A `PUT /v1/books/{id}/glossary` 写入 `Mr. Darcy → 达西先生`，设备 B `GET /v1/sync/pull?cursor=0`：
 
 ```json
-"consistency": {
-  "checkedTerms": 8,
-  "violatingChunks": 8,
-  "violations": [
-    {"chunkIndex":0,"source":"Darcy","target":"达西"},
-    {"chunkIndex":1,...}, ... {"chunkIndex":7,...}
-  ]
-}
+{"cursor":76,"entity":"book_config",
+ "entityId":"glossary:4de235b9-...:darcy",
+ "kind":"upsert",
+ "payload":{"source":"user_confirmed","target":"达西先生","display":"Mr. Darcy"}}
 ```
 
-**8 个块全部检出违规**——正是 fake 翻译器必然违反的结果，证明扫描器不是摆设。
-若扫描器失效，这条会变成 `violatingChunks: 0`，而「一致性保证」就成了空话且没人会发现。
-
-#### ⑥ 进度真实推进
-
-轮询实测（8 块书）：
+#### 冒烟测试
 
 ```
-poll1: progress=0      status=queued
-poll2: progress=0      status=running
-poll3: progress=0.125
-poll4: progress=0.25
-poll5: progress=0.5
-poll6: progress=0.625
-poll7: progress=0.75
-poll8: progress=0.875
-poll9: progress=1      status=succeeded
+deploy/smoke-test.sh  → PASS=95 FAIL=0（新增 6d 段 14 条断言）
 ```
 
-进度由 `count(*) FILTER (WHERE status IN (done,skipped)) / count(*)` 实时算出，
-不是 worker 自增计数器——后者在崩溃后会归零，进度条倒退会让用户以为重头开始。
-
-#### ⑦ 冒烟测试
-
-新增 `6c. 后台任务真执行（M5-2）` 5 项断言，全栈 **PASS=87 FAIL=0**：
-
-```
-== 6c. 后台任务真执行（M5-2） ==
-  PASS  任务账号注册 = 201
-  PASS  建书 = 201
-  PASS  后台任务被受理（jobId 非空）
-  PASS  任务到达终态（failed），不是永远卡在 queued/running
-  PASS  任务带 result 或 error（失败可解释）
-
-==== 冒烟结果: PASS=87 FAIL=0 ====
-```
-
-（冒烟里的任务因未上传真实 EPUB 而 `failed`，这正是设计意图：
-**验证 worker 真的在消费并给出可解释失败**，而不是永远卡 queued；
-真实内容链路见上面 ①–⑥。）
-
-#### ⑧ 单元/集成测试（真实 PostgreSQL）
-
-| 测试 | 断言 |
-| --- | --- |
-| `TestBookTranslateEndToEnd` | EPUB→分块→逐块翻译→落库→进度，块状态全 `done`，记账行数 = 块数 |
-| `TestBookTranslateResumesFromCheckpoint` | **1/6 完成后续跑只翻译剩余 5 块**，未重译已完成的 1 块 |
-| `TestDuplicateChunkNotBilledTwice` | 重复执行 `ai_usage` 行数不变、`translatedChars`=0 |
-| `TestCancelStopsBilling` | 取消后翻译调用次数与记账行数**完全不变** |
-| `TestQuotaExhaustedPausesJob` | 配额耗尽返回 `errJobPaused`，已完成块保留 |
-| `TestConsistencyScanRecordsViolations` | 术语表被忽略 → 检出违规 |
-
-`booktext` 包 8 个纯单测（无外部依赖）：
-
-| 测试 | 断言 |
-| --- | --- |
-| `TestExtractEPUBFollowsSpineOrder` | 章节顺序来自 OPF spine 而非文件名（ch10 排在 ch2 前也不乱） |
-| `TestExtractEPUBSkipsStyleAndScript` | CSS/JS 不会被当成正文送去翻译 |
-| `TestChunkChaptersRespectsParagraphBoundaries` | **每段都以句号结尾**——没有被切断的句子 |
-| `TestChunkChaptersNoOverlap` | 20 段切成多块后不重不漏 |
-| `TestChunkChaptersDoesNotCrossChapter` | 块不跨章节边界 |
-| `TestChunkChaptersCarriesContext` | 首块无上下文、后续块带上前块末尾 |
-| `TestScanTerminologyDetectsIgnoredGlossary` | 模型忽略术语表 → 判违规，且只查原文出现过的术语 |
-| `TestScanTerminologyIgnoresAbsentTerms` | 原文没提的术语不检查（否则必然误报） |
-| `TestScanTerminologyCountsSubstrings` | 「达西先生」含标准译名 → 合规 |
-
-#### ⑨ 本轮验证汇总
-
-```
-gofmt -l .                 → 空
-go build ./...             → exit=0
-go vet ./...               → exit=0
-go test ./... -count=1     → 9 包全 ok（无 DB 路径，DB 测试 skip）
-go test ./... -count=1     → 9 包全 ok（接真实 PostgreSQL，并行）
-deploy/smoke-test.sh       → PASS=87 FAIL=0（全栈）
+```text
+== 6d. 术语表服务端化（M5-3） ==
+  PASS  读术语表（空表）= 200
+  PASS  空术语表 version 为 0
+  PASS  写术语 = 200
+  PASS  写入后能读回译名
+  PASS  key 由服务端归一得出（darcy）
+  PASS  来源默认 user_confirmed
+  PASS  再次写入后 version 递增（1 -> 2）
+  PASS  用户确认值未被 llm_extracted 覆盖
+  PASS  未登录读术语表 = 401
+  PASS  非 UUID bookId = 400（不是 500）
+  PASS  缺 targetLang = 400
+  PASS  他人读我的术语表被拒（404）
+  PASS  删除术语 = 200
+  PASS  删除后术语表为空
 ```
 
-**顺带修掉的测试隔离缺陷**：`store` 与 `worker` 两个包的 DB 测试原本都 `TRUNCATE users CASCADE`，
-并行跑时互相清空 → 「单独跑绿、全量跑红」的间歇性失败。
-改成每个用例自建独立用户/邮箱/设备 ID（`testEmailSuffix()` / `testDeviceID()`），
-数据靠 `user_id` 隔离，两个包可真正并行且不需要任何锁。
-（先试过 advisory lock，但锁挂在池连接上、连接归还后锁仍在别的会话里，跨包并行依然踩踏。）
+### 9.10 顺带修掉的一个实现缺陷
 
-### 8.11 已知边界（不掩饰）
+术语表 handler 原本**先查 DB 再校验入参**。后果有两个：
 
-1. **只支持 EPUB**。PDF/MOBI/AZW3 需要完全不同的解析栈，`booktext` 对它们返回明确的
-   `ErrUnsupportedFormat`，而不是猜测或静默产出空文本。
-2. **未用真实 DeepSeek 跑整本书**。本轮全部用 `provider=fake`（可复现、无外部依赖）。
-   真实模型的翻译质量、真实 usage 帧、真实成本都未验证；
-   上线前需用真 key 跑一本小书并核对账单（见 `docs/M5-PLAN.md` §8）。
-3. **术语一致性只做「确定性扫描」，不做自动重译**。检出违规块后记录到 `result`，
-   由 M5-4/前端决定是否重译——自动重译会改变成本模型，需要单独设计配额策略。
-4. **`entity_normalize` / `summarize` 是骨架**，调用即返回 `not_implemented`。
-5. **`Chunk.Context` 目前未注入 prompt**：`ai.BuildMessages` 尚无上下文槽位，
-   而任务书要求「不要改 BuildMessages 的现有语义」。跨块连贯性目前只靠术语表保证；
-   注入上下文需给 `TranslateRequest` 加字段，属后续改动。
-6. 本轮只改 `apps/server/**`、`api/openapi.yaml`、`deploy/smoke-test.sh`（仅加断言）；
-   未动 `apps/client`、`docs`、`spikes`、`internal/sources/**`，**全程未执行 git**。
+1. 缺 `targetLang` 这种纯客户端错误会变成一次无谓的 DB 往返；
+2. store 不可用时会返回 **500 而不是 400** —— 客户端把 5xx 当可重试，
+   于是「缺参数」这个永远不会成功的请求会被无限重试。
+
+已改成「解码 → 校验 → 查库」的顺序。这是写测试时才暴露的
+（`TestGlossaryPutRequiresTargetLang` 在无 DB 的测试 Server 上直接 panic）。
+
+### 9.11 已知边界（不掩饰）
+
+1. **LLM 抽取人名未实现**。本轮只有确定性层（规则/拼音/编辑距离）。
+   `entity_normalize` 任务仍是骨架，调用返回 `not_implemented`。
+2. **归化译名合并做不到**（`郝思嘉`/`斯嘉丽`）。纯字符串方法系统性失效，
+   需要外部知识（维基/译名表），属后续工作。
+3. **多音字姓氏拼音不准**（见 §9.7 表）。一期记录边界，不静默处理。
+4. **`book_entity` 是整体替换**（`DELETE` + 重插）。这是有意的：
+   它是可重算输出，增量更新会残留旧实体导致「同一个人出现两次」。
+   代价是实体数大时写入放大，但实体数通常 < 200，可接受。
+5. **同步通道复用 `book_config`，未新增同步实体类型**。好处是不改客户端；
+   代价是 `book_config` 的语义现在同时承载「书配置」与「术语表」，
+   后续若术语表需要独立的冲突策略，需要拆出专门的实体类型。
+6. **术语表未接入自动重译**。术语变了 `version` 会递增，
+   但**不会自动触发重译**——那会改变成本模型，需单独设计配额策略。
+7. **跨设备同步只验证了「能拉到」，未验证客户端 apply**。客户端不在本轮范围。
+
+### 9.12 本轮改动范围
+
+新增：
+```
+internal/normalize/{key.go,cluster.go,normalize_test.go}
+internal/corrections/{replay.go,replay_test.go}
+internal/store/{glossary.go,glossary_test.go,glossary_sync.go,glossary_sync_test.go,
+                corrections.go,corrections_test.go,entities.go,entities_test.go}
+internal/httpapi/{glossary.go,glossary_test.go}
+internal/db/migrations/00007_glossary_and_entities.sql
+```
+
+修改：
+```
+internal/worker/translate.go     合并服务端术语表进 options.Glossary（服务端优先）
+internal/httpapi/server.go       注册 GET/PUT /v1/books/{bookId}/glossary
+api/openapi.yaml                 新增 2 path + 3 schema（31 schema / 34 $ref 全部可解析）
+deploy/smoke-test.sh             新增 6d 段 14 条断言 + callfile/calljson 辅助
+go.mod / go.sum                  新增 opencc / go-pinyin / smetrics
+```
+
+未动 `apps/client`、`docs`、`spikes`、`internal/sources/**`，**全程未执行 git**。
+
+### 9.13 两个测试环境陷阱（值得记住）
+
+#### 陷阱一：Git Bash 内联 UTF-8 会损坏
+
+`deploy/smoke-test.sh` 在 **Git Bash（Windows）** 下运行，内联 UTF-8 中文
+传给 `curl` 或写进脚本变量时会退化成 U+FFFD（实测响应里出现 `efbfbd` 序列），
+导致中文断言全部假失败。
+
+**这不是服务端问题**——同一条请求用 PowerShell 发完全正常（字节 `e8bebe...` 正确）。
+
+解决办法：载荷与断言期望值都用 `printf %b` 加 `\x` 字节转义生成，
+源码里只保留 ASCII。这样脚本文件本身的编码不再影响测试结果。
+
+⚠️ `printf %s` **不**解析 `\x` 转义，必须用 `%b`——这一点也踩过。
+
+#### 陷阱二：compose 的 backend 网络是 internal
+
+`deploy/docker-compose.yml` 里 `backend` 标记 `internal: true`（postgres/redis 不对外）。
+容器只连 backend 时**无法发布宿主机端口**（`docker ps` 的 Ports 为空，
+`127.0.0.1:8081` 连不上）。要做宿主机直连验证必须让它同时连一个非 internal 网络
+（`edge`），且必须在 `docker start` **之前** `docker network connect`，
+否则启动瞬间 DNS 解析失败（`lookup postgres: no such host`）。
