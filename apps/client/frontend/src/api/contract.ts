@@ -22,6 +22,39 @@ export type SyncPullResponse = components['schemas']['SyncPullResponse']
 export type AnnotationDto = components['schemas']['Annotation']
 export type AnnotationCreate = components['schemas']['AnnotationCreate']
 
+// ---- AI / 书源（task-23）----
+export type TranslateRequest = components['schemas']['TranslateRequest']
+export type AiJob = components['schemas']['AiJob']
+export type AiJobCreate = components['schemas']['AiJobCreate']
+export type AiUsage = components['schemas']['AiUsage']
+export type QuotaDimension = components['schemas']['QuotaDimension']
+export type QuotaExceededError = components['schemas']['QuotaExceededError']
+export type BookTranslateResult = components['schemas']['BookTranslateResult']
+export type ConsistencyScan = components['schemas']['ConsistencyScan']
+export type SourceItem = components['schemas']['SourceItem']
+export type SourceList = components['schemas']['SourceList']
+
+/**
+ * 术语表条目（M5-4 服务端化尚未落地，见 task-22）。
+ *
+ * ⚠️ **契约缺口**：`GET/PUT /v1/books/{id}/glossary` 在 task-23 的说明里
+ * 提到"可能还在做"，实测服务端**没有**这个路由（server.go 的路由表里没有）。
+ * 因此这里按"服务端已有的能力"来设计：术语表通过
+ * `POST /v1/ai/translate` 的 `glossary` 字段传给模型（这条**是**实现了的），
+ * UI 侧的术语表编辑只维护本地状态，不假装能持久化到服务端。
+ * 详见 apps/client/STATUS.md 的"契约缺口"一节。
+ */
+export interface GlossaryEntry {
+  /** 原文写法（source）。 */
+  source: string
+  /** 标准译名（target）。 */
+  target: string
+  /** 来源标记：用户确认 / LLM 抽取 / 确定性规则。 */
+  origin: GlossaryOrigin
+}
+
+export type GlossaryOrigin = 'user' | 'llm' | 'deterministic'
+
 /**
  * ⚠️ 契约缺口（已在 spikes/sync/RESULTS.md 记录，本任务不改 api/ 目录）：
  *   GET /v1/sync/snapshot 在 apps/server 已实现并有冒烟覆盖，但 api/openapi.yaml 未收录，

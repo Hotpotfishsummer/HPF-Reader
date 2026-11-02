@@ -4,6 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDebounceFn } from '@vueuse/core'
 import { useSettingsStore, type ReaderTheme } from '@/stores/settings'
+import { useSelectionTranslate } from '@/features/ai/composables/useSelectionTranslate'
+import { useGlossary } from '@/features/ai/glossaryStore'
+import TranslateBubble from '@/features/ai/components/TranslateBubble.vue'
+import BookTranslatePanel from '@/features/ai/components/BookTranslatePanel.vue'
+import GlossaryPanel from '@/features/ai/components/GlossaryPanel.vue'
 import { usePlatform } from '@/platform'
 import { SAMPLE_BOOK_ID, getRememberedBook, isLocalOnlyBook, rememberBook } from './bookSession'
 import { useFoliateEngine, type RelocateDetail } from './useFoliateEngine'
@@ -47,6 +52,9 @@ const toc = shallowRef<{ label: string; target: string | number }[]>([])
 const progress = ref(0)
 const chapterLabel = ref('')
 const tocOpen = ref(layout.value.tocMode === 'sidebar')
+/** AI 面板开关（互斥：同时只开一个，避免叠在一起看不清）。 */
+const aiPanelOpen = ref(false)
+const glossaryOpen = ref(false)
 const sanitizeSummary = ref('')
 const selectionRectCount = ref(0)
 /** 续读提示：只在"确实从上次位置继续"时显示一次。 */
@@ -65,6 +73,28 @@ let lastCfi = ''
 /** 划词结果：只把"值"交给 Vue（文本 + 可见矩形数），Range 本身留在闭包里。 */
 const selectionText = ref('')
 let selectionRange: Range | null = null
+
+/**
+ * 划词翻译（task-23）。
+ *
+ * ★ 气泡锚点用**主文档视口坐标**（fixed 定位）：选区在 iframe 里，
+ *   必须经 coords.ts 换算（selectionAnchor 已经算好了）。
+ *   锚点变化时气泡跟随；选区清空时气泡保持（用户可能想先读完再关）。
+ */
+const selectionTranslate = useSelectionTranslate()
+const bubbleAnchor = ref<{ left: number; top: number } | null>(null)
+
+/** 目标语言跟随界面语言：中文界面→译成中文，英文界面→译成英文。 */
+const targetLang = computed(() => (settings.locale === 'zh-CN' ? 'zh-CN' : 'en'))
+
+/**
+ * 本书术语表 → 翻译接口的 `glossary` 字段。
+ *
+ * 这条链路是**服务端已实现**的（POST /v1/ai/translate 的 glossary 进 system 前缀），
+ * 所以划词翻译也会遵守已确认的译名 —— 这是术语一致性的实际落点。
+ */
+const glossary = useGlossary(() => bookId.value)
+const glossaryForTranslate = computed(() => glossary.translateMap.value)
 
 const themeOrder: ReaderTheme[] = ['light', 'sepia', 'dark', 'ink']
 const themeLabel = computed(() => t(`settings.themeName.${settings.readerTheme}`))
@@ -93,6 +123,33 @@ async function copySelection(): Promise<void> {
   selectionRange = null
   selectionText.value = ''
   selectionRectCount.value = 0
+  bubbleAnchor.value = null
+  selectionTranslate.reset()
+}
+
+/**
+ * 开始划词翻译：把选中文本交给流式接口。
+ *
+ * ★ 锚点在这一刻才算（而不是选区一变就算）：这样选区只是"高亮 + 出现操作条"，
+ *   不会立刻弹出一个大气泡挡住正文。用户点了「翻译」才需要看译文。
+ */
+function translateSelection(): void {
+  if (selectionText.value === '') return
+  const anchor = selectionAnchor()
+  if (anchor) bubbleAnchor.value = anchor
+  void selectionTranslate.start({
+    text: selectionText.value,
+    targetLang: targetLang.value,
+    bookId: bookId.value,
+    glossary: glossaryForTranslate.value,
+  })
+}
+
+/** 关闭气泡：中止在途请求（★ 取消后不再烧钱）。 */
+function closeBubble(): void {
+  selectionTranslate.cancel()
+  selectionTranslate.reset()
+  bubbleAnchor.value = null
 }
 
 function readerStyleInput() {
@@ -174,7 +231,6 @@ const engine = useFoliateEngine(() => hostRef.value, {
         selectionRange = selection?.range ?? null
         selectionText.value = selection?.text ?? ''
         if (selection) {
-          // 几何信息留在这里，M2 的浮层直接用 coords.ts 换算（见 §5.5）。
           const visible = Array.from(selection.range.getClientRects()).filter(
             (rect) => rect.width > 0 && rect.height > 0,
           )
@@ -182,7 +238,9 @@ const engine = useFoliateEngine(() => hostRef.value, {
         } else {
           selectionRectCount.value = 0
         }
-        // 立刻换算一次，确保坐标系在真实 DOM 上被跑通（值本身留给 M2 的浮层用）。
+        // 选区变化只更新操作条；气泡锚点在点击「翻译」时才算（见 translateSelection）。
+        // 选区清空时**不清气泡**：用户正在读译文，清掉会闪。
+        // 这里仍然跑一次坐标换算，确保坐标系在真实 DOM 上被验证过（值本身留给点击时用）。
         selectionAnchor()
       },
     })
@@ -363,6 +421,8 @@ onBeforeUnmount(() => {
       @next="engine.next()"
       @toggle-toc="tocOpen = !tocOpen"
       @cycle-theme="cycleTheme"
+      @toggle-ai="aiPanelOpen = !aiPanelOpen; glossaryOpen = false"
+      @toggle-glossary="glossaryOpen = !glossaryOpen; aiPanelOpen = false"
     />
 
     <div class="flex min-h-0 w-full flex-1 pt-12">
@@ -439,15 +499,54 @@ onBeforeUnmount(() => {
       {{ t('reader.resumed', { n: progress }) }}
     </p>
 
+    <!-- 整书翻译面板 -->
+    <BookTranslatePanel
+      v-if="aiPanelOpen"
+      :book-id="bookId"
+      :book-title="chapterLabel || t('reader.title')"
+      @close="aiPanelOpen = false"
+    />
+
+    <!-- 术语表面板 -->
+    <GlossaryPanel
+      v-if="glossaryOpen"
+      :book-id="bookId"
+      @close="glossaryOpen = false"
+    />
+
+    <!-- 划词操作条：选区存在时出现（竖屏也不挡正文） -->
     <div
       v-if="selectionText"
+      data-testid="selection-bar"
       class="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] px-3 py-2 text-xs shadow"
     >
       <span class="max-w-[40ch] truncate">{{ t('reader.selected', { n: selectionText.length }) }}</span>
-      <span class="text-[var(--color-text-secondary)]">{{ selectionRectCount }} rect</span>
+      <button
+        type="button"
+        data-testid="selection-translate"
+        class="rounded bg-[var(--color-accent)] px-2 py-1 text-xs font-medium text-white"
+        @click="translateSelection"
+      >
+        {{ t('ai.translate') }}
+      </button>
       <button type="button" class="rounded px-2 py-1 text-xs" @click="copySelection">
         {{ t('reader.copy') }}
       </button>
     </div>
+
+    <!-- 划词翻译气泡（task-23）：跟随选区，流式显示译文 -->
+    <TranslateBubble
+      v-if="bubbleAnchor"
+      :anchor="bubbleAnchor"
+      :source="selectionText"
+      :status="selectionTranslate.status.value"
+      :text="selectionTranslate.text.value"
+      :error-text="selectionTranslate.errorText.value"
+      :quota-message="selectionTranslate.quotaMessage.value"
+      @translate="translateSelection"
+      @cancel="selectionTranslate.cancel()"
+      @retry="translateSelection"
+      @close="closeBubble"
+    />
   </div>
 </template>

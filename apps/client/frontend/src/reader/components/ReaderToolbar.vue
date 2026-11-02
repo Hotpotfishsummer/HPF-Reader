@@ -27,6 +27,8 @@ const emit = defineEmits<{
   next: []
   'toggle-toc': []
   'cycle-theme': []
+  'toggle-ai': []
+  'toggle-glossary': []
 }>()
 
 const { t } = useI18n()
@@ -87,6 +89,29 @@ const tocLabel = computed(() => t('reader.toc'))
     >
       L2
     </span>
+
+    <!-- ★ AI 入口（task-23）：整书翻译 + 术语表 -->
+    <button
+      type="button"
+      data-testid="toggle-ai"
+      :aria-label="t('ai.bookEntry')"
+      :title="t('ai.bookEntry')"
+      class="shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
+      @click="emit('toggle-ai')"
+    >
+      <span aria-hidden="true">文</span><span v-if="!props.compact" class="ml-1">A</span>
+    </button>
+
+    <button
+      type="button"
+      data-testid="toggle-glossary"
+      :aria-label="t('ai.glossaryEntry')"
+      :title="t('ai.glossaryEntry')"
+      class="shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
+      @click="emit('toggle-glossary')"
+    >
+      <span aria-hidden="true">≡</span>
+    </button>
 
     <button
       type="button"

@@ -1,4 +1,5 @@
 import type { ApiClient } from './client'
+import { createAiApi } from './ai'
 import type {
   AnnotationCreate,
   AnnotationDto,
@@ -132,13 +133,14 @@ export function createAnnotationsApi(client: ApiClient) {
   }
 }
 
-/** 组装四个资源域（服务端契约按 tag 分组）。 */
+/** 组装资源域（服务端契约按 tag 分组）。 */
 export function createApi(client: ApiClient) {
   return {
     auth: createAuthApi(client),
     books: createBooksApi(client),
     sync: createSyncApi(client),
     annotations: createAnnotationsApi(client),
+    ai: createAiApi(client),
   }
 }
 

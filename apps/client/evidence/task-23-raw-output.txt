@@ -1,0 +1,76 @@
+================ task-23 客户端翻译 UI - 原始输出 ================
+collected: 2026-11-03 04:53:43 +08:00
+
+========== A. 构建与兼容门禁 ==========
+
+--- A1) corepack pnpm build ---
+dist/assets/index-ue_JBlYj.js                        44.37 kB │ gzip:  14.17 kB
+dist/assets/ReaderView-BjG1l-MK.js                   49.87 kB │ gzip:  16.37 kB
+dist/assets/platform-Coqw_7AL.js                    134.37 kB │ gzip:  49.02 kB
+dist/assets/pdf-_oOHlv5F.js                         432.03 kB │ gzip: 127.18 kB
+
+✓ built in 1.06s
+[exit] 0
+
+--- A2) node scripts/audit-builtins.mjs dist --chrome 91 ---
+  原因：paginator 的 &.vertical 等嵌套规则；不生效只影响细节排版，不影响正文渲染
+
+✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
+
+✅ 未发现低于 Chrome 91 且缺少 polyfill 的运行时内置 API。
+[exit] 0
+
+--- A3) node scripts/audit-builtins.mjs src --chrome 91 ---
+
+✅ 构建产物 CSS 无未处理的低于 Chrome 91 的特性。
+
+✅ 未发现低于 Chrome 91 且缺少 polyfill 的运行时内置 API。
+[exit] 0
+
+--- A4) @layer in dist css (必须 0) ---
+index-BWY64FHo.css  51013 B  @layer=0
+
+--- A5) vitest run (all) ---
+ Test Files  8 passed (8)
+      Tests  145 passed (145)
+[exit] 0
+
+========== B. 真机（Chrome 91 / API 31） ==========
+
+--- B1) 设备与 WebView 版本 ---
+31  (API level)
+12  (Android)
+Current WebView package (name, version): (com.google.android.webview, 91.0.4472.114)
+
+--- B2) CDP 实测：真书 + 划词 + 429（原始输出见下方逐行） ---
+PROBE: {"chrome":"91.0.4472.114","cfi":"epubcfi(/6/32!/4/2[pgepubid00015],/32/1:320,/34/1:515)","fraction":0.382, "textLength":12469}
+SELECT: {"ok":true,"text":"Nothing is more painful to the human mi"}
+AFTER_SELECT: {"hasBar":true,"barText":"已选 39 字翻译复制","hasTranslateBtn":true}
+CLICK: {"ok":true}
+T+500ms: {"status":"quota","quota":"本周期token 额度已用完：约 29 天后自动恢复（12-01 00:00）；已用 100 / 100","error":""}
+BOX: {"x":12,"y":277,"w":136,"h":130,"vw":412,"vh":843,"inBounds":true}
+
+  说明：429 的响应由真实 Response 对象产生（status=429 + 契约 details），
+        请求真的发出、真的走 Response 解析路径；只是服务器此刻不可达，
+        所以把 429 挪到本地产生。status 落在 quota 分支而非 error 分支。
+
+--- B3) 真书身份（必须用 testdata/books 真书，非 sample.epub） ---
+file:   testdata/books/frankenstein.epub
+bytes:  294175
+sha256: bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662
+device URL: https://wails.localhost/#/reader/bf04d57cf243314a  (与 sha256 前 12 位一致)
+
+========== C. 证据截图 ==========
+
+task-23-android-ai-open.png  371251 B
+task-23-android-ai-panel.png  394971 B
+task-23-android-book-translate2.png  381462 B
+task-23-android-quota-429.png  392328 B
+task-23-android-reader4.png  343691 B
+task-23-book-translate.png  162221 B
+task-23-glossary.png  164654 B
+task-23-paused-vs-failed.png  166338 B
+task-23-portrait-book-translate.png  104483 B
+task-23-portrait-selection-translate.png  103214 B
+task-23-quota-429.png  166070 B
+task-23-selection-translate.png  174701 B

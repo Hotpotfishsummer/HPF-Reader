@@ -469,6 +469,79 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /v1/books/{bookId}/glossary:
+    get:
+      tags: [ai]
+      summary: 读取术语表
+      description: |
+        返回一本书在某个目标语言下的全部术语。
+
+        术语表的 **key 是归一化后的原文键**（如 `darcy`），不是原始写法。
+        原因：同一人物会以多种写法出现（`Mr. Darcy` / `Darcy` / `达西先生`），
+        若按原始写法存，同一个人会变成多条术语，译文一致性无从谈起。
+
+        `display` 保留原始写法供展示，`target` 是标准译名。
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: targetLang
+          in: query
+          required: true
+          description: 目标语言。必填而非默认 zh——猜语言会产生难以解释的行为。
+          schema: { type: string, minLength: 1, maxLength: 16 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Glossary' }
+        '400':
+          description: bookId 非 UUID，或缺少 targetLang
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    put:
+      tags: [ai]
+      summary: 批量写入 / 删除术语
+      description: |
+        **合并语义**，不是替换：只处理请求里出现的 key，未提及的术语保持不动。
+        客户端因此可以只提交改动的那几条，不必回传整份术语表。
+
+        **来源优先级**：已有术语是 `user_confirmed` 时，`llm_extracted` /
+        `deterministic` 的写入会被忽略。用户手工确认的译名**重跑不得覆盖**。
+        这关乎信任而非精度：用户改的译名被自动流水线冲掉，会认为功能不可靠。
+
+        `key` 可省略，由服务端用归一化规则从 `display` 计算。
+        客户端不应自行实现归一化——那是一套有版本的规则，重复实现必然不一致。
+
+        每次成功写入或删除都会使 `version` 递增。`version` 参与译文缓存键：
+        术语变了，受影响块必须重译，否则会复用基于旧术语的错误译文。
+
+        写入同时进入同步通道（`book_config` 通道，
+        entityId 形如 `glossary:<bookId>:<key>`），其它设备靠游标增量拉取。
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GlossaryPutRequest' }
+      responses:
+        '200':
+          description: 更新后的完整术语表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Glossary' }
+        '400':
+          description: bookId 非 UUID / 缺 targetLang / 术语缺 target / source 非法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -500,6 +573,65 @@ components:
 
   schemas:
     Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, description: 机器可读错误码 }
+        message: { type: string, description: 人类可读说明 }
+        details: { type: object, additionalProperties: true, description: 可选的附加信息 }
+    GlossaryTerm:
+      type: object
+      required: [key, display, target, source]
+      properties:
+        key:
+          type: string
+          description: 归一化原文键（如 `darcy`）。用于去重与按 key 删除。
+        display:
+          type: string
+          description: 展示用原始写法（保留大小写与尊称，如 `Mr. Darcy`）。
+        target:
+          type: string
+          description: 标准译名。
+        aliases:
+          type: array
+          items: { type: string }
+        source:
+          type: string
+          enum: [user_confirmed, llm_extracted, deterministic]
+          description: |
+            术语来源。优先级 user_confirmed > llm_extracted > deterministic。
+            `user_confirmed` 不会被自动流水线的重跑覆盖。
+
+    Glossary:
+      type: object
+      required: [bookId, targetLang, version, terms]
+      properties:
+        bookId: { type: string, format: uuid }
+        targetLang: { type: string }
+        version:
+          type: integer
+          format: int64
+          description: |
+            每次术语变更递增。参与译文 input_hash：
+            术语变了，受影响块必须重译。
+        terms:
+          type: array
+          items: { $ref: '#/components/schemas/GlossaryTerm' }
+
+    GlossaryPutRequest:
+      type: object
+      required: [targetLang]
+      properties:
+        targetLang: { type: string, minLength: 1, maxLength: 16 }
+        terms:
+          type: array
+          maxItems: 2000
+          items: { $ref: '#/components/schemas/GlossaryTerm' }
+        removeKeys:
+          type: array
+          items: { type: string }
+          description: 要删除的归一 key。与 terms 合并成一个请求，避免「先删后写」之间出现空窗。
+
       type: object
       required: [code, message]
       properties:

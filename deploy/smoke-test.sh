@@ -41,6 +41,21 @@ call() {
 }
 
 # 极简 JSON 取值，避免依赖 jq
+# calljson 与 call 相同，但 PUT/POST 走 JSON body。
+# call 的 PUT 分支固定是 octet-stream + @文件（书籍上传用），
+# 术语表这类 JSON 端点必须用这个，否则 curl 会把 JSON 当文件名。
+calljson() {
+  _m="$1"
+  _p="$2"
+  _tok="${3:-}"
+  _data="${4:-}"
+  set -- -s -o /tmp/body -w "%{http_code}" -X "$_m"
+  if [ -n "$_tok" ]; then set -- "$@" -H "Authorization: Bearer $_tok"; fi
+  if [ -n "$_data" ]; then set -- "$@" -H "Content-Type: application/json" --data-binary "$_data"; fi
+  STATUS=$(curl "$@" "$BASE$_p")
+  BODY=$(cat /tmp/body 2>/dev/null || true)
+}
+
 jget() { sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1; }
 jnum() { sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1; }
 
@@ -306,6 +321,52 @@ case "$JFINAL" in
   *\"result\"*|*\"error\"*) ok "任务带 result 或 error（失败可解释）" ;;
   *) bad "任务既无 result 也无 error（静默失败）：$JFINAL" ;;
 esac
+
+echo "== 6d. 术语表服务端化（M5-3） =="
+# 术语表是内容侧数据（能暴露用户在读什么书、书里有哪些人名），
+# 所以除了功能，还必须验证鉴权与越权。
+call GET "/v1/books/$JBOOK/glossary?targetLang=zh" "$JTOKEN"
+check "读术语表（空表）= 200" "$STATUS" "200"
+contains "空术语表 version 为 0" "$BODY" '"version":0'
+
+# 写入一条术语：key 由服务端从 display 计算，客户端不实现归一化。
+calljson PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" '{"targetLang":"zh","terms":[{"display":"Mr. Darcy","target":"达西先生"}]}'
+check "写术语 = 200" "$STATUS" "200"
+contains "写入后能读回译名" "$BODY" '"target":"达西先生"'
+# 服务端应把 "Mr. Darcy" 归一成 key=darcy（剥掉尊称、小写）。
+contains "key 由服务端归一得出（darcy）" "$BODY" '"key":"darcy"'
+contains "来源默认 user_confirmed" "$BODY" '"source":"user_confirmed"'
+
+# version 必须递增：它参与译文 input_hash，术语变了旧译文就失效。
+V1=$(printf "%s" "$BODY" | jget version)
+calljson PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" '{"targetLang":"zh","terms":[{"key":"darcy","display":"Mr. Darcy","target":"达西","source":"llm_extracted"}]}'
+V2=$(printf "%s" "$BODY" | jget version)
+if [ "$V2" -gt "$V1" ]; then ok "再次写入后 version 递增（$V1 -> $V2）"; else bad "version 未递增（$V1 -> $V2）"; fi
+# **用户确认的译名不得被自动流水线覆盖** —— 这是本轮最重要的行为断言。
+contains "用户确认值未被 llm_extracted 覆盖" "$BODY" '"target":"达西先生"'
+contains "来源仍为 user_confirmed" "$BODY" '"source":"user_confirmed"'
+
+# 鉴权：未登录不得读术语表。
+call GET "/v1/books/$JBOOK/glossary?targetLang=zh" ""
+check "未登录读术语表 = 401" "$STATUS" "401"
+# 入参校验：非 UUID bookId 不能走到 SQL 层（否则 22P02 会变成 500，客户端无限重试）。
+call GET "/v1/books/not-a-uuid/glossary?targetLang=zh" "$JTOKEN"
+check "非 UUID bookId = 400（不是 500）" "$STATUS" "400"
+# targetLang 必填：不默认成 zh，避免「以为在改中文、实际改了日文」。
+call GET "/v1/books/$JBOOK/glossary" "$JTOKEN"
+check "缺 targetLang = 400" "$STATUS" "400"
+# 越权：另一个用户不能读这本书的术语表。
+call GET "/v1/books/$JBOOK/glossary?targetLang=zh" "$TOKEN"
+if [ "$STATUS" = "404" ] || [ "$STATUS" = "403" ]; then
+  ok "他人读我的术语表被拒（$STATUS）"
+else
+  bad "他人能读我的术语表（$STATUS）：$BODY"
+fi
+
+# 删除术语也必须可用（F-06 那类缺陷就在删除路径上）。
+calljson PUT "/v1/books/$JBOOK/glossary" "$JTOKEN" '{"targetLang":"zh","removeKeys":["darcy"]}'
+check "删除术语 = 200" "$STATUS" "200"
+contains "删除后术语表为空" "$BODY" '"terms":[]'
 
 echo "== 7. 书源 =="
 call GET "/v1/sources/search?q=austen&source=zlibrary" "$TOKEN"
