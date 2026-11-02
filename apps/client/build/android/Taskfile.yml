@@ -267,10 +267,20 @@ tasks:
       - frontend/bindings/**/*
     cmds:
       # Bindings are generated from the Go AST; CGO is disabled so the NDK
-      # is not required for this step
-      - wails3 generate bindings -f '-tags android' -clean=true
+      # is not required for this step.
+      #
+      # -ts -i are REQUIRED: without -ts the generator emits .js (+ no .d.ts),
+      # and because this task runs with -clean=true it deletes the committed
+      # .ts bindings first, so the frontend build then fails with TS7016.
+      #
+      # Do NOT set GOOS=android here. With GOOS=android the package analyzer
+      # cannot resolve the Android GOROOT stdlib and reports
+      #   could not import crypto/sha256 (missing package: "crypto/sha256")
+      # for every stdlib import, ending at "1 Package, 0 Services, 0 Methods" —
+      # i.e. an empty bindings directory. The default (host) GOOS plus the
+      # android build tag is what actually resolves the services.
+      - wails3 generate bindings -ts -i -f '-tags android' -clean=true
     env:
-      GOOS: android
       CGO_ENABLED: 0
 
   ensure-emulator:

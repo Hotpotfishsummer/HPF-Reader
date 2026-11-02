@@ -33,6 +33,27 @@ export interface EngineHooks {
   onSanitize?(stats: SanitizeStats): void
 }
 
+/**
+ * ★ 排版几何（task-12 §3 横竖屏自适应）。
+ *
+ * foliate-paginator 通过 **attribute** 而不是 CSS 接收几何参数：
+ *   `max-column-count` / `max-inline-size` / `margin` / `gap`
+ * 其中 `max-inline-size` 的 attributeChangedCallback 会显式调用 `render()`，
+ * 所以它是"让引擎真的重新分栏"的那一下（改 CSS 是不会重排的）。
+ *
+ * 另外 paginator 自带 container query：容器是竖屏时强制
+ * `--_max-column-count-portrait`（=1），所以"竖屏单栏"是引擎原生行为，
+ * 我们只需要在横屏时告诉它最多几栏。
+ */
+export interface EngineLayout {
+  columns: 1 | 2
+  /** 单栏正文宽度上限。 */
+  maxInlineSize: number
+  marginInline: number
+  /** 百分比（foliate 按容器宽度解释）。 */
+  columnGapPercent: number
+}
+
 export interface FoliateEngine {
   ready: ShallowRef<boolean>
   open(source: File | Blob, options?: { lastLocation?: string }): Promise<void>
@@ -41,7 +62,12 @@ export interface FoliateEngine {
   goTo(target: string | number | { fraction: number }): Promise<void>
   getToc(): FoliateTOCItem[]
   getCurrentHref(): string
+  /** 主题/字体（写进章节文档的 <style>）。 */
   setStyles(styles: string | [string, string]): void
+  /** 几何（写在 paginator 的 attribute 上，会触发重排）。 */
+  setLayout(layout: EngineLayout): void
+  /** 当前分页后的总页数；未就绪时返回 0。用于观测"重排是否真的发生"。 */
+  getPageCount(): number
   getCFI(index: number, range: Range): string
   close(): Promise<void>
 }
@@ -165,6 +191,8 @@ export function useFoliateEngine(
     } catch (error) {
       console.error('[engine] open failed', error)
       hooks.onError?.(error)
+      // 继续往外抛：调用方可能要换一种方式重试（例如"续读位置失效 → 从头打开"）。
+      throw error
     } finally {
       pending.delete(element)
       if (view !== element) await destroy(element)
@@ -201,6 +229,21 @@ export function useFoliateEngine(
     getToc: () => view?.book?.toc ?? [],
     getCurrentHref: () => view?.book?.sections[view.lastLocation?.index ?? 0]?.id as string ?? '',
     setStyles: (styles: string | [string, string]) => view?.renderer?.setStyles?.(styles),
+    setLayout: (layout: EngineLayout) => {
+      const renderer = view?.renderer
+      if (!renderer) return
+      // 顺序有意为之：先把不触发重排的设好，最后再设 max-inline-size（它会 render()）。
+      renderer.setAttribute('gap', `${layout.columnGapPercent}%`)
+      renderer.setAttribute('margin', `${layout.marginInline}px`)
+      renderer.setAttribute('max-column-count', String(layout.columns))
+      renderer.setAttribute('max-inline-size', `${layout.maxInlineSize}px`)
+      // 供 E2E / 调试观测"我们要求了几栏"（真正是否生效由页数变化证明）。
+      view?.setAttribute('data-hpf-columns', String(layout.columns))
+    },
+    getPageCount: () => {
+      const renderer = view?.renderer as (HTMLElement & { pages?: number }) | undefined
+      return typeof renderer?.pages === 'number' ? renderer.pages : 0
+    },
     getCFI: (index: number, range: Range) => view?.getCFI(index, range) ?? '',
     close,
   }

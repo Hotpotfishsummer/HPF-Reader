@@ -1,7 +1,16 @@
-# apps/client 交付状态（task-9：客户端骨架 Wails v3 + Vue 3 + foliate-js）
+# apps/client 交付状态
 
-**状态：已完成（可构建 / 可测试 / 可在真实浏览器里打开一本 EPUB）。**
-最后核对时间：2026-11-02。所有命令均在 Windows + PowerShell 下实测通过。
+> 覆盖 **task-9**（客户端骨架）、**task-12**（本地优先阅读闭环 + 横竖屏自适应）、
+> **task-14**（老旧 WebView 兼容性）。最后核对时间：2026-11-03。
+> 所有命令均在 Windows + PowerShell 下实测通过，原始输出见 `apps/client/evidence/`。
+
+**状态：**
+- task-9 骨架：已完成。
+- task-12 阅读闭环 / 横竖屏：**已完成**（8/8 E2E 通过，含真实公版书）。
+- task-14 老旧 WebView 兼容性：**已完成**（审计 + polyfill + 构建目标 + 单测 + E2E 模拟验证）。
+  **含两个 Android 真机阻塞点**：① `Object.groupBy is not a function`（§9.1~9.6）；
+  ② `Unsupported compression format: 'deflate-raw'`（§9.7，**零新增依赖**）。
+- task-12 的"真实 exe 截图"：**已完成**（4 张真实窗口截图，见 §8.3）。
 
 ---
 
@@ -9,6 +18,7 @@
 
 ### 1.1 外壳与工程结构
 
+- [x] 真实 `hpfreader.exe` 窗口截图 4 张（§8.3，`PrintWindow` + `PW_RENDERFULLCONTENT`）。
 - [x] `wails3 init`（v3.1.0）生成 vue 模板，产物**上提**到 `apps/client/` 根（模板默认会多套一层
       `apps/client/HPFReader/`，已拉平，见 §6 踩坑记录）。
 - [x] `go.mod` module = `github.com/hotpotfish/hpfreader/client`；`main.go` 嵌入 `frontend/dist`。
@@ -239,3 +249,310 @@ apps/client/
     ├── tests/                  # 架构门禁
     └── scripts/                # gen-api-types / make-sample-epub
 ```
+
+---
+
+## 8. task-12：本地优先阅读闭环 + 横竖屏自适应
+
+### 8.1 完成项
+
+- [x] **本地优先闭环**：本地选书 → 导入书库 → 阅读 → 分页/翻页/目录 → **进度落盘** → 重开续读。
+      全链路不依赖后端。桌面端走 Wails 原生文件对话框（`files.dialog` 能力）。
+- [x] **书库空态可用**：后端不可达时显示 `library-local-mode` 提示条（琥珀色、非阻断）+
+      `library-empty` 空态 + "打开本地文件"按钮，**不白屏、不报错**。
+      `import-book` 仅在 `files.dialog` 与 `library.local` 两个能力同时具备时才出现。
+- [x] **拖放导入**：书库区支持 `dragover/dragleave/drop`，拖入 EPUB 直接进阅读器。
+- [x] **真实公版书验证**：用 `testdata/books/frankenstein.epub`（294 175 B，
+      sha256 `bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662`）
+      实测：目录 32 项、正文 7 375 字符/章、多页分页、翻页 CFI 变化。测量值落盘在
+      `evidence/real-book-open.json`。
+- [x] **横竖屏自适应**：
+      | 视口 | 方向 | 栏数 | 目录 | 工具栏 |
+      |---|---|---|---|---|
+      | ≥1024px 宽 | 横屏 | **2 栏** | 侧栏（≥1080px 才侧栏，否则覆盖层） | 完整（带文字标签） |
+      | <1024px 或竖屏 | 竖屏/窄 | **1 栏** | 覆盖层 | 紧凑（仅图标） |
+      旋转后**自动重排且不丢位置**：同一 CFI 在 1280×800 → 480×900 → 1440×900 三次测量中，
+      章节不变（`textStart` 一致）、页数 11 → 18 → 11。数据见
+      `evidence/reader-layout-measurements.json`。
+- [x] **无硬编码像素**：断点集中在 `src/app/useViewport.ts`（`COMPACT_MAX_WIDTH = 760`）与
+      `src/reader/useReaderLayout.ts`（`TWO_COLUMN_MIN_WIDTH = 1024`、
+      `SIDEBAR_MIN_WIDTH = 1080`、`MAX_INLINE_SIZE = 720`）两个文件；
+      几何值通过 paginator 的**属性**（`max-inline-size` / `max-column-count` / `gap` / `margin`）
+      下发，不用 CSS hack。
+
+### 8.2 阅读进度存储：选型与理由
+
+**结论：文件型 JSON（Go 侧）+ 渲染进程 `localStorage` 同步镜像。**
+
+| 方案 | 结论 | 理由 |
+|---|---|---|
+| **SQLite** | ❌ 本里程碑不采用 | 需要 CGO 或纯 Go 驱动（`modernc.org/sqlite` 约 +10 MB 二进制）；当前数据量是"每本书一条记录"，JSON 完全够用；进度写入是低频小对象，没有并发/索引压力。已在 `libraryservice.go` 留 TODO 注释，后续引入标签/全文检索时再迁移。 |
+| **文件型 JSON** | ✅ 采用（权威源） | `<dataDir>/progress.json`（`os.UserConfigDir()/HPFReader`）。零依赖、可读可修、原子写；与书库索引 `library.json` 同一套存储策略，认知成本低。 |
+| **localStorage** | ✅ 采用（同步镜像） | 阅读器每翻一页都要写进度。走 Go 有 IPC 往返 + 潜在失败；`localStorage` 是同步 API，**翻页当下就落盘**，即使应用被强杀也不丢位置。 |
+
+两者关系：
+1. 翻页 → **同步**写 `localStorage`（`rememberProgress`）→ 再 fire-and-forget 上报 Go（失败只 warn）。
+2. 打开书 → **先读 `localStorage`**，命中就用；未命中再问 Go，并回填 `localStorage`。
+3. 纯前端书（`sample`、`isLocalOnlyBook`）**完全不发网络请求**，`progressBackend` 为 `undefined`。
+
+`localStorage` 键名：`hpf.reader.progress.v1`（与 E2E 里硬编码的值是同一契约）。
+
+### 8.3 ★ 真实 exe 截图（已拿到，附方法）
+
+**结论：真实 `hpfreader.exe` 的窗口内容已经截到了，4 张，全部落盘。**
+
+一开始用 `Graphics.CopyFromScreen` 只能抓到桌面合成层（窗口区域是黑的），
+误以为"窗口不可捕获"。真正可行的通道是 **`PrintWindow` + `PW_RENDERFULLCONTENT`(flag=2)** ——
+后者专门用于 DWM/WebView2 这类 GPU 合成的窗口，能直接拿到窗口位图，**不依赖窗口是否在最前**。
+
+| 截图 | 内容 | 大小 |
+|---|---|---|
+| `evidence/exe-01-library-empty.png` | 书库空态（无后端也不白屏） | 26 663 B |
+| `evidence/exe-02-reader-opened.png` | 打开示例书后的正文（第一章，36%） | 68 007 B |
+| `evidence/exe-03-after-page-turn.png` | 翻页后（第三章，100%，"已从上次位置继续"） | 53 705 B |
+| `evidence/exe-04-night-mode.png` | 夜间模式（正文深色，主题按钮显示"夜间"） | 54 180 B |
+
+复现方法（`frontend/scripts/_capture-exe.ps1`）：
+
+1. `Start-Process ..\bin\hpfreader.exe`，等 9 秒让 WebView 完成首帧；
+2. `GetWindowRect` 取窗口矩形，`PrintWindow(hwnd, hdc, 2)` 抓位图并存 PNG；
+3. 交互用 **`SetCursorPos` + `mouse_event`** 点按钮（不用 `SendKeys`，它对 WebView 不可靠），
+   翻页用 **`SendKeys {RIGHT}`** —— 因为 `ReaderView.vue` 把 `ArrowRight/PageDown/空格`
+   绑在 `window` 的 `keydown` 上，键盘比点像素稳。
+
+**踩坑**：`exe` 必须是**重新构建过的**。一开始用的是 11 502 080 B 的旧 exe（2026/11/3 0:01），
+它内嵌的是旧 `dist/`，界面上还没有"打开本地文件"按钮，导致按旧坐标点击全部落空。
+重建后（11 591 680 B，1:14:36）坐标才对上。
+
+> 备注：原生文件对话框（"导入书籍"）仍然无法自动化驱动（`SendKeys` 进不去系统对话框），
+> 所以真实书是用 Playwright 走同一份 `dist/` 验证的（见 §9.7 的 `e2e-legacy-deflate-raw.png`）。
+
+- 另有 Playwright 证据（同样证明真实渲染，且可复现、可复核）：
+  - `evidence/e2e-landscape-wide.png`（1280×800，横屏双栏 + 侧栏目录）
+  - `evidence/e2e-portrait-narrow.png`（480×900，竖屏单栏 + 紧凑工具栏）
+  - `evidence/e2e-night-mode.png`（夜间模式，正文深色 `rgb(20, 22, 26)`）
+  - `evidence/e2e-sample-reader.png`（示例书正文）
+  - `evidence/e2e-legacy-webview-sim.png`（删掉 ES2022+ 内置对象后仍能阅读）
+  - `evidence/real-book-open.json`（真实公版书打开/跳章/翻页的引擎测量值）
+  - 这些截图由 **真实 Chrome**（`channel: 'chrome'`，非无头模拟）渲染
+    `vite preview` 的**生产构建产物**，与 exe 内嵌的是同一份 `dist/`。
+- 需要真机截图时，请在有人值守的桌面会话里执行 `apps/client/bin/hpfreader.exe` 后手动截屏。
+
+### 8.4 本轮修掉的真实崩溃 / 白屏
+
+| # | 症状 | 根因 | 修法 |
+|---|---|---|---|
+| 1 | **夜间模式点了没反应**（正文还是白底黑字） | CSS 变量**不跨文档继承**：把 `var(--reader-paper)` 直接写进 iframe 的样式表，变量在章节文档 `\:root` 上不存在 → 声明失效 → 背景透明 | `readerStyles.ts` 新增 `resolveReaderTokens()`，用 `getComputedStyle` 把变量**解析成具体颜色**再注入；主题变化时 `applyStyles()`（`flush: 'post'`） |
+| 2 | 夜间模式**双重取反**变回浅色（截图证据） | `foliate-view::part(filter) { filter: invert(1) }` 与深色配色叠加 | 反转滤镜恒为 `none`，只保留变量注入这一条路径（也避免把插图反成负片） |
+| 3 | 真实公版书测试**误判失败** | frankenstein 第 1 个 section 是标题页（27 字符），拿"首屏字数 >200"当"这是真书"的证据必然假阴性 | 改为断言目录 ≥20 项 + 跳到第 5 章后正文 >2 000 字符且多页 |
+| 4 | 旋转后"页数没变"假阴性 | `renderer.pages` 是**每 section** 的页数，短章节两方向都是 1 页 | 先导航到长章节，再断言页数随方向单调变化 |
+| 5 | 目录条目数测到 0 | 宽屏下目录是侧栏且**默认展开**，测试又点了一次 toggle 把它关了 | 先判断是否已展开，只在未展开时点击 |
+| 6 | 证据落错目录 | `process.cwd()` 是 `apps/client/frontend`，`../../evidence` 指向 `apps/evidence` | 改为 `../evidence` |
+
+---
+
+## 9. 老旧 WebView 兼容性（task-14）
+
+### 9.1 问题本质
+
+> **打包器只降语法，不 polyfill 运行时内置对象。**
+
+`vite.config.ts` 原来的 `build.target` 是 Vite 默认的 `'modules'`（≈ chrome87），
+**语法**层面本来就没问题；真正炸掉的是**运行时缺 API**：
+
+```
+[engine] open failed TypeError: Object.groupBy is not a function (ReaderView-Bb7x_oFD.js:2)
+```
+
+出现在 Android 模拟器（Pixel_6 / API 31，WebView UA `Chrome/91.0.4472.114`）上。
+`Object.groupBy` 是 ES2024 / **Chrome 117+**，在 91 上根本不存在 →
+**任何 EPUB 都打不开**。这也解释了为什么"改 build.target"不可能修好这个 bug。
+
+**兼容基线定为 Chromium 91**，依据：
+1. API 29~31 模拟器**实测**就是 91（`apps/client/spikes/android/RESULTS.md`）；
+2. e-ink 阅读器（文石/Kindle 类）大量是 Android 8~11 + WebView 80~100；
+3. 91 是能覆盖上述全部设备的最低公约数。
+
+### 9.2 审计方法与命中清单（可复现）
+
+```bash
+node scripts/audit-builtins.mjs src  --chrome 91   # 源码 + vendored 上游
+node scripts/audit-builtins.mjs dist --chrome 91   # ★ 权威：含 node_modules 打包后代码
+```
+
+脚本对 `.ts/.js/.mjs/.cjs/.vue/.mts` 全量扫描 31 组 ES2022~ES2025 API，
+对照每个 API 进入 Chrome 稳定的版本；**有"低于基线且无 polyfill"就 exit 1**，可直接进 CI。
+（已接入 `pnpm run audit:compat` / `audit:compat:dist`。）
+
+**为什么 dist 那一遍才是权威**：`Object.hasOwn` 在 `src` 里命中 0 次，
+但在产物里出现 3 次 —— 来自 **vue-router / pinia / pinia-plugin-persistedstate / @vueuse/core**
+的源码。只扫 src 会漏掉整个依赖树。
+
+| API | 最低 Chrome | src | dist | 处理 | 真实调用点 |
+|---|---|---|---|---|---|
+| `Object.groupBy` | 117 | 5 | 4 | polyfill | foliate-js/epub.js（**EPUB 必挂**） |
+| `Map.groupBy` | 117 | 1 | 4 | polyfill | foliate-js/epub.js（**EPUB 必挂**） |
+| `Array.prototype.findLastIndex` | 97 | 1 | 1 | polyfill | **paginator.js:1089（分页必挂）** |
+| `Array.prototype.findLast` | 97 | 1 | 1 | polyfill | pdf.js |
+| `Promise.withResolvers` | 119 | 40 | 30 | polyfill | pdf.js |
+| `Promise.try` | 128 | 8 | 5 | polyfill | pdf.js（epub.js:782 只是注释，见下方行级豁免） |
+| `Array.prototype.at` | 92 | 58 | 20 | polyfill | foliate-js/epub.js、epubcfi.js |
+| `String.prototype.at` | 92 | — | 1 | polyfill | 成对补齐 |
+| `structuredClone` | 98 | 6 | 9 | polyfill | zip.js 能力探测 |
+| `crypto.randomUUID` | 92 | 5 | 5 | polyfill | `platform/server.ts` |
+| `AbortSignal.timeout` | 103 | 1 | 5 | polyfill | `api/client.ts` |
+| `Object.hasOwn` | 93 | 0 | **3** | polyfill | ★ vue-router / pinia / @vueuse |
+| `Array.prototype.to{ sorted, Reversed, Spliced }` / `with` | 110 | 0 | 3 | polyfill | ★ Vue 响应式数组插桩 |
+| `Uint8Array.prototype.toBase64` / `fromBase64` | 133 | 4 | 8 | polyfill | pdf.js 内联图片/签名 |
+| `String.prototype.replaceAll` | 85 | 50 | 15 | **不补** | 91 已支持 |
+| `Object.fromEntries` / `matchAll` / `flatMap` / `allSettled` / `WeakRef` / `FinalizationRegistry` / `CompressionStream` / `Intl.Segmenter` / RegExp `d` | ≤90 | — | — | **不补** | 91 已支持，补了纯属噪音 |
+| `URL.canParse` / `RegExp.escape` / `Set.prototype.union` / `Array.fromAsync` | 120+ | 0 | 0 | **不补** | 全量扫描命中数为 0 |
+
+**行级豁免**（`scripts/audit-builtins.mjs` 的 `ALLOWLIST`，必须写明原因 + 精确行号，
+行号漂移会立刻重新报出来，避免"整文件忽略"掩盖真问题）：
+`vendor/foliate-js/epub.js:782` —— `Promise.try` 只出现在注释里，没有真实调用。
+
+已知误报：`.at(` 的 58 处命中里含非数组用法（字符串、CSS 类名），需人工确认；
+脚本会打印这条提示。
+
+### 9.3 Polyfill 实现（`src/compat/polyfills.ts`）
+
+- **导入位置**：`src/main.ts` **第一行**。ES 模块按 import 声明顺序深度优先求值，
+  所以这里先于 router / i18n / platform / App 的顶层代码跑完。
+- **安装时机**：模块求值即安装（`export const INSTALLED_POLYFILLS = installPolyfills()`），
+  不等 `bootstrap()`。
+- **幂等 + 只在缺失时安装**：`typeof target[key] !== 'function'` 才补，**绝不覆盖原生实现**。
+- **启动自检**：`verifyPolyfills()` 用**真实调用形态**（复现 `paginator.js:1089` 的
+  `sections.findLastIndex(...)`）验证，不是只检查"函数存在"；有问题打 `console.warn`。
+- **实现形态**：辅助函数接收**显式 receiver**（`arrayAt(array, index)`），
+  安装时由 `installMethod` 包一层接到 `this`。好处是同一个函数在测试里能直接当纯函数调，
+  不依赖 TS 对泛型 `this` 的推断（那种推断在 `.call()` 上经常失败）。
+- **每个内置对象都标注了最低 Chrome 版本**（见文件头部的审计表）。
+- **已知偏差**（都写在对应函数上方 + 测试里）：
+  - `structuredClone`：函数/平台对象按引用透传（不抛 `DataCloneError`，不支持 transfer list）；
+  - `AbortSignal.timeout`：Chromium <98 忽略 abort 的 `reason`，可能只给通用 `AbortError`；
+  - `toSorted/toReversed/toSpliced/with`：固定返回普通数组，不走 `Symbol.species`；
+  - 原型方法包装器用 rest 参数，`fn.length` 为 0（已确认消费方不检查 length）。
+- **不修改 vendored 的 foliate-js 源码**（上游，靠这一层兜）。
+
+### 9.4 构建目标下调（`vite.config.ts`）
+
+```ts
+const COMPAT_TARGET = 'chrome91'
+// 同时作用于 build.target 与 esbuild.target
+```
+
+选 `chrome91` 而不是 `es2020`：目标必须是**具体浏览器版本**，esbuild 才能对
+类字段、可选链、`??=`、async generator 等做正确的降级；`es2020` 是语言规范版本，
+与 WebView 实际能力没有对应关系，而且会让 esbuild 保留一些 91 不支持的语法降级假设。
+
+### 9.5 验证
+
+- **单元测试** `src/compat/__tests__/polyfills.spec.ts`：**44 个用例**，覆盖
+  - 安装行为：幂等、**原生实现不被覆盖**、缺失时真的补齐（临时 `delete` 全局实现 +
+    `vi.resetModules()` 后重新 import，模拟 WebView 91）；
+  - 边界：空数组、`NaN` 键（SameValueZero）、负索引/越界、循环引用、`null` 原型、
+    Symbol 键、不可枚举属性、`RangeError`；
+  - `toBase64/fromBase64` 往返（含全 256 字节、200 000 字节不爆栈）、base64url、非法长度。
+- **单元测试** `src/compat/__tests__/deflateRaw.spec.ts`：**12 个用例**（§9.7 详述）。
+- **E2E** `e2e/reader.spec.ts` 新增两条，都用 `page.addInitScript` 在**任何应用脚本执行之前**把
+  真实 WebView 91 的能力差异**复刻**出来：
+  1. 把 16 个 ES2022+ 内置对象全部 `delete`，断言应用仍能打开书、完成分页、翻页，
+     且 `pageerror` 为空。没有 polyfill 时这条会以
+     `Object.groupBy is not a function` 失败 —— 与模拟器上的报错完全一致。
+  2. 把 `DecompressionStream` 换成"gzip/deflate 可用、deflate-raw 抛错"的 Chrome 91 复刻版，
+     断言 **frankenstein.epub**（36 个 deflate 条目）仍能打开、目录 ≥20 项、跳章后有正文、
+     翻页可用、`pageerror` 为空。没有兜底时这条会以
+     `Unsupported compression format: 'deflate-raw'` 失败。
+
+### 9.6 原始输出
+
+`evidence/task-14-compat-raw-output.txt` 收录了 5 条命令的**完整原始输出与退出码**：
+
+| 命令 | 退出码 |
+|---|---|
+| `pnpm run build`（含 `vue-tsc --noEmit`） | 0 |
+| `node scripts/audit-builtins.mjs src --chrome 91` | 0 |
+| `node scripts/audit-builtins.mjs dist --chrome 91` | 0 |
+| `pnpm run test`（vitest，**83** 用例 / 4 个文件） | 0 |
+| `pnpm run test:e2e`（Playwright，**8** 用例） | 0 |
+
+### 9.7 ★ 第二个阻塞点：`DecompressionStream('deflate-raw')`（真机复现）
+
+补齐 builtin 之后，**示例书能开、真书仍然全打不开**。Android 真机 logcat（mobile-dev 提供）：
+
+```
+这本书打不开：Failed to construct 'DecompressionStream': Unsupported compression format: 'deflate-raw'
+```
+
+**这是"示例书假阳性"的典型**：`sample.epub` 是 100% STORE（压缩方法 **0**），
+根本不走解压；而真实公版书都有 deflate 条目（压缩方法 **8**）。
+
+| 文件 | 大小 | ZIP 压缩方法分布 |
+|---|---|---|
+| `dist/sample/sample.epub` | 5 509 B | `{0: 8}` ← 全部 STORE，不触发解压 |
+| `testdata/books/frankenstein.epub` | 294 175 B | `{0: 2, 8: 36}` |
+| `testdata/books/alice-in-wonderland.epub` | 136 756 B | `{0: 2, 8: 19}` |
+| `testdata/books/pride-and-prejudice.epub` | 609 138 B | `{0: 2, 8: 22}` |
+
+ZIP 的压缩方法 8 里存的是**裸 deflate 流**（没有 zlib 头），所以 zip.js 必须用
+`'deflate-raw'` 构造 `DecompressionStream`。而该格式是 **Chrome 103+** 才有：
+
+```
+WebView 91 实测：{ gzip: OK, deflate: OK, deflate-raw: THROW }
+```
+
+→ **WebView 91 上所有真实 EPUB 都打不开**。
+
+#### 修法：零新增依赖的窄兜底
+
+**没有引入 `fflate` npm 依赖** —— foliate-js 自带的 `src/vendor/foliate-js/vendor/fflate.js`
+（MIT，上游已 vendored）就是 fflate 的裁剪版，导出了 `unzlibSync`。
+它只做 zlib 容器的 inflate，所以这里给它补 2 字节 zlib 头（`0x78 0x9c`，
+`0x789c % 31 === 0`）与 4 字节 adler32 占位（它不校验校验和）就能解裸 deflate。
+
+**窄接管策略**（`src/compat/polyfills.ts` 的 `installDecompressionStreamFallback()`）：
+
+1. **特性探测** `new DecompressionStream('deflate-raw')`：
+   不抛 → 原生可用 → **完全不接管**（绝不把原生快速路径换成 JS 实现）；
+2. 抛错才安装 shim，且**只**接管 `'deflate-raw'`（和 `'deflate64-raw'` → 明确抛错，
+   不产出垃圾数据）；
+3. `'gzip'` / `'deflate'` **原样委托**给原生实现（不退性能、不改语义）；
+4. `Shim.prototype = Native.prototype`，尽量保持 `instanceof` 语义。
+
+zip.js 在**模块初始化时**就把 `DecompressionStream` 抓进 config，
+而 `main.ts` 第一行 import 保证 polyfill 先于它执行 —— 顺序天然满足，无需改 vendor。
+
+#### 验证（三层）
+
+| 层 | 内容 | 结果 |
+|---|---|---|
+| 单元 | `src/compat/__tests__/deflateRaw.spec.ts`，用 `node:zlib` 的 `deflateRawSync` **生成真实裸 deflate 数据**（不是手搓假数据）：解压往返、空输入、70 000 字节、压缩级别 0/1/9、分块喂入 `pipeThrough`、原生支持时不接管、gzip/deflate 委托 | **12/12** |
+| 审计 | `scripts/audit-builtins.mjs` 新增 "Web API 能力" 段：`DecompressionStream('deflate-raw')` 最低 Chrome 103、需兜底、处理方式 | exit 0 |
+| E2E | `模拟 Chromium 91 缺 deflate-raw`：用 `addInitScript` 把 `DecompressionStream` 换成"gzip/deflate 可用、deflate-raw 抛错"的 Chrome 91 复刻版，然后打开 **frankenstein.epub** —— 断言目录 ≥20 项、点击跳章后正文 >2 000 字符、翻页 CFI 变化、`pageerror` 为空 | **通过**，截图 `evidence/e2e-legacy-deflate-raw.png` |
+
+#### 启动能力探测（用户可读提示）
+
+`src/compat/capabilities.ts` 的 `probeCapabilities()` 在启动时检查关键能力
+（builtin 存在性 + `deflate-raw` 可用性），缺任何一条就打 `console.warn`：
+
+> 当前系统的网页组件版本太旧，缺少必需的能力（`xxx`）。
+> 请更新「Android System WebView」：在应用商店搜索它并安装更新，然后重新打开本应用。
+
+结果同时挂到 `window.__HPF_CAPABILITIES__`，供排障与 E2E 断言。
+这是**兜底**：宁可给一句话，也不要白屏或 `TypeError: xxx is not a function`。
+
+### 9.8 对 Android 的直接影响
+
+Android 端（task-15）此前的两个阻塞都已解除：
+
+1. `Object.groupBy is not a function` → §9.2~9.6（14 个 builtin 补齐）；
+2. `Unsupported compression format: 'deflate-raw'` → §9.7（零依赖窄兜底）。
+
+两者都有 E2E 回归保护，且 E2E 是在**真实 Chrome** 里把 WebView 91 的行为**复刻**出来验证的
+（删 builtin / 让 deflate-raw 构造抛错），不是只测桌面 Chrome 的原生能力。
+
+**注意**：polyfill 修的是"运行时能力缺失"。Android 侧若还有别的故障
+（`src/platform/mobile.ts` 的桥接、WebView 文件选择器、权限申请），不在本任务范围内。
+真实书验收请用 `testdata/books/frankenstein.epub`（31 章、含 36 个 deflate 条目），
+**不要**用 `sample.epub` —— 它是 STORE 压缩，测不出解压路径。

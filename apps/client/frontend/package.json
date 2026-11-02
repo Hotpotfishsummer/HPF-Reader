@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "api:types": "node scripts/gen-api-types.mjs",
+    "audit:compat": "node scripts/audit-builtins.mjs src --chrome 91",
+    "audit:compat:dist": "node scripts/audit-builtins.mjs dist --chrome 91",
     "make:sample": "node scripts/make-sample-epub.mjs"
   },
   "dependencies": {

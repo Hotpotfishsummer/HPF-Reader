@@ -7,21 +7,52 @@
  *
  * 注意：paginator.setStyles 支持传字符串或 `[beforeStyle, style]` 两段，
  * 这里用两段：before 负责排版（先于书籍自身 CSS 生效），style 负责覆盖（后于书籍 CSS 生效）。
+ *
+ * ★ 与几何的分工（task-12）：
+ *   本文件只负责**排版与配色**（字体、字号、行高、颜色、换行规则）；
+ *   **几何**（几栏、单栏多宽、页边距、栏间距）由 paginator 的 attribute 控制，
+ *   见 useFoliateEngine.setLayout()。两者不能混 —— CSS 改栏数不会让引擎重新分页。
  */
+
+/**
+ * ★ 把主文档的阅读器 CSS 变量**解析成具体值**。
+ *
+ * 为什么必须解析（这是 E2E 抓出来的真 bug）：
+ *   章节正文在 iframe 里，而 CSS 自定义属性**不跨文档继承**。
+ *   如果直接把字符串 `var(--reader-paper)` 写进 iframe 的样式表，
+ *   那个变量在 iframe 的 `:root` 上根本不存在 → 声明失效 → 背景变透明。
+ *   结果是"外层容器颜色看着对、正文其实没换主题"，夜间模式只有 UI 变了。
+ *
+ * `getComputedStyle` 读自定义属性时返回的是**已替换 var() 的计算值**，
+ * 所以这里拿到的是真正的颜色/字体栈。
+ */
+export interface ReaderTokens {
+  paper: string
+  ink: string
+  fontFamily: string
+}
+
+export function resolveReaderTokens(root: HTMLElement = document.documentElement): ReaderTokens {
+  const style = getComputedStyle(root)
+  const read = (name: string, fallback: string): string => style.getPropertyValue(name).trim() || fallback
+  return {
+    paper: read('--reader-paper', '#fbf8f2'),
+    ink: read('--reader-ink', '#23201c'),
+    fontFamily: read('--reader-font-family', 'Georgia, "Songti SC", serif'),
+  }
+}
 
 export interface ReaderStyleInput {
   fontFamily: string
   fontSize: number
   lineHeight: number
   letterSpacing: number
-  marginInline: number
+  /** 正文上下留白；左右由 paginator 的 margin attribute 负责。 */
   marginBlock: number
-  columnGap: number
-  maxInlineSize: number
-  maxColumnCount: number
   paper: string
   ink: string
-  /** 夜间/墨水屏：正文颜色反转由 foliate-view::part(filter) 处理，这里只管配色。 */
+  /** 允许段落首行缩进（中文书籍常见），书籍自身 CSS 优先。 */
+  textIndent: boolean
 }
 
 export function buildReaderStyles(input: ReaderStyleInput): [string, string] {
@@ -37,18 +68,25 @@ html {
   font-size: ${input.fontSize}px;
   line-height: ${input.lineHeight};
   letter-spacing: ${input.letterSpacing}em;
+  /* 窄屏时不要出现横向滚动条 */
+  overflow-wrap: break-word;
+  word-break: break-word;
+  -webkit-text-size-adjust: 100%;
 }
 body { margin-block: ${input.marginBlock}px; }
 `
+
   const style = `
 html { color-scheme: light; }
 p, li, div { orphans: 2; widows: 2; }
+p { margin-block: 0.6em; }
 a { color: inherit; text-decoration-color: currentColor; }
-img, svg, video { max-inline-size: 100% !important; block-size: auto !important; }
+/* 图片在竖屏窄栏里必须等比缩放，否则会撑破分栏 */
+img, svg, video, table { max-inline-size: 100% !important; block-size: auto !important; }
+table { border-collapse: collapse; }
+pre { white-space: pre-wrap; }
+${input.textIndent ? 'p { text-indent: 2em; margin-block: 0.2em; }' : ''}
 `
-  void input.marginInline
-  void input.columnGap
-  void input.maxInlineSize
-  void input.maxColumnCount
+
   return [before, style]
 }

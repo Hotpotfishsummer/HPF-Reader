@@ -53,8 +53,12 @@ export const useSettingsStore = defineStore(
         root.dataset['theme'] = uiTheme
         root.dataset['readerTheme'] = rTheme
         root.dataset['readerDark'] = rTheme === 'dark' ? 'true' : 'false'
-        // 夜间反转只作用于书籍内容（foliate-view::part(filter)）
-        root.style.setProperty('--reader-filter', rTheme === 'dark' ? 'invert(1)' : 'none')
+        // ⚠️ 这里曾经用 `foliate-view::part(filter) { filter: invert(1) }` 做夜间反转，
+        //    与"把 --reader-paper/--reader-ink 真正写进 iframe"的方案**重复**：
+        //    章节底色已经是 #14161a、字色已经是 #d8dce3，再整体 invert(1) 就又变回
+        //    浅色页面 —— 实测截图就是"点了夜间，正文还是白的"。
+        //    现在只保留变量注入这一条路径，反转滤镜保持 none（也避免把插图反成负片）。
+        root.style.setProperty('--reader-filter', 'none')
         if (isAppLocale(nextLocale)) applyLocale(nextLocale)
       },
       { immediate: true },

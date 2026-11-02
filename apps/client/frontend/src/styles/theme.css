@@ -103,7 +103,12 @@ foliate-view {
   block-size: 100%;
 }
 
+/*
+ * 夜间配色**不靠反转滤镜**：正文颜色由 readerStyles 直接写进章节文档
+ * （--reader-paper / --reader-ink 解析成具体值后 setStyles）。
+ * 反转滤镜会与这套配色叠加成"双重取反"，把深色页面变回浅色（实测 bug）。
+ * 保留这个 part 钩子只是为了让 --reader-filter 有落点，默认恒为 none。
+ */
 foliate-view::part(filter) {
-  /* 夜间反转只作用于书籍内容，不影响高亮浮层 */
   filter: var(--reader-filter, none);
 }
