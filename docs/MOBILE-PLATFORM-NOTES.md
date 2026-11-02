@@ -86,7 +86,8 @@
 | 触发点 | 点「打开示例书」后 `Object.groupBy is not a function` |
 | 源码位置 | vendored `foliate-js/epub.js` 第 178 / 200 / 204 / 206 / 258 行，使用 ES2024 `Object.groupBy` / `Map.groupBy`（需 Chrome 117+） |
 | logcat 原文 | `D/WailsActivity(4927): [WebView] ERROR: [engine] open failed TypeError: Object.groupBy is not a function (.../ReaderView-Bb7x_oFD.js:2)` |
-| 影响面 | **Android 上「打开书」必挂**；桌面 WebView2 版本新，所以**在 Windows 上完全没暴露** |
+| 影响面 | **Android 上「打开书」必挂**（修复前）；桌面 WebView2 版本新，所以**在 Windows 上完全没暴露** |
+| 修复后状态 | **已解决**：WebView 91 上真书可正常打开、翻页、跳章（见 §7.4 实测表） |
 
 ### 7.2 为什么这不是「降级构建目标」能解决的
 
@@ -103,7 +104,22 @@
 
 ### 7.4 支持基线（连带结论）
 
-- 移动端**最低支持 WebView 91 / Android 12**（补 polyfill 后）；
+**实测结论（2026-11-03，模拟器真机）：补 polyfill 后，WebView 91 / Android 12 上真书可正常阅读。**
+
+| 验证项 | WebView 91（Android 12） | WebView 124（Android 15） |
+|---|---|---|
+| 内置对象 polyfill | 安装 19 项 | 只需 3 项 |
+| `DecompressionStream('deflate-raw')` | **polyfill 接管后 ok** | 原生支持 |
+| 真书打开（frankenstein，294KB / 31 章） | **成功**（CFI 正常、可翻页） | 成功 |
+| 竖屏 / 横屏 | 均正常（截图 `12-` / `13-`） | 均正常 |
+| 目录跳章 | 正常（31 章可见） | 正常 |
+| 进度持久化 | 正常（`dataDir()` 修好后可存可续读） | 正常 |
+
+> ⚠️ **排查陷阱（我自己踩过，务必记下）**：诊断过程中设备上曾装过一份 **store-only 重打包 APK**（为绕开旧 deflate-raw 缺失而做的诊断态），
+> 它**不含** `task-14` 的兜底代码。在那份 APK 上测出的「真书打不开」是**假阴性**，不能当作 WebView 91 的真实能力。
+> 判定版本前必须先确认设备上装的是哪一份 APK（比对文件大小与 polyfill 日志里有没有 `DecompressionStream(deflate-raw)` 这一项）。
+
+- 移动端**最低支持 WebView 91 / Android 12**（补 polyfill 后实测可用）；
 - 真机上 WebView 一般可由应用商店更新到很新，但**国产 ROM 与 e-ink 设备常年不更新**，所以不能假设；
 - 启动时若检测到 WebView 低于基线，应给出**可读提示**，而不是白屏或静默失败。
 
