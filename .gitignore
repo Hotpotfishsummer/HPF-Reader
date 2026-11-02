@@ -16,6 +16,17 @@ build/bin/
 apps/client/build/bin/
 apps/client/frontend/dist/
 
+# Android / Gradle 构建产物
+#   注意：build/android/ 下的**脚手架**（build.gradle、gradlew、MainActivity.java、overlay.json、gradle-wrapper.jar）必须入库，
+#   否则 APK 无法从仓库复现；只忽略 Gradle 生成的产物。
+apps/client/build/android/**/build/
+apps/client/build/android/.gradle/
+apps/client/build/android/local.properties
+apps/client/build/android/.idea/
+*.apk
+*.aab
+*.hprof
+
 # env & data
 .env
 .env.*
