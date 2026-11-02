@@ -417,13 +417,39 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AiJob' }
 
+  /v1/sources:
+    get:
+      tags: [sources]
+      summary: 列出已注册的合法书源
+      description: |
+        返回内置书源标识。全部为**合法公版 / 开放获取**资源：
+        Project Gutenberg、Standard Ebooks、Open Library、Internet Archive。
+        本项目**不含**通用抓取规则引擎，也不支持加载第三方书源。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SourceList' }
+
   /v1/sources/search:
     get:
       tags: [sources]
-      summary: 合法书源搜索（Gutenberg / Standard Ebooks / Open Library / OPDS）
+      summary: 合法书源搜索（Gutenberg / Standard Ebooks / Open Library / Internet Archive）
+      description: |
+        聚合搜索内置书源；不指定 source 时搜索全部并聚合结果，
+        部分源失败不影响整体（错误放在 details 里）。
+
+        **下载链的合法性判据在协议层**：OPDS 源只对带
+        `http://opds-spec.org/acquisition/open-access` relation 的链接
+        给出 downloadUrl。没有该 relation 的条目（借阅 / 试读 / 裸
+        acquisition / Atom enclosure）**不会**出现在结果里 ——
+        因此返回的每一条都可直接下载。
       parameters:
-        - { name: q, in: query, required: true, schema: { type: string, minLength: 1 } }
-        - { name: source, in: query, schema: { type: string } }
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 256 } }
+        - name: source
+          in: query
+          schema: { type: string, enum: [gutenberg, standard-ebooks, open-library, internet-archive] }
       responses:
         '200':
           description: OK
@@ -432,6 +458,16 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/SourceItem' }
+        '400':
+          description: q 缺失 / 过长，或 source 未知
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '502':
+          description: 上游书源不可用
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
 components:
   securitySchemes:
@@ -783,6 +819,15 @@ components:
             used: { type: integer, format: int64 }
             resetAt: { type: string, format: date-time }
 
+    SourceList:
+      type: object
+      required: [sources]
+      properties:
+        sources:
+          type: array
+          items: { type: string }
+          example: [gutenberg, standard-ebooks, open-library, internet-archive]
+
     SourceItem:
       type: object
       required: [source, title, downloadUrl, license]
@@ -791,9 +836,28 @@ components:
         title: { type: string }
         author: { type: string, nullable: true }
         language: { type: string, nullable: true }
-        downloadUrl: { type: string, format: uri }
+        downloadUrl:
+          type: string
+          format: uri
+          description: |
+            可直接下载的地址。**仅当**条目具有可验证的开放获取依据时才存在：
+            - OPDS 源：必须带 `http://opds-spec.org/acquisition/open-access` relation
+            - 内置 Gutenberg：由我们核实为公有领域
+            没有依据的条目不会出现在结果里（而不是给一个空值）。
         coverUrl: { type: string, format: uri, nullable: true }
-        license: { type: string, description: 授权标识，例如 public-domain / cc0 }
+        license:
+          type: string
+          enum: [public-domain, open-access, mixed-open-access, cc0, unknown]
+          description: |
+            授权标识。
+            - public-domain：公有领域（已核实）
+            - open-access：OPDS 协议声明的开放获取
+            - mixed-open-access：源内混合公版与借阅，条目级以 open-access relation 为准
+            - unknown：未能核实（不应出现在下载结果里）
+        extra:
+          type: object
+          additionalProperties: true
+          description: 源站排障信息（例如 OPDS relation 与 MIME 类型）
 
 security:
   - bearerAuth: []
