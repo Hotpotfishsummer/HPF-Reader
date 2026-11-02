@@ -6,18 +6,45 @@ package store
 // 通过环境变量提供连接串，未提供则跳过：
 //   HPF_TEST_DATABASE_URL=postgres://hpf:xxx@127.0.0.1:5432/hpf_reader?sslmode=disable go test ./internal/store/
 //
-// 库必须是**空库或专用测试库**：测试会 TRUNCATE users（级联清空 devices）。
+// 测试不 TRUNCATE 整表，而是每个用例自建独立用户，靠 user_id / 邮箱隔离。
+// 因此可以指向**共享**测试库：多个测试包并行跑时不会互相清空数据。
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/hpf-reader/hpf-reader/apps/server/internal/db"
 	syncengine "github.com/hpf-reader/hpf-reader/apps/server/internal/sync"
 )
+
+// testEmailSuffix 返回每次调用都不同的后缀，用于隔离同一库里的测试数据。
+//
+// 这些测试曾经依赖 `TRUNCATE users CASCADE` 保证邮箱唯一，
+// 但那会与其它包的 DB 测试并行时互相清空。改用唯一后缀后，
+// 每个用例的数据天然隔离，可安全地在共享库上并行运行。
+func testEmailSuffix() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 36)
+}
+
+// testDeviceID 生成一个每次调用都不同的合法 UUID v4。
+//
+// 设备 ID 也必须唯一：库里残留的历史设备会让「注册成功」的断言直接失败。
+// 用 UUID 而不是拼接字符串，是因为 devices.id 是 UUID 列，格式非法会先报 22P02。
+func testDeviceID() string {
+	var b [16]byte
+	n := time.Now().UnixNano()
+	for i := range b {
+		b[i] = byte(n >> (uint(i) * 4))
+	}
+	b[6] = (b[6] & 0x0f) | 0x40 // version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // variant
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
 
 func testStore(t *testing.T) (*Store, context.Context) {
 	t.Helper()
@@ -32,10 +59,9 @@ func testStore(t *testing.T) (*Store, context.Context) {
 		t.Fatalf("connect: %v", err)
 	}
 	t.Cleanup(pool.Close)
-	// 只清 users：devices/refresh_tokens 都 ON DELETE CASCADE。
-	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE`); err != nil {
-		t.Fatalf("truncate users: %v", err)
-	}
+	// 不做 TRUNCATE：各用例用不同的邮箱与 deviceId，天然隔离。
+	// （曾经这里 TRUNCATE users CASCADE，导致与 worker 包的 DB 测试并行时互相清空，
+	//   表现为「单独跑绿、全量跑红」的间歇性失败。）
 	return New(pool), ctx
 }
 
@@ -51,17 +77,19 @@ func testStore(t *testing.T) (*Store, context.Context) {
 //  3. 原账号的设备绑定不受影响。
 func TestRegisterAccountDeviceConflictLeavesNoOrphanUser(t *testing.T) {
 	s, ctx := testStore(t)
-	const devID = "11111111-1111-4111-8111-111111111111"
+	// 邮箱带唯一后缀：多个测试共用同一个库时不会互相冲突（不再靠 TRUNCATE）。
+	u := testEmailSuffix()
+	devID := testDeviceID()
 
 	// 1) 用户 A 正常注册，占用 devID。
-	if _, _, err := s.RegisterAccount(ctx, "a@example.com", "hash-a", "A", DeviceRegistration{
+	if _, _, err := s.RegisterAccount(ctx, "a-"+u+"@example.com", "hash-a", "A", DeviceRegistration{
 		ID: devID, Name: "device-a", Platform: "windows",
 	}, 0); err != nil {
 		t.Fatalf("register A: %v", err)
 	}
 
 	// 2) 用户 B 用同一个 deviceId 注册 → 必须失败，且是「设备被占用」而非「找不到」。
-	_, _, err := s.RegisterAccount(ctx, "b@example.com", "hash-b", "B", DeviceRegistration{
+	_, _, err := s.RegisterAccount(ctx, "b-"+u+"@example.com", "hash-b", "B", DeviceRegistration{
 		ID: devID, Name: "device-b", Platform: "android",
 	}, 0)
 	if err == nil {
@@ -73,7 +101,7 @@ func TestRegisterAccountDeviceConflictLeavesNoOrphanUser(t *testing.T) {
 
 	// 3) 关键断言：没有孤儿用户行。
 	var n int
-	if err := s.Pool().QueryRow(ctx, `SELECT count(*) FROM users WHERE email = $1`, "b@example.com").Scan(&n); err != nil {
+	if err := s.Pool().QueryRow(ctx, `SELECT count(*) FROM users WHERE email = $1`, "b-"+u+"@example.com").Scan(&n); err != nil {
 		t.Fatalf("count users: %v", err)
 	}
 	if n != 0 {
@@ -86,7 +114,7 @@ func TestRegisterAccountDeviceConflictLeavesNoOrphanUser(t *testing.T) {
 		t.Fatalf("query device owner: %v", err)
 	}
 	var aID string
-	if err := s.Pool().QueryRow(ctx, `SELECT id::text FROM users WHERE email = $1`, "a@example.com").Scan(&aID); err != nil {
+	if err := s.Pool().QueryRow(ctx, `SELECT id::text FROM users WHERE email = $1`, "a-"+u+"@example.com").Scan(&aID); err != nil {
 		t.Fatalf("query user A: %v", err)
 	}
 	if owner != aID {
@@ -100,17 +128,18 @@ func TestRegisterAccountDeviceConflictLeavesNoOrphanUser(t *testing.T) {
 // ErrNotFound → HTTP 404（「资源不存在」），语义完全错了。
 func TestUpsertDeviceRejectsForeignDevice(t *testing.T) {
 	s, ctx := testStore(t)
-	const devID = "22222222-2222-4222-8222-222222222222"
+	u := testEmailSuffix()
+	devID := testDeviceID()
 
-	if _, _, err := s.RegisterAccount(ctx, "owner@example.com", "h", "", DeviceRegistration{
+	if _, _, err := s.RegisterAccount(ctx, "owner-"+u+"@example.com", "h", "", DeviceRegistration{
 		ID: devID, Name: "owner-device",
 	}, 0); err != nil {
 		t.Fatalf("register owner: %v", err)
 	}
 	// 另一个用户试图占用同一设备 ID。
 	// other 在 if 之后还要用（传给 UpsertDevice），因此单独声明。
-	other, _, err := s.RegisterAccount(ctx, "other@example.com", "h2", "", DeviceRegistration{
-		ID: "33333333-3333-4333-8333-333333333333",
+	other, _, err := s.RegisterAccount(ctx, "other-"+u+"@example.com", "h2", "", DeviceRegistration{
+		ID: testDeviceID(),
 	}, 0)
 	if err != nil {
 		t.Fatalf("register other: %v", err)
@@ -124,9 +153,10 @@ func TestUpsertDeviceRejectsForeignDevice(t *testing.T) {
 // 注册时传的 deviceName 必须真的落库，并能从 ListDevices 读回来。
 func TestDeviceNameIsPersistedAndEchoed(t *testing.T) {
 	s, ctx := testStore(t)
+	u := testEmailSuffix()
 	// dev 在 if 之后还要用，因此单独声明。
-	_, dev, err := s.RegisterAccount(ctx, "named@example.com", "h", "", DeviceRegistration{
-		ID: "44444444-4444-4444-8444-444444444444", Name: "spike-device-A", Platform: "windows", AppVersion: "1.0",
+	_, dev, err := s.RegisterAccount(ctx, "named-"+u+"@example.com", "h", "", DeviceRegistration{
+		ID: testDeviceID(), Name: "spike-device-A", Platform: "windows", AppVersion: "1.0",
 	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
@@ -149,8 +179,9 @@ func TestDeviceNameIsPersistedAndEchoed(t *testing.T) {
 // TestDeviceNameNullWhenNotProvided 保证「没有名字」返回 null，而不是空字符串冒充有值。
 func TestDeviceNameNullWhenNotProvided(t *testing.T) {
 	s, ctx := testStore(t)
-	_, dev, err := s.RegisterAccount(ctx, "anon@example.com", "h", "", DeviceRegistration{
-		ID: "55555555-5555-4555-8555-555555555555", Platform: "linux",
+	u := testEmailSuffix()
+	_, dev, err := s.RegisterAccount(ctx, "anon-"+u+"@example.com", "h", "", DeviceRegistration{
+		ID: testDeviceID(), Platform: "linux",
 	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
@@ -167,15 +198,16 @@ func TestDeviceNameNullWhenNotProvided(t *testing.T) {
 // 断言：返回 ErrInvalidInput（HTTP 层据此回 400）。
 func TestPushForeignKeyViolationIsClientError(t *testing.T) {
 	s, ctx := testStore(t)
-	u, _, err := s.RegisterAccount(ctx, "push@example.com", "h", "", DeviceRegistration{
-		ID: "66666666-6666-4666-8666-666666666666",
+	sfx := testEmailSuffix()
+	u, _, err := s.RegisterAccount(ctx, "push-"+sfx+"@example.com", "h", "", DeviceRegistration{
+		ID: testDeviceID(),
 	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
 	}
 	sy := NewSyncStore(s)
 	payload := []byte(`{"totalProgression":0.5,"contentHash":"sha256:abc"}`)
-	_, err = sy.Push(ctx, u.ID, "66666666-6666-4666-8666-666666666666",
+	_, err = sy.Push(ctx, u.ID, testDeviceID(),
 		[]syncengine.StoreOp{{
 			Entity: syncengine.EntityProgress, EntityID: "99999999-9999-4999-8999-999999999999",
 			Kind: syncengine.KindUpsert, HLC: "001a19d234920-00000000-a1a1a1a1", Payload: payload,

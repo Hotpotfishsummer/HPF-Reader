@@ -11,22 +11,32 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/hpf-reader/hpf-reader/apps/server/internal/ai"
+	"github.com/hpf-reader/hpf-reader/apps/server/internal/storage"
 	"github.com/hpf-reader/hpf-reader/apps/server/internal/store"
 )
 
 // Deps 是 worker 依赖。
 type Deps struct {
-	Logger          *slog.Logger
-	Store           *store.Store
-	SyncStore       *store.SyncStore
-	Translator      ai.Translator
+	Logger     *slog.Logger
+	Store      *store.Store
+	SyncStore  *store.SyncStore
+	Translator ai.Translator
+	// Storage 用于读取书籍原始文件（整书翻译需要从 EPUB 抽章节）。
+	Storage         storage.Store
 	Interval        time.Duration
 	IdempotencyTTL  time.Duration
 	CleanupInterval time.Duration
+	// StaleJobAfter 是 running 任务的租约时长：超过它没更新 locked_at 就判定为卡死。
+	// 默认 15 分钟；整书翻译是逐块推进的，块与块之间会刷新 locked_at，所以不会误判。
+	StaleJobAfter time.Duration
+	// MaxAttempts 是重试上限：超过就不再退回 queued，避免毒任务无限重跑烧钱。
+	MaxAttempts int
 }
 
 // Worker 轮询并处理后台任务。
@@ -46,12 +56,22 @@ func New(d Deps) *Worker {
 	if d.IdempotencyTTL <= 0 {
 		d.IdempotencyTTL = 7 * 24 * time.Hour
 	}
+	if d.StaleJobAfter <= 0 {
+		d.StaleJobAfter = 15 * time.Minute
+	}
+	if d.MaxAttempts <= 0 {
+		d.MaxAttempts = 3
+	}
 	return &Worker{deps: d, id: "worker-1"}
 }
 
 // Run 阻塞运行直到 ctx 取消。
 func (w *Worker) Run(ctx context.Context) {
 	w.deps.Logger.Info("background worker started", "poll_interval", w.deps.Interval.String())
+
+	// 启动时先回收上一次进程崩溃/重启遗留的 running 任务。
+	// 不做这一步的话，这些任务永远不会被再捞到（ClaimAIJob 只认 queued）。
+	w.reclaimStale(ctx)
 
 	poll := time.NewTicker(w.deps.Interval)
 	defer poll.Stop()
@@ -64,10 +84,27 @@ func (w *Worker) Run(ctx context.Context) {
 			w.deps.Logger.Info("background worker stopping")
 			return
 		case <-poll.C:
+			// 每轮都回收：多 worker 部署时，别的 worker 挂掉留下的任务也能被接走，
+			// 不必等重启。开销是一条 UPDATE，可忽略。
+			w.reclaimStale(ctx)
 			w.drain(ctx)
 		case <-cleanup.C:
 			w.cleanup(ctx)
 		}
+	}
+}
+
+// reclaimStale 把租约超时的 running 任务退回 queued。
+//
+// 这是断点续跑的前提：任务若不回到 queued，就永远没机会被重新执行。
+func (w *Worker) reclaimStale(ctx context.Context) {
+	n, err := w.deps.Store.ReclaimStaleJobs(ctx, w.deps.StaleJobAfter, w.deps.MaxAttempts)
+	if err != nil {
+		w.deps.Logger.Warn("reclaim stale jobs failed", "error", err)
+		return
+	}
+	if n > 0 {
+		w.deps.Logger.Info("reclaimed stale running jobs", "count", n)
 	}
 }
 
@@ -89,30 +126,95 @@ func (w *Worker) drain(ctx context.Context) {
 	}
 }
 
-// process 处理单个任务。
+// process 处理单个任务：按 kind 分派到具体实现。
 //
-// 一期行为：把任务标记为 failed 并写明「未接入模型」，而不是假装成功。
-// 虚假的 succeeded 会让前端与用户误以为正文已被处理，属于最糟的失败模式。
+// 为什么必须有明确的「未实现」兜底而不是静默成功：
+// 虚假的 succeeded 会让前端与用户误以为正文已被处理，是最糟的失败模式。
+// 未知 kind 一律 failed 并写明原因。
 func (w *Worker) process(ctx context.Context, job store.AIJob) {
 	log := w.deps.Logger.With("job_id", job.ID, "kind", job.Kind, "user_id", job.UserID)
 	log.Info("processing ai job", "attempt", job.Attempts)
 
-	// 占位实现：真正的整书翻译 / 实体归一化需要分块调度与长事务，
-	// 属于 M5 范围。这里保证「任务被消费、状态被正确推进、错误可解释」。
-	result, _ := json.Marshal(map[string]any{
-		"status":   "not_implemented",
-		"kind":     job.Kind,
-		"message":  "AI 后台任务处理器尚未接入模型调用（M5 范围）；接口与状态机已就绪",
-		"provider": w.providerName(),
-	})
-	if err := w.deps.Store.FinishAIJob(ctx, job.ID, "failed", 0, result,
-		"AI job processor is not implemented yet (planned for M5)"); err != nil {
-		log.Error("finish ai job failed", "error", err)
+	var (
+		result any
+		err    error
+		status = "succeeded"
+		prog   = 1.0
+	)
+
+	switch job.Kind {
+	case "book_translate":
+		var res translateResult
+		res, err = w.runBookTranslate(ctx, job)
+		result = res
+		prog = chunkFraction(res.DoneChunks, res.TotalChunks)
+		switch {
+		case errors.Is(err, errJobPaused):
+			// 配额耗尽：暂停而不是失败，已完成块全部保留，下个周期可续跑。
+			status = "paused"
+			err = nil
+		case errors.Is(err, errJobCanceled):
+			status = "canceled"
+			err = nil
+		case errors.Is(err, context.Canceled):
+			// 进程关闭：任务保持 running，重启后会被 ClaimAIJob 重新捞起。
+			log.Info("worker shutting down; leaving job running for resume")
+			return
+		}
+	case "entity_normalize":
+		var res normalizeResult
+		res, err = w.runEntityNormalize(ctx, job)
+		result = res
+		if errors.Is(err, errNotImplemented) {
+			status, err = "failed", errNotImplemented
+		}
+	case "summarize":
+		var res summarizeResult
+		res, err = w.runSummarize(ctx, job)
+		result = res
+		if errors.Is(err, errNotImplemented) {
+			status, err = "failed", errNotImplemented
+		}
+	default:
+		err = fmt.Errorf("%w: kind %q", errUnknownKind, job.Kind)
+	}
+
+	if err != nil && status == "succeeded" {
+		status = "failed"
+	}
+	var payload json.RawMessage
+	if result != nil {
+		if b, mErr := json.Marshal(result); mErr == nil {
+			payload = b
+		}
+	}
+	errMsg := ""
+	if err != nil {
+		errMsg = err.Error()
+	}
+	var finErr error
+	if status == "paused" {
+		finErr = w.deps.Store.PauseAIJob(ctx, job.ID, prog, payload, errMsg)
+	} else {
+		finErr = w.deps.Store.FinishAIJob(ctx, job.ID, status, prog, payload, errMsg)
+	}
+	if finErr != nil {
+		log.Error("finish ai job failed", "error", finErr)
 		return
 	}
-	log.Info("ai job marked as not implemented")
+	log.Info("ai job finished", "status", status, "progress", prog)
 }
 
+// chunkFraction 把块数换算成进度（总数为 0 时视为完成）。
+func chunkFraction(done, total int) float64 {
+	if total <= 0 {
+		return 1
+	}
+	if done >= total {
+		return 1
+	}
+	return float64(done) / float64(total)
+}
 func (w *Worker) providerName() string {
 	if w.deps.Translator == nil {
 		return "none"

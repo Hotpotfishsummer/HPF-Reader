@@ -130,6 +130,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /v1/ai/jobs/{jobId}", s.requireAuth(s.handleGetAIJob))
 
 	// ---- sources ----
+	mux.HandleFunc("GET /v1/sources", s.requireAuth(s.handleSourceList))
 	mux.HandleFunc("GET /v1/sources/search", s.requireAuth(s.handleSourceSearch))
 
 	return s.chain(mux)

@@ -1,0 +1,114 @@
+# task-21：OPDS 客户端 + 合法公版书库 —— 原始命令与原始输出
+# 目录：apps/server    工具：go 1.26    时间：2026-11-03
+
+## 0) 结论
+只做 OPDS（开放标准）+ 内置合法公版源，不做通用抓取规则引擎。
+合法性判据落在协议层：只对 http://opds-spec.org/acquisition/open-access
+relation 的链接给出 downloadUrl；没有该 relation 的条目不出现在结果里。
+
+## 1) 真实 fixture（抓自公开 OPDS 源，非手写）
+  gutenberg-ebook-acquisition.opds.xml   12483 B
+  gutenberg-search-navigation.opds.xml   62371 B
+  standardebooks-atom-austen.xml   30794 B
+  standardebooks-new-releases.atom.xml   67552 B
+  standardebooks-opds-austen.xml   36670 B
+
+## 2) 关键事实：各源 relation 形态并不统一（这是设计的依据）
+| fixture | acquisition | open-access | enclosure | 判定 |
+|---|---|---|---|---|
+| standardebooks-opds-austen.xml | 35 | 35 | 0 | 可下载（有 open-access） |
+| gutenberg-ebook-acquisition.opds.xml | 6 | 0 | 0 | 0 条（无 open-access） |
+| gutenberg-search-navigation.opds.xml | 0 | 0 | 0 | 0 条（无 open-access） |
+| standardebooks-atom-austen.xml | 0 | 0 | 35 | 0 条（无 open-access） |
+
+## 3) 单测（核心正确性）
+  --- SKIP: TestLiveOPDSSources (0.00s)
+  --- SKIP: TestLiveStandardEbooksOpenAccess (0.00s)
+  --- PASS: TestParseOPDSStandardEbooksOpenAccess (0.00s)
+  --- PASS: TestParseOPDSGutenbergBareAcquisitionIsRejected (0.00s)
+  --- PASS: TestParseOPDSNavigationFeedYieldsNoItems (0.00s)
+  --- PASS: TestParseOPDSAtomEnclosureIsNotOPDS (0.00s)
+  --- PASS: TestIsOpenAccessIsExactMatch (0.00s)
+  --- PASS: TestAcquisitionSubtypesAreNotOpenAccess (0.00s)
+  --- PASS: TestMixedRelationsPickOnlyOpenAccess (0.00s)
+  --- PASS: TestOpenAccessXHTMLIsNotADownloadableBook (0.00s)
+  --- PASS: TestParseOPDSMalformedXML (0.00s)
+  --- PASS: TestParseOPDSEmptyFeed (0.00s)
+  --- PASS: TestOPDSSourceRejectsPrivateHosts (0.00s)
+  --- PASS: TestOPDSSourceRejectsPlainHTTP (0.00s)
+  --- PASS: TestOPDSSourceRejectsRedirectToPrivateHost (0.00s)
+  --- PASS: TestOPDSSourceSearchEndToEnd (0.00s)
+  --- PASS: TestOPDSSourceHandlesUpstreamErrors (0.00s)
+  --- PASS: TestOPDSSourceTimeout (0.30s)
+  --- PASS: TestOPDSSourceRequiresQueryPlaceholder (0.00s)
+  --- PASS: TestGutenbergSearchParsesAndFilters (0.00s)
+  --- PASS: TestGutenbergHandlesUpstreamErrors (0.30s)
+  --- PASS: TestGutenbergRejectsPrivateHosts (0.00s)
+  --- PASS: TestRegistryDispatch (0.00s)
+  --- PASS: TestIsPrivateIPBlocksInternalRanges (0.00s)
+  --- PASS: TestIsPrivateIPFailsClosed (0.00s)
+  --- PASS: TestDialRejectsPrivateIPBeforeConnecting (0.00s)
+  --- PASS: TestDialAllowsPrivateIPWhenExplicitlyAllowed (0.00s)
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/sources	0.711s
+
+## 4) SSRF / DNS 重绑定防护
+  --- PASS: TestOPDSSourceRejectsPrivateHosts (0.00s)
+  --- PASS: TestOPDSSourceRejectsPlainHTTP (0.00s)
+  --- PASS: TestOPDSSourceRejectsRedirectToPrivateHost (0.00s)
+  --- PASS: TestGutenbergRejectsPrivateHosts (0.00s)
+  --- PASS: TestIsPrivateIPBlocksInternalRanges (0.00s)
+  --- PASS: TestIsPrivateIPFailsClosed (0.00s)
+  --- PASS: TestDialRejectsPrivateIPBeforeConnecting (0.00s)
+  --- PASS: TestDialAllowsPrivateIPWhenExplicitlyAllowed (0.00s)
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/sources	0.113s
+
+## 5) 真实网络测试（HPF_LIVE_SOURCES=1）
+      live_test.go:33: [standard-ebooks] 7 items
+      live_test.go:38:    - "Short Fiction" / "Ring Lardner" / public-domain / https://standardebooks.org/ebooks/ring-lardner/short-fiction/downloads/ring-lardner_short-fiction.epub?source=feed
+      live_test.go:38:    - "Northanger Abbey" / "Jane Austen" / public-domain / https://standardebooks.org/ebooks/jane-austen/northanger-abbey/downloads/jane-austen_northanger-abbey.epub?source=feed
+      live_test.go:38:    - "Mansfield Park" / "Jane Austen" / public-domain / https://standardebooks.org/ebooks/jane-austen/mansfield-park/downloads/jane-austen_mansfield-park.epub?source=feed
+      live_test.go:30: [open-library] FAILED: sources: OPDS request failed: Get "https://openlibrary.org/feeds/opds/search?query=austen": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+      live_test.go:30: [internet-archive] FAILED: sources: OPDS request failed: Get "https://archive.org/advancedsearch.php?q=austen&fl%5B%5D=identifier&output=atom": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+  --- PASS: TestLiveOPDSSources (17.41s)
+      live_test.go:65: live Standard Ebooks: 7 items
+      live_test.go:70:    "Short Fiction" by "Ring Lardner" -> https://standardebooks.org/ebooks/ring-lardner/short-fiction/downloads/ring-lardner_short-fiction.epub?source=feed (public-domain)
+      live_test.go:70:    "Northanger Abbey" by "Jane Austen" -> https://standardebooks.org/ebooks/jane-austen/northanger-abbey/downloads/jane-austen_northanger-abbey.epub?source=feed (public-domain)
+      live_test.go:70:    "Mansfield Park" by "Jane Austen" -> https://standardebooks.org/ebooks/jane-austen/mansfield-park/downloads/jane-austen_mansfield-park.epub?source=feed (public-domain)
+      live_test.go:70:    "Sense and Sensibility" by "Jane Austen" -> https://standardebooks.org/ebooks/jane-austen/sense-and-sensibility/downloads/jane-austen_sense-and-sensibility.epub?source=feed (public-domain)
+      live_test.go:70:    "Persuasion" by "Jane Austen" -> https://standardebooks.org/ebooks/jane-austen/persuasion/downloads/jane-austen_persuasion.epub?source=feed (public-domain)
+  --- PASS: TestLiveStandardEbooksOpenAccess (1.03s)
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/sources	18.525s
+
+可达性实测（Test-NetConnection -Port 443）：
+  standardebooks.org:443 -> True
+  www.gutenberg.org:443 -> True
+  openlibrary.org:443 -> False
+  archive.org:443 -> False
+
+## 6) 契约门禁
+  --- PASS: TestOpenAPINoDanglingRefs (0.00s)
+  --- PASS: TestSourceItemLicenseEnumMatchesCode (0.00s)
+  --- PASS: TestSourceListEndpoint (0.00s)
+  --- PASS: TestSourceListRequiresAuth (0.00s)
+  --- PASS: TestSourceSearchOnlyReturnsDownloadableItems (0.00s)
+  --- PASS: TestSourceSearchRejectsNonOpenAccessUpstream (0.00s)
+  --- PASS: TestSourceSearchUnknownSource (0.00s)
+  --- PASS: TestSourceSearchRequiresQuery (0.00s)
+  --- PASS: TestSourceSearchWithoutRegistryIs503 (0.00s)
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/httpapi	0.137s
+
+## 7) 全套门禁
+$ gofmt -l .  -> (empty, clean)
+$ go build ./...  -> exit 0
+$ go vet ./...    -> exit 0
+$ go test ./... -count=1
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/auth	0.172s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/booktext	0.122s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/config	0.119s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/httpapi	0.167s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/sources	0.728s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/storage	0.099s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/store	0.131s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/sync	0.081s
+  ok  	github.com/hpf-reader/hpf-reader/apps/server/internal/worker	0.123s
+  [exit] 0

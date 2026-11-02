@@ -55,6 +55,13 @@ type Config struct {
 	// 书源
 	SourcesTimeout time.Duration
 	GutendexURL    string
+	// OPDSSourcesEnabled 控制是否注册内置 OPDS 源（Standard Ebooks /
+	// Open Library / Internet Archive）。默认开启；关闭后只剩 Gutenberg。
+	OPDSSourcesEnabled bool
+	// StandardEbooksOPDSURL 等三个内置 OPDS 源的搜索地址，便于测试/镜像替换。
+	StandardEbooksOPDSURL  string
+	OpenLibraryOPDSURL     string
+	InternetArchiveOPDSURL string
 
 	// 队列
 	QueueDriver string // none | asynq
@@ -130,6 +137,14 @@ func parse() Config {
 
 		SourcesTimeout: getDur("HPF_SOURCES_TIMEOUT", 8*time.Second),
 		GutendexURL:    getStr("HPF_GUTENDEX_URL", "https://gutendex.com"),
+
+		OPDSSourcesEnabled: getBool("HPF_OPDS_ENABLED", true),
+		StandardEbooksOPDSURL: getStr("HPF_OPDS_STANDARD_EBOOKS_URL",
+			"https://standardebooks.org/feeds/opds/all?query={query}&per-page=25"),
+		OpenLibraryOPDSURL: getStr("HPF_OPDS_OPEN_LIBRARY_URL",
+			"https://openlibrary.org/feeds/opds/search?query={query}"),
+		InternetArchiveOPDSURL: getStr("HPF_OPDS_INTERNET_ARCHIVE_URL",
+			"https://archive.org/advancedsearch.php?q={query}&fl%5B%5D=identifier&output=atom"),
 
 		QueueDriver: getStr("HPF_QUEUE_DRIVER", "none"),
 		RedisURL:    getStr("REDIS_URL", ""),

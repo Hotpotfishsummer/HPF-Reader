@@ -5,7 +5,19 @@ import (
 	"strings"
 )
 
-// handleSourceSearch 在合法书源中搜索（一期内置 Project Gutenberg）。
+// handleSourceList 列出已注册的合法书源。
+//
+// 前端用它填充书源选择器。返回的是**代码内置**的源标识，
+// 不存在"用户导入第三方书源"的入口（见 docs/M5-PLAN-LEGAL-CORRECTION.md §12）。
+func (s *Server) handleSourceList(w http.ResponseWriter, r *http.Request) {
+	if s.sources == nil {
+		writeError(w, http.StatusServiceUnavailable, codeUnavailable, "sources are not configured", nil)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"sources": s.sources.Names()})
+}
+
+// handleSourceSearch 在合法书源中搜索（Gutenberg + 内置 OPDS 源）。
 //
 // 支持 source 参数指定单个源；不带则搜索全部并聚合结果。
 // 部分源失败不影响整体（把错误放在响应的 details 里，前端可提示降级）。

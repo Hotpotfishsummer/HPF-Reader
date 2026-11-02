@@ -1,8 +1,12 @@
 # apps/server STATUS — HPF-Reader 服务端
 
-> 交付人：server-dev（task-8）｜接口契约：`api/openapi.yaml`（只读，未修改）
+> 交付人：server-dev（task-8）、client-dev（task-21 书源）｜接口契约：`api/openapi.yaml`
 > DDL / 同步设计参考 docs/TECH-PLAN.md §4.2、§4.3
 > 结论：**编译、单测、迁移、起服务、端到端 push/pull 全部实测通过**。
+>
+> **task-21 书源（§8）**：只做 OPDS（开放标准）+ 内置合法公版源，
+> **不含**通用抓取规则引擎（方案按法律意见修正，见 `docs/M5-PLAN-LEGAL-CORRECTION.md` §12）。
+> 合法性判据在协议层：只对 `http://opds-spec.org/acquisition/open-access` 给下载链。
 
 ## 0. 验证证据（都是实际执行结果）
 
@@ -13,7 +17,8 @@ go test ./... -count=1
   ok  internal/auth      0.152s      # argon2id / JWT / refresh 轮换 / 限流
   ok  internal/config    0.114s      # 默认值 / prod 强制密钥 / 枚举校验
   ok  internal/httpapi   1.062s      # 探针 / 401 / 限流 / CORS / 指标文本
-  ok  internal/sources   0.969s      # gutendex 解析 / SSRF 白名单 / 超时
+  ok  internal/sources   0.804s      # gutendex 解析 / SSRF 白名单 / 超时
+                                     # + task-21：OPDS 解析 / open-access 判据 / DNS 重绑定防护
   ok  internal/storage   0.103s      # 分片布局 / 原子写 / 路径穿越 / 哈希
   ok  internal/store     0.636s      # 游标编解码 / 错误翻译 / 载荷助手
   ok  internal/sync      0.566s      # ★ HLC 单调+因果、幂等、合并、游标
@@ -708,3 +713,139 @@ deploy/smoke-test.sh       → PASS=82 FAIL=0（全栈，含 13 项配额断言�
    但**闸门判定**在极端长输出场景下可能偏松。真正的精确闸门需要上游 usage 预检，属后续优化。
 4. 本轮只改 `apps/server/**»、`api/openapi.yaml»、`deploy/smoke-test.sh»（仅加断言），
    未动 `apps/client»、`docs»、`spikes»，**全程未执行 git**。
+
+## 8. M5-5 书源：OPDS 客户端 + 合法公版书库（task-21）
+
+> **方案按法律意见修正过。** 原规划的「声明式 JSON 书源引擎」**已废弃**：
+> 该形态与已被判刑的「书源指令包」同构（预设抓取规则 + 指向第三方站点）。
+> 详见 `docs/M5-PLAN-LEGAL-CORRECTION.md` §12。
+> 本轮只做 **OPDS（开放标准）+ 内置合法公版源**，不含任何通用抓取引擎。
+
+### 8.1 合法性判据落在协议层（这是整个设计的核心）
+
+OPDS 协议定义了 acquisition relation。我们**只对**带
+`http://opds-spec.org/acquisition/open-access` 的链接给出 `downloadUrl`。
+这是可验证的协议事实，不是「我们觉得它合法」。
+
+必须区分的 relation（都在 `internal/sources/opds.go` 里做成常量）：
+
+| relation | 含义 | 是否给下载链 |
+|---|---|---|
+| `acquisition/open-access` | 开放获取 | **是（唯一）** |
+| `acquisition`（裸的） | 「可获取」，不声明开放 | 否 |
+| `acquisition/borrow` | 借阅，需授权 | 否 |
+| `acquisition/sample` | 试读 | 否 |
+| `acquisition/subscribe` | 订阅 | 否 |
+| `enclosure`（Atom 原生） | 附件，无 OPDS 授权语义 | 否 |
+
+实现要点：`IsOpenAccess` 用**精确相等**匹配（`EqualFold`），
+不做前缀匹配 —— 否则裸 `acquisition` 会被误判成开放获取（这个坑有专门的单测）。
+
+### 8.2 ★ 实测发现：各源的 relation 形态**并不统一**
+
+这是本轮最重要的发现，直接决定了实现的形状。抓取真实响应后（fixture 在 `testdata/`）：
+
+| fixture | acquisition | open-access | enclosure | 结果 |
+|---|---|---|---|---|
+| `standardebooks-opds-austen.xml` | 35 | **35** | 0 | 7 条可下载 |
+| `gutenberg-ebook-acquisition.opds.xml` | 6 | **0** | 0 | **0 条** |
+| `gutenberg-search-navigation.opds.xml` | 0 | 0 | 0 | 0 条（导航型 feed） |
+| `standardebooks-atom-austen.xml` | 0 | 0 | 35 | 0 条（普通 Atom） |
+
+**关键结论**：Project Gutenberg 的 `/ebooks/{id}.opds` 用的是**裸** `acquisition`，
+一个 `open-access` 都没有。如果严格按 open-access 判据，Gutenberg 的 OPDS 源**不会**给出任何下载链。
+
+这是**故意保留**的行为，不是 bug：
+- Gutenberg 的公有领域属性由**内置源的 `License` 字段**声明（我们核实过），
+  走的是 `gutendex.com` JSON API（`sources.go` 里已有的 `Gutenberg`），不走 OPDS；
+- OPDS 的 open-access 判据只对**「用户自行添加的 OPDS 地址」**这类场景起兜底作用。
+
+**不能**因为「Gutenberg 是公版」就把裸 `acquisition` 也放行 ——
+否则任何人挂一个 OPDS 地址、条目里随便写个 `acquisition`，就变成了可下载的盗版链。
+两者的合法性来源不同，不能混用。
+
+### 8.3 复用了什么（没重写）
+
+按 Lead 的要求，`sources.go` 的架构**原样复用**：
+- `Searcher` 接口、`Registry`、`SearchAll`（并发聚合 + 部分失败容错）
+- `Item` 结构（已含 `License` 字段）
+- `Gutenberg` 的超时 / 4MiB 响应上限 / `isPrivateHost` SSRF 白名单
+
+新增文件：`opds.go`（协议解析 + 安全客户端）、`opds_source.go`（接 `Searcher`）。
+
+### 8.4 SSRF 加固（比内置源更严）
+
+| 防护 | 做法 |
+|---|---|
+| 强制 https | `checkURL` 拒绝非 https（测试可放开） |
+| 禁内网/回环/链路本地 | `isPrivateHost`（沿用）+ `isPrivateIP`（新增，判解析后的 IP） |
+| 禁重定向到内网 | `CheckRedirect` **逐跳**校验（最多 5 跳） |
+| **DNS 重绑定防护** | `DialContext` 里先解析、校验**所有**候选 IP、再用校验过的 IP 拨号 |
+| 响应体上限 | 8 MiB（`io.LimitReader`） |
+| 硬超时 | 8s（`http.Client.Timeout`） |
+
+DNS 重绑定防护是**本轮新增**的：只查主机名字面量拦不住「公网域名解析到 127.0.0.1」。
+实现细节：**任何一个**候选 IP 是内网就拒绝整个主机（防轮询 DNS 绕过），
+并且用校验过的那个 IP 去拨号（消除「校验后重新解析」的 TOCTOU 窗口）。
+
+### 8.5 验证（全部原始输出见 `apps/server/evidence/task-21-opds-raw-output.txt`）
+
+**单测 26 条全过**，其中核心正确性 4 条直接喂**真实 fixture**：
+
+```
+--- PASS: TestParseOPDSStandardEbooksOpenAccess          (35 个 open-access → 7 条可下载，且选 .epub 不是 xhtml)
+--- PASS: TestParseOPDSGutenbergBareAcquisitionIsRejected (6 个裸 acquisition → 0 条)
+--- PASS: TestParseOPDSNavigationFeedYieldsNoItems        (导航型 feed → 0 条)
+--- PASS: TestParseOPDSAtomEnclosureIsNotOPDS             (Atom enclosure → 0 条)
+```
+
+**SSRF 反向验证**（证明测试不是空跑）：把 `DialContext` 里的 IP 校验短路成 `if false`，
+测试立刻红：
+
+```
+ssrf_test.go:87: DialContext connected to loopback: SSRF guard is not effective
+--- FAIL: TestDialRejectsPrivateIPBeforeConnecting
+```
+
+> 踩坑记录：第一版这条测试只断言 `err != nil`，结果**假阳性** ——
+> 拨号到没监听的端口也会 `err != nil`（connection refused）。
+> 改成「起一个真的在监听的回环服务 + 断言错误文案来自我们的防护」后才真正有效。
+> 这是本轮最容易自欺的地方：**"有错误"不等于"防护生效"**。
+
+**契约门禁**：`TestOpenAPINoDanglingRefs` + `TestSourceItemLicenseEnumMatchesCode`。
+反向验证：注入 `$ref: #/components/schemas/DoesNotExist` → 
+`dangling $ref(s): [#/components/schemas/DoesNotExist]` + exit 1；还原后 exit 0。
+
+### 8.6 真实网络验证：一个通过，两个**未验证**（如实说明）
+
+| 源 | 状态 | 证据 |
+|---|---|---|
+| Standard Ebooks | ✅ **已实测通过** | 7 条真实条目，如 "Northanger Abbey" → `.../northanger-abbey.epub` |
+| Open Library | ⚠️ **未验证** | `openlibrary.org:443` 从本机不可达（Test-NetConnection=False） |
+| Internet Archive | ⚠️ **未验证** | `archive.org:443` 同样不可达 |
+| Project Gutenberg | ✅ 已实测（走 gutendex JSON，非 OPDS） | 原有 `Gutenberg` 测试全过 |
+
+Open Library 与 Internet Archive **不是代码问题，是网络不可达**。我没有把它们标成"已验证"。
+保守处理：
+1. 两者都标 `mixed-open-access`（源内混合公版与借阅），**不**预设它们全是公版；
+2. 合法性判据完全交给 open-access relation —— 即使 URL 参数有偏差，
+   最坏结果是「搜不到」，**不会**给出未经授权资源的下载链；
+3. 可用 `HPF_OPDS_OPEN_LIBRARY_URL` / `HPF_OPDS_INTERNET_ARCHIVE_URL` 覆盖地址。
+
+⚠️ **接入前必须在真实网络下跑一遍 live test 并核对 relation**，确认不是把 HTML 页面当 OPDS 解析。
+
+### 8.7 明确没做（与法律修正一致）
+
+- ❌ 通用 XPath / JSONPath 规则引擎 —— **不做**
+- ❌ JS 执行 —— **不做**
+- ❌ 书源市场 / 榜单 —— **不做**
+- ❌ 预留第三方侵权源加载点 —— **不预留**（预留本身就是帮助侵权的证据）
+- ❌ 用户导入书源规则 —— **不做**（官方不提供任何规则文件）
+
+### 8.8 契约变更（`api/openapi.yaml`）
+
+- 新增 `GET /v1/sources` → 返回已注册书源标识（新增 `SourceList` schema）
+- `/v1/sources/search`：补 `description`（写明协议层判据）、
+  `q` 加 `maxLength: 256`、`source` 加 `enum`、补 `400` / `502` 响应
+- `SourceItem`：`license` 从自由字符串改成 `enum`（与代码实际值一致，有测试守着）
+- 新增 `extra` 字段（排障用）

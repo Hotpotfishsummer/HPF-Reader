@@ -23,7 +23,7 @@ import (
 
 // quotaTestStore 连接测试库并清空数据。
 //
-// 注意：会 TRUNCATE users CASCADE，只能指向空的专用测试库。
+// 注意：每个测试自建独立用户，因此可以指向共享测试库而不会互相干扰。
 // 与 register_account_test.go 里的 testStore 共用同一个连接助手，但独立命名避免重复定义。
 func quotaTestStore(t *testing.T) *Store {
 	t.Helper()
@@ -37,9 +37,13 @@ func quotaTestStore(t *testing.T) *Store {
 		t.Fatalf("connect: %v", err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, "TRUNCATE users CASCADE"); err != nil {
-		t.Fatalf("truncate: %v", err)
-	}
+
+	// 不 TRUNCATE：每个测试自建独立用户，靠 user_id 隔离。
+	//
+	// 之前的版本用 `TRUNCATE users CASCADE` + advisory lock 串行化，
+	// 但锁挂在池连接上、连接归还后锁仍在别的会话里，跨包并行时依然踩踏，
+	// 表现为「单独跑绿、全量跑红」的间歇性失败。
+	// 隔离到用户级别后，两个包的 DB 测试可以真正并行，也不需要任何锁。
 	return New(pool)
 }
 

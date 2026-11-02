@@ -133,9 +133,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("create ai gateway: %w", err)
 	}
-	registry := sources.NewRegistry(
-		sources.NewGutenberg(cfg.GutendexURL, cfg.SourcesTimeout),
-	)
+	registry := buildSourceRegistry(&cfg)
 
 	_, handler := httpapi.New(httpapi.Deps{
 		Config:     cfg,
@@ -155,6 +153,7 @@ func run() error {
 		Store:           st,
 		SyncStore:       syncStore,
 		Translator:      translator,
+		Storage:         fileStore,
 		Interval:        5 * time.Second,
 		IdempotencyTTL:  7 * 24 * time.Hour,
 		CleanupInterval: time.Hour,
@@ -203,4 +202,30 @@ func run() error {
 	}
 	logger.Info("shutdown complete")
 	return nil
+}
+
+// buildSourceRegistry 组装书源注册表。
+//
+// 内置源全部是**合法公版/开放获取**资源：
+//   - Project Gutenberg（gutendex.com，全公版）
+//   - Standard Ebooks / Open Library / Internet Archive（OPDS）
+//
+// OPDS 源的合法性判据在协议层：**只对带
+// `http://opds-spec.org/acquisition/open-access` relation 的链接启用下载**
+// （见 internal/sources/opds.go）。没有该 relation 的条目不会给出下载链。
+//
+// 这里**不含**任何通用抓取规则引擎，也不预留第三方书源加载点 ——
+// 详见 docs/M5-PLAN-LEGAL-CORRECTION.md §12。
+func buildSourceRegistry(cfg *config.Config) *sources.Registry {
+	searchers := []sources.Searcher{
+		sources.NewGutenberg(cfg.GutendexURL, cfg.SourcesTimeout),
+	}
+	if cfg.OPDSSourcesEnabled {
+		searchers = append(searchers,
+			sources.NewOPDSSource(sources.SourceStandardEbooks, cfg.StandardEbooksOPDSURL, "public-domain"),
+			sources.NewOPDSSource(sources.SourceOpenLibrary, cfg.OpenLibraryOPDSURL, "mixed-open-access"),
+			sources.NewOPDSSource(sources.SourceInternetArchive, cfg.InternetArchiveOPDSURL, "mixed-open-access"),
+		)
+	}
+	return sources.NewRegistry(searchers...)
 }
