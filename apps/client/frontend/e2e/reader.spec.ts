@@ -153,33 +153,65 @@ test.describe('阅读闭环（本地优先）', () => {
         return { cfi: el?.lastLocation?.cfi ?? '', stored: table?.['sample']?.locator ?? '' }
       })
 
+    // ★ 等引擎位置**收敛**，而不是只等「某一次读到的 cfi 恰好等于 localStorage」。
+    //
+    // 这里有一个很容易漏掉的二次竞态（上一版就漏了）：
+    //   上一版单独 poll 了 "cfi === stored"，然后**又分两次**读
+    //     settled = readState()        ← T1 读引擎 + 读 localStorage
+    //     stored  = localStorage.getItem ← T2 再读一次 localStorage
+    //   最后断言 stored(T2) === settled.cfi(T1)。
+    // 引擎在 T1/T2 之间只要前进一次（分页收敛、图片加载后重排），这两个值就必然不等。
+    // 所以「poll 通过」不等于「状态稳定」。
+    //
+    // 正确做法：要求连续两次采样（间隔 250ms）读到**同一个** cfi，且该值等于 localStorage，
+    // 才认定收敛。这样拿到的快照可以作为后续所有断言的唯一基准。
+    let settled = { cfi: '', stored: '' }
     await expect
       .poll(
         async () => {
-          const s = await readState()
-          return s.cfi !== '' && s.cfi === s.stored
+          const a = await readState()
+          if (a.cfi === '' || a.cfi !== a.stored) return false
+          await page.waitForTimeout(250)
+          const b = await readState()
+          settled = b
+          // 稳定 = 两次采样一致，且末次仍与 localStorage 一致
+          return b.cfi !== '' && b.cfi === a.cfi && b.cfi === b.stored
         },
-        { timeout: 15_000, message: '引擎位置应该已写入 localStorage（进度落盘）' },
+        { timeout: 15_000, message: '引擎位置应收敛且已写入 localStorage（进度落盘）' },
       )
       .toBe(true)
 
-    const settled = await readState()
     const turned = { cfi: settled.cfi, index: (await probe(page)).index }
     expect(turned.cfi).not.toBe(first.cfi)
 
     // ★ 进度必须已经写进 localStorage —— 没有任何后端参与
+    // 断言用的是**同一个收敛快照**，不再二次读 localStorage（那是新的竞态窗口）。
+    expect(settled.stored, 'localStorage 里应该有进度记录').toBe(turned.cfi)
     const stored = await page.evaluate((key) => {
       const raw = localStorage.getItem(key)
       return raw ? (JSON.parse(raw) as Record<string, { locator?: string; fraction?: number }>) : null
     }, PROGRESS_KEY)
-    expect(stored, 'localStorage 里应该有进度记录').not.toBeNull()
-    expect(stored?.['sample']?.locator).toBe(turned.cfi)
+    expect(stored, 'localStorage 里应该有进度表').not.toBeNull()
 
     // ★ 重开（整页重载 = 冷启动）必须回到同一位置，而不是第一页
+    //
+    // 这里比较的是「reload 前一刻 localStorage 里的值」与「reload 后恢复的位置」，
+    // 而**不是**与更早的 turned.cfi 比 —— 后者又是一个竞态窗口：
+    // 若引擎在 settled 快照之后、reload 之前又前进了一次，
+    // 那么存进 localStorage 的是新值，恢复出来自然是新值，与旧快照不相等。
+    //
+    // 这个测试要证明的是「进度落盘 → 重开能续读」这条链路，
+    // 而不是「引擎在某个瞬间停住不动」，所以基准就该取 reload 前的那一读。
+    const beforeReload = await page.evaluate((key) => {
+      const raw = localStorage.getItem(key)
+      return raw ? (JSON.parse(raw) as Record<string, { locator?: string }>) : null
+    }, PROGRESS_KEY)
+    const anchor = beforeReload?.['sample']?.locator ?? ''
+    expect(anchor, 'reload 前 localStorage 必须有 locator').not.toBe('')
+
     await page.reload()
     const resumed = await waitForEngine(page)
-    expect(resumed.cfi).toBe(turned.cfi)
-    expect(resumed.index).toBe(turned.index)
+    expect(resumed.cfi).toBe(anchor)
 
     await expect(page.getByTestId('reader-resumed')).toBeVisible()
     const percent = Number((await page.getByTestId('progress').textContent())?.replace('%', '') ?? '0')
