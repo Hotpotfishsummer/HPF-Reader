@@ -72,11 +72,20 @@ tasks:
           exit 1
         fi
 
-        # Determine toolchain based on host OS
+        # Determine toolchain based on host OS.
+        #
+        # Windows 必须支持：项目要求「Windows 与 Android 都可用」，而开发机是 Windows。
+        # Git Bash / MSYS2 下 `uname -s` 返回 MINGW64_NT-10.0 / MSYS_NT-10.0 之类，
+        # 此前只有 Darwin/Linux 分支，Windows 直接 "Unsupported host OS" 退出，
+        # 导致 Windows 上**根本无法构建 Android APK**（这是真缺陷，不是配置问题）。
+        #
+        # NDK 在 Windows 上的 prebuilt 目录名仍是 linux-x86_64（NDK r23+ 统一用这个名，
+        # 因为内部工具链本就是 Linux 二进制 + Windows 的 .exe 包装），所以映射到 linux-x86_64。
         case "$(uname -s)" in
           Darwin) HOST_TAG="darwin-x86_64" ;;
           Linux)  HOST_TAG="linux-x86_64" ;;
-          *)      echo "Unsupported host OS"; exit 1 ;;
+          MINGW*|MSYS*|CYGWIN*) HOST_TAG="linux-x86_64" ;;
+          *)      echo "Unsupported host OS: $(uname -s)"; exit 1 ;;
         esac
 
         TOOLCHAIN="$NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG"
