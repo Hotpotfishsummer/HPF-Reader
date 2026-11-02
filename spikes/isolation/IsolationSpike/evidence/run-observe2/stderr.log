@@ -1,0 +1,12 @@
+2026/11/02 23:34:08 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-observe2
+2026/11/02 23:34:08 [spike] block mode = false
+Nov  2 23:34:08.237 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 GOOS=windows vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd vcs.time=2026-11-02T15:26:04Z CGO_ENABLED=0 GOAMD64=v1 vcs=git vcs.modified=true -buildmode=exe -compiler=gc GOARCH=amd64
+Nov  2 23:34:08.242 INF AssetServer Info: middleware=true handler=true
+Nov  2 23:34:08.242 INF Platform Info: Go-WebView2Loader=true WebView2=157.0.4341.30 ID=25H2 Name=Windows 10 Pro for Workstations Version=2009 (Build: 26220) Branding=Windows 11 专业工作站版 Insider Preview
+2026/11/02 23:34:08 [WebView2] Environment created successfully
+Nov  2 23:34:09.145 INF [AssetFileServerFS] Handling request url=/ file=.
+Nov  2 23:34:09.166 INF [AssetFileServerFS] Handling request url=/assets/index-DJ7-rv-_.js file=assets/index-DJ7-rv-_.js
+Nov  2 23:34:09.290 INF [AssetFileServerFS] Handling request url=/favicon.ico file=favicon.ico
+Nov  2 23:34:09.311 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:34:09.561 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:34:09.579 ERR Invalid runtime call: missing object value

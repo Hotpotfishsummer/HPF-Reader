@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+
+/*
+ * 设计约定（docs/research/50-vue3-reader-stack.md §4.2）：
+ *   - UI token 用 Tailwind 的 @theme（编译期处理，供工具类消费）；
+ *   - 阅读器 token 用 :root 上的普通 CSS 变量（运行时可通过 style.setProperty 改），
+ *     两套边界清晰。把 --reader-* 塞进 @theme 会导致运行时改不动。
+ */
+@theme {
+  --color-surface: oklch(98% 0.005 90);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-surface-sunken: oklch(94% 0.006 90);
+  --color-text-primary: oklch(24% 0.01 260);
+  --color-text-secondary: oklch(48% 0.01 260);
+  --color-border-subtle: oklch(88% 0.006 90);
+  --color-accent: oklch(62% 0.14 250);
+  --color-accent-contrast: oklch(98% 0 0);
+  --radius-card: 0.75rem;
+  --font-reading: 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* 夜间模式：覆盖同一组语义 token（组件不需要写两套样式） */
+:root[data-theme='dark'] {
+  --color-surface: oklch(20% 0.012 260);
+  --color-surface-raised: oklch(25% 0.014 260);
+  --color-surface-sunken: oklch(16% 0.012 260);
+  --color-text-primary: oklch(92% 0.008 260);
+  --color-text-secondary: oklch(72% 0.01 260);
+  --color-border-subtle: oklch(32% 0.012 260);
+  --color-accent: oklch(70% 0.13 250);
+  --color-accent-contrast: oklch(18% 0 0);
+}
+
+/* ---------- 阅读器专属变量（运行时可改，主题切换要"双写"：主文档 + renderer.setStyles） ---------- */
+:root {
+  --reader-font-family: var(--font-reading);
+  --reader-font-size: 18px;
+  --reader-line-height: 1.65;
+  --reader-letter-spacing: 0.01em;
+  --reader-margin-inline: 48px;
+  --reader-margin-block: 32px;
+  --reader-column-gap: 7%;
+  --reader-max-inline-size: 720px;
+  --reader-max-column-count: 1;
+  --reader-paper: #fbf8f2;
+  --reader-ink: #23201c;
+  /* 上游约定变量名（overlayer.js 会读这两个值控制高亮外观） */
+  --overlayer-highlight-opacity: 0.3;
+  --overlayer-highlight-blend-mode: multiply;
+}
+
+:root[data-reader-theme='sepia'] {
+  --reader-paper: #f6ecd9;
+  --reader-ink: #4a3b26;
+}
+
+:root[data-reader-theme='dark'] {
+  --reader-paper: #14161a;
+  --reader-ink: #d8dce3;
+  --overlayer-highlight-blend-mode: screen;
+}
+
+/* 墨水屏：高对比、去混合模式、降高亮不透明度 */
+:root[data-reader-theme='ink'] {
+  --reader-paper: #ffffff;
+  --reader-ink: #000000;
+  --overlayer-highlight-opacity: 0.18;
+  --overlayer-highlight-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+html,
+body,
+#app {
+  block-size: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * foliate-view 是 custom element，内部是 closed shadow root：
+ * Vue 的 scoped style / :deep() 都穿不进去，只能靠 ::part() 或引擎属性。
+ * 这里只控制宿主元素本身。
+ */
+foliate-view {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+foliate-view::part(filter) {
+  /* 夜间反转只作用于书籍内容，不影响高亮浮层 */
+  filter: var(--reader-filter, none);
+}

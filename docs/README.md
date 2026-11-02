@@ -65,3 +65,24 @@
 - 抓不到一手来源的一律标注 **「未验证」**，三份调研共列出 30+ 条未验证项，**没有编造任何仓库名、字段名、版本号或价格**。
 - 关于「Legado 作者因分享书源被判刑」：知乎原页返回 403、**未取得任何裁判文书**，故在文档中标注为 **「未核实传闻，不得作为事实引用」**；仅采用可核实的方向性证据（Legado 官网自述 Google Play 版已下架）。**但风险结论不依赖该传闻。**
 - 调研中的对比评分（如跨端框架加权分）是研究员的**主观判断**，不是实测；包体、帧率、跨引擎渲染一致性均**未实测**。
+---
+
+## 7. 开发阶段新增（2026-11-02 起）
+
+决策变更后新增的文档与工程文件：
+
+| 文件 | 内容 |
+|---|---|
+| [ADR-002-客户端落地-Vue与Wails.md](ADR-002-客户端落地-Vue与Wails.md) | **生效决策**：Vue 3 + Wails v3 落地，含 3 个风险闸门与语言栈收敛策略 |
+| [ADR-003-内容隔离架构.md](ADR-003-内容隔离架构.md) | **核心**：Wails 桥零校验 + foliate-js 默认最弱 sandbox 的越权通路；L1–L5 定案；Arch-A 判死 |
+| [research/40-wails-v3.md](research/40-wails-v3.md) | Wails 版本线、移动端定位、Server 构建、22 条补偿清单 |
+| [research/50-vue3-reader-stack.md](research/50-vue3-reader-stack.md) | Vue 3 全栈选型与 foliate-js 集成铁律 |
+| [research/60-webview-security-backend-lang.md](research/60-webview-security-backend-lang.md) | 源码级威胁模型、20 条 M1 安全 PoC、后端语言评估 |
+| [research/70-isolation-feasibility.md](research/70-isolation-feasibility.md) | 隔离可行性核实（Arch-A 判死、CSP 可行性、两个生死门） |
+| [MOBILE-PLATFORM-NOTES.md](MOBILE-PLATFORM-NOTES.md) | **移动端现实**：Android 可构建（需 gomobile）；**iOS 在 Windows 上无法构建** |
+| [../api/openapi.yaml](../api/openapi.yaml) | 唯一跨端契约（16 路径 / 21 schema） |
+| [../README.md](../README.md) | 仓库总览与本机环境（Go / wails3 / pnpm 的确切路径） |
+
+**当前阶段**：开发中。已完成方案冻结与三项工具链准备（Go→1.26 自动切换、wails3 v3.1.0、Docker 已启动、gomobile 已装）。
+
+三个并行开发流：`apps/server`（Go 服务端 + Docker）、`apps/client`（Wails v3 + Vue 3）、`spikes/isolation`（G2 隔离 PoC）。

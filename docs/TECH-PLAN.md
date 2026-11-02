@@ -282,7 +282,7 @@ interface PlatformSecureStore { get(k): Promise<string|null>; set(k, v): Promise
 | L1 | EPUB 解压预算（zip 炸弹防护）、禁用 XML 外部实体 | 确定 |
 | **L2（主力）** | 用官方 `transformTarget` 钩子（README:115，唯一早于解析的变换点）逐节：剥 `script`/`on*`/`javascript:`/`foreignObject`、重写远程 URL、注入 `meta CSP: default-src 'none'; script-src 'none'; img-src data: blob:; style-src 'unsafe-inline'` | **确定可达，零引擎改动** |
 | L3 | 去掉 iframe sandbox 的 `allow-scripts`（foliate-js 用它仅为绕 WebKit Bug 218086） | 需实测 |
-| L4 | 阅读器窗口 + 自建中间件按 `x-wails-window-id` 拒绝 /wails/runtime | 需过 C-01/C-09 两门 |
+| L4 | 阅读器窗口 + 自建中间件按 `x-wails-window-id` 拒绝 /wails/runtime | ✅ **已验证**（C-01/C-09 均成立，双窗口实测只拒阅读器窗口）；**仅限桌面/移动**，server 模式无原生注入故不可用 |
 | L5 | A5 结构化渲染（foliate-js 仅作解析器，Vue 组件渲染） | 兜底 |
 
 **三个决定整套方案成立的前提**：
@@ -317,7 +317,7 @@ interface PlatformSecureStore { get(k): Promise<string|null>; set(k, v): Promise
 
 | # | 措施 | 原因 |
 |---|---|---|
-| B1 | 默认只绑 loopback；公网入口走自建反代 + 鉴权，或另建独立 HTTP API，**不暴露 /wails/runtime** | 该端点无鉴权，且无 Origin 头的请求被放行 |
+| B1 | 默认只绑 loopback；公网入口走自建反代 + 鉴权，或另建独立 HTTP API，**不暴露 /wails/runtime** | 该端点无鉴权，且**无 Origin 头的请求直接被放行**（实测 curl → 200 且泄露数据）；另：server 模式**无原生注入窗口头**，伪造 `x-wails-window-id` 被原样接受 → **Web 版不能用 L4** |
 | B2 | 自建用户/会话/配额模型 | server 模式把标签页当窗口（`browser-N`），**无账号概念** |
 | B3 | service 内禁止持有请求级状态（当前用户/当前书籍） | service 是跨窗口共享单例 |
 | B4 | Events 定向发送，禁止广播用户数据 | Go 侧 `Emit` 广播到所有连接 |
@@ -711,7 +711,7 @@ Internet ──► Caddy (443, 自动 HTTPS)
 | 密码 | Argon2id；登录失败锁定与速率限制 |
 | 会话 | 短 access + 轮换 refresh + 重用检测 |
 | 注入 | 参数化查询（Drizzle）、上传文件类型与大小校验 |
-| **恶意电子书（硬门槛，方案已定）** | 主力防线 **L2**（同源 iframe + transformTarget 逐节净化 + 逐节注入 `default-src 'none'; script-src 'none'` + 剥离重写远程引用）→ 确定可达；**L4** 阅读器窗口按窗口标识拒绝 /wails/runtime → 需过 C-01/C-09 两门；**L5/A5** 结构化渲染 → 兜底退路。依据见 [ADR-003](ADR-003-内容隔离架构.md) 第 9 节 |
+| **恶意电子书（硬门槛，已验证）** | 主力防线 **L2**（同源 iframe + transformTarget 逐节净化 + 逐节注入 `default-src 'none'; script-src 'none'` + 剥离重写远程引用）→ 确定可达；**L4** 阅读器窗口按窗口标识拒绝 /wails/runtime → **C-01/C-09 两门已实测通过，双窗口限权生效**（仅桌面/移动）；**L5** 结构化渲染 → 兜底（约 10–16 人周）。依据见 [ADR-003](ADR-003-内容隔离架构.md) 第 9–10 节 |
 | SSRF | 书源请求走白名单 + 禁止内网地址（169.254/10./127.） |
 | 越权 | Repository 强制 user_id + RLS 兜底 |
 | 数据导出/删除 | 提供 `GET /v1/me/export` 与 `DELETE /v1/me`（合规要求） |

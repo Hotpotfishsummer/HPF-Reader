@@ -1,0 +1,10 @@
+# 构建上下文瘦身：只保留 Go 源码与依赖清单
+.git
+.gitignore
+*.md
+STATUS.md
+data/
+tmp/
+*.log
+*_test.go
+**/*_test.go

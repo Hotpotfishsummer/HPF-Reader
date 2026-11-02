@@ -1,0 +1,7 @@
+allowBuilds:
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.105.2'
+  - '@tanstack/vue-query@5.105.2'
+# vue-demi 的 postinstall 需要生成 Vue 3 分发入口，必须显式放行，
+# 否则 pnpm 会以 ERR_PNPM_IGNORED_BUILDS 结束（退出码 1）。

@@ -1,0 +1,7 @@
+2026/11/02 23:39:04 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-server
+2026/11/02 23:39:04 [spike] block mode = false
+Nov  2 23:39:04.807 INF Platform Info: mode=server
+Nov  2 23:39:04.807 INF AssetServer Info: middleware=true handler=true
+Nov  2 23:39:04.807 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 -buildmode=exe -compiler=gc -tags=server CGO_ENABLED=0 vcs=git vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd vcs.modified=true GOARCH=amd64 GOOS=windows GOAMD64=v1 vcs.time=2026-11-02T15:26:04Z
+Nov  2 23:39:04.809 INF Server mode enabled (built with -tags server)
+Nov  2 23:39:04.832 INF Server mode starting address=localhost:8080

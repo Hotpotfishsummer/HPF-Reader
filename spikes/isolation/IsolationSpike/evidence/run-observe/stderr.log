@@ -1,0 +1,11 @@
+2026/11/02 23:31:16 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-observe
+2026/11/02 23:31:17 [spike] block mode = false
+Nov  2 23:31:17.006 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 CGO_ENABLED=0 GOAMD64=v1 vcs=git vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd vcs.time=2026-11-02T15:26:04Z vcs.modified=true -buildmode=exe -compiler=gc GOARCH=amd64 GOOS=windows
+Nov  2 23:31:17.011 INF Platform Info: Go-WebView2Loader=true WebView2=157.0.4341.30 ID=25H2 Name=Windows 10 Pro for Workstations Version=2009 (Build: 26220) Branding=Windows 11 专业工作站版 Insider Preview
+Nov  2 23:31:17.011 INF AssetServer Info: middleware=true handler=true
+2026/11/02 23:31:17 [WebView2] Environment created successfully
+Nov  2 23:31:17.756 INF [AssetFileServerFS] Handling request url=/ file=.
+Nov  2 23:31:17.769 INF [AssetFileServerFS] Handling request url=/assets/index-B_d2X_XY.js file=assets/index-B_d2X_XY.js
+Nov  2 23:31:17.851 INF [AssetFileServerFS] Handling request url=/favicon.ico file=favicon.ico
+Nov  2 23:31:17.858 ERR Invalid binding call: missing argument 'call-id'
+Nov  2 23:31:18.074 ERR Invalid binding call: missing argument 'call-id'

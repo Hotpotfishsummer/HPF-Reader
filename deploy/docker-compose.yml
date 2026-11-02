@@ -1,0 +1,198 @@
+# HPF-Reader 自托管栈：api + postgres + redis + minio + caddy。
+#
+#   cd deploy && cp .env.example .env   # 改掉所有 change-me
+#   docker compose up -d
+#   docker compose run --rm migrate     # 单独执行迁移（api 启动时也会自动跑）
+#
+# 所有密码来自 .env，不在本文件里硬编码任何生产密钥。
+
+name: hpf-reader
+
+services:
+  postgres:
+    # pgvector 版本：自带 vector 扩展（RAG 预留）；换成 postgres:16 也能跑，迁移会自动跳过向量表
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hpf_reader}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-hpf_reader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [backend]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - miniodata:/data
+    ports:
+      # 仅暴露到本机；公网访问一律经 Caddy 反代
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks: [backend]
+
+  # 创建书籍桶并设为私有；对象存储接入（S3 driver）是后续里程碑，这里先把桶与权限备好。
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-hpf-books}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$MINIO_BUCKET"
+        mc anonymous set none "local/$$MINIO_BUCKET"
+        echo "bucket $$MINIO_BUCKET ready"
+    networks: [backend]
+    restart: "no"
+
+  # 独立迁移入口：docker compose run --rm migrate
+  migrate:
+    build:
+      context: ../apps/server
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${HPF_VERSION:-dev}
+    image: ${HPF_API_IMAGE:-hpf-reader-api:local}
+    entrypoint: ["/app/migrate"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hpf_reader}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backend]
+    restart: "no"
+
+  api:
+    build:
+      context: ../apps/server
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${HPF_VERSION:-dev}
+    image: ${HPF_API_IMAGE:-hpf-reader-api:local}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HPF_ENV: ${HPF_ENV:-prod}
+      HPF_ADDR: ":8080"
+      HPF_AUTO_MIGRATE: "true"
+      HPF_STORAGE_DRIVER: local
+      HPF_STORAGE_DIR: /data/files
+      # compose 内部服务名即主机名；redis 预留给队列（当前实现用 Postgres 表队列，见 STATUS.md）
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hpf_reader}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      # Caddy 在同一 bridge 网络内，因此信任网段内的 X-Forwarded-For
+      HPF_TRUSTED_PROXIES: "${HPF_TRUSTED_PROXIES:-*}"
+    volumes:
+      - bookfiles:/data/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [backend, edge]
+    healthcheck:
+      test: ["CMD", "/app/api", "healthcheck", "--url", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      HPF_DOMAIN: ${HPF_DOMAIN:?set HPF_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+      - staticweb:/srv/www:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [edge]
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # 静态前端占位：把构建产物放进 staticweb 卷即可由 Caddy 托管。
+  # 一期没有前端产物，这里只提供一个说明页，保证 / 不是 404。
+  web:
+    image: alpine:3.20
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /srv/www
+        if [ ! -f /srv/www/index.html ]; then
+          printf %s "<!doctype html><meta charset=\"utf-8\"><title>HPF-Reader</title><h1>HPF-Reader API is running</h1><p>前端静态产物尚未部署。API 见 /healthz /readyz /metrics。</p>" > /srv/www/index.html
+        fi
+        sleep infinity
+    volumes:
+      - staticweb:/srv/www
+    networks: [edge]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  bookfiles:
+  caddydata:
+  caddyconfig:
+  staticweb:
+
+networks:
+  # 仅内部：postgres / redis / minio 不对外暴露
+  backend:
+    internal: true
+  # 对外：caddy 与 api
+  edge:

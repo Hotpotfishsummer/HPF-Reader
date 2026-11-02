@@ -1,0 +1,8 @@
+2026/11/02 23:39:44 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-server2
+2026/11/02 23:39:44 [spike] block mode = false
+Nov  2 23:39:44.301 INF Platform Info: mode=server
+Nov  2 23:39:44.301 INF AssetServer Info: middleware=true handler=true
+Nov  2 23:39:44.301 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 GOOS=windows GOAMD64=v1 vcs=git vcs.modified=true -tags=server GOARCH=amd64 vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd vcs.time=2026-11-02T15:26:04Z -buildmode=exe -compiler=gc CGO_ENABLED=0
+Nov  2 23:39:44.303 INF Server mode enabled (built with -tags server)
+Nov  2 23:39:44.340 INF Server mode starting address=localhost:8080
+Nov  2 23:39:55.988 ERR Window ID not found: id=999

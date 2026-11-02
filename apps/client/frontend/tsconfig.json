@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "verbatimModuleSyntax": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": false,
+    // 注意：**不要**给 foliate-js 加 paths 映射。
+    // 映射到 .js 源码会让 tsc 去解析没有类型声明的 JS（allowJs=false 下报错），
+    // 覆盖掉 src/reader/foliate.d.ts 里的 ambient 声明。运行时别名在 vite.config.ts 里配。
+    // 不写 baseUrl：TS 6+ 已弃用它，paths 直接按 tsconfig 所在目录解析。
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "bindings/**/*.ts"],
+  "exclude": ["node_modules", "dist", "src/vendor/foliate-js/**", "tests/e2e/**"]
+}

@@ -1,0 +1,19 @@
+2026/11/02 23:43:13 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-archb-off
+2026/11/02 23:43:13 [spike] block mode = false
+Nov  2 23:43:13.643 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 CGO_ENABLED=0 GOARCH=amd64 vcs=git vcs.modified=true GOOS=windows GOAMD64=v1 vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd vcs.time=2026-11-02T15:26:04Z -buildmode=exe -compiler=gc
+Nov  2 23:43:13.649 INF Platform Info: Go-WebView2Loader=true WebView2=157.0.4341.30 ID=25H2 Name=Windows 10 Pro for Workstations Version=2009 (Build: 26220) Branding=Windows 11 专业工作站版 Insider Preview
+Nov  2 23:43:13.649 INF AssetServer Info: middleware=true handler=true
+2026/11/02 23:43:13 [WebView2] Environment created successfully
+2026/11/02 23:43:14 [WebView2] Environment created successfully
+Nov  2 23:43:14.227 INF [AssetFileServerFS] Handling request url=/ file=.
+Nov  2 23:43:14.228 INF [AssetFileServerFS] Handling request url=/ file=.
+Nov  2 23:43:14.244 INF [AssetFileServerFS] Handling request url=/assets/index-Dv-vHHyz.js file=assets/index-Dv-vHHyz.js
+Nov  2 23:43:14.245 INF [AssetFileServerFS] Handling request url=/assets/index-Dv-vHHyz.js file=assets/index-Dv-vHHyz.js
+Nov  2 23:43:14.416 INF [AssetFileServerFS] Handling request url=/favicon.ico file=favicon.ico
+Nov  2 23:43:14.418 INF [AssetFileServerFS] Handling request url=/favicon.ico file=favicon.ico
+Nov  2 23:43:14.423 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:43:14.424 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:43:14.627 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:43:14.634 ERR Binding call failed: unknown bound method id 0
+Nov  2 23:43:14.642 ERR Invalid runtime call: missing object value
+Nov  2 23:43:14.652 ERR Invalid runtime call: missing object value

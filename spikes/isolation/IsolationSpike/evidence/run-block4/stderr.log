@@ -1,0 +1,9 @@
+2026/11/02 23:37:40 [spike] evidence dir = C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\spikes\isolation\IsolationSpike\evidence\run-block4
+2026/11/02 23:37:40 [spike] block mode = true
+Nov  2 23:37:40.753 INF Build Info: Wails=v3.1.0 Compiler=go1.26.0 -buildmode=exe -compiler=gc CGO_ENABLED=0 GOAMD64=v1 vcs.revision=38268ce070d042c25570f4ea4d3714483e14dacd GOARCH=amd64 GOOS=windows vcs=git vcs.time=2026-11-02T15:26:04Z vcs.modified=true
+Nov  2 23:37:40.757 INF AssetServer Info: middleware=true handler=true
+Nov  2 23:37:40.757 INF Platform Info: Go-WebView2Loader=true WebView2=157.0.4341.30 ID=25H2 Name=Windows 10 Pro for Workstations Version=2009 (Build: 26220) Branding=Windows 11 专业工作站版 Insider Preview
+2026/11/02 23:37:40 [WebView2] Environment created successfully
+Nov  2 23:37:41.320 INF [AssetFileServerFS] Handling request url=/ file=.
+Nov  2 23:37:41.333 INF [AssetFileServerFS] Handling request url=/assets/index-Dv-vHHyz.js file=assets/index-Dv-vHHyz.js
+Nov  2 23:37:41.398 INF [AssetFileServerFS] Handling request url=/favicon.ico file=favicon.ico

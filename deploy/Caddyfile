@@ -1,0 +1,60 @@
+# HPF-Reader 反向代理与自动 HTTPS。
+#
+# 域名来自 .env 的 HPF_DOMAIN；本地调试可用 HPF_DOMAIN=localhost（Caddy 会签本地证书）。
+# Caddy 会自动申请/续期 Let's Encrypt 证书，因此 80/443 必须可达。
+
+# 注意：这里**不要**写 `email {$ACME_EMAIL}`。
+# 该指令要求必须有一个非空参数，若 .env 里 ACME_EMAIL 为空，Caddy 会直接启动失败（解析错误）。
+# Let's Encrypt 不强制邮箱；需要接收证书到期提醒时，取消下面一行的注释并确保 ACME_EMAIL 非空：
+#	email {$ACME_EMAIL}
+{
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+{$HPF_DOMAIN} {
+	encode zstd gzip
+
+	# 安全响应头基线
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# 健康与指标：只允许内网/运维访问（公网暴露 /metrics 会泄露路由与流量结构）
+	@ops path /healthz /readyz /metrics
+	handle @ops {
+		@internal remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+		handle @internal {
+			reverse_proxy api:8080
+		}
+		respond 403
+	}
+
+	# API：SSE（/v1/ai/translate）需要关闭缓冲，否则流式翻译会被攒成一坨
+	handle /v1/* {
+		reverse_proxy api:8080 {
+			flush_interval -1
+			transport http {
+				read_timeout 300s
+				write_timeout 300s
+			}
+		}
+	}
+
+	# 静态前端占位
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

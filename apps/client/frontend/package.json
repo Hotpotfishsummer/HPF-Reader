@@ -1,0 +1,46 @@
+{
+  "name": "hpf-reader-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:dev": "vue-tsc --noEmit && vite build --minify false --mode development",
+    "build": "vue-tsc --noEmit && vite build --mode production",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "api:types": "node scripts/gen-api-types.mjs",
+    "make:sample": "node scripts/make-sample-epub.mjs"
+  },
+  "dependencies": {
+    "@floating-ui/vue": "^2.0.1",
+    "@tanstack/vue-query": "^5.105.2",
+    "@tanstack/vue-virtual": "^3.13.51",
+    "@vueuse/core": "^15.0.0",
+    "@wailsio/runtime": "3.1.0",
+    "pinia": "^4.1.0",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "reka-ui": "^2.11.0",
+    "vue": "~3.5.44",
+    "vue-i18n": "^11.4.17",
+    "vue-router": "^5.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/test-utils": "^2.5.1",
+    "@vue/tsconfig": "^0.9.1",
+    "happy-dom": "^21.0.4",
+    "openapi-typescript": "^7.13.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "vue-tsc": "^3.3.14",
+    "vitest": "^5.0.5"
+  }
+}
