@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hpf-reader/hpf-reader/apps/server/internal/store"
 )
@@ -27,10 +28,14 @@ const (
 	codeNotFound           = "not_found"
 	codeConflict           = "conflict"
 	codeRateLimited        = "rate_limited"
-	codeAccountLocked      = "account_locked"
-	codePayloadTooLarge    = "payload_too_large"
-	codeInternal           = "internal_error"
-	codeUnavailable        = "service_unavailable"
+	// codeQuotaExceeded 与 codeRateLimited 刻意分开：
+	// 限流是「短时请求太密，等一下再来」，配额是「本周期额度用完，要等下个月或提额」。
+	// 混成一个码会让客户端做出完全错误的重试决策（配额超限重试一万次也不会成功）。
+	codeQuotaExceeded   = "quota_exceeded"
+	codeAccountLocked   = "account_locked"
+	codePayloadTooLarge = "payload_too_large"
+	codeInternal        = "internal_error"
+	codeUnavailable     = "service_unavailable"
 )
 
 // writeJSON 输出 JSON 响应。
@@ -71,6 +76,8 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		slog.Default().Warn("invalid input rejected", "error", err)
 		writeError(w, http.StatusBadRequest, codeInvalidRequest,
 			"request contains a value the server cannot interpret", nil)
+	case errors.As(err, new(*store.ErrQuotaExceeded)):
+		writeQuotaExceeded(w, err)
 	default:
 		slog.Default().Error("store error", "error", err)
 		writeError(w, http.StatusInternalServerError, codeInternal, "internal error", nil)
@@ -115,4 +122,31 @@ func queryInt64(r *http.Request, key string, def int64) (int64, error) {
 		return def, nil
 	}
 	return strconv.ParseInt(raw, 10, 64)
+}
+
+// writeQuotaExceeded 输出 429 与可操作的 details。
+//
+// details 必须能让客户端区分「哪个维度超了」：
+//
+//	dimension=calls  → 本周期调用次数用完，等重置或提额；
+//	dimension=tokens → token 额度用完，通常是跑了整书翻译这种大任务。
+//
+// 只回一句「quota exceeded」的话，用户完全不知道下一步该做什么。
+func writeQuotaExceeded(w http.ResponseWriter, err error) {
+	var qe *store.ErrQuotaExceeded
+	if !errors.As(err, &qe) {
+		writeError(w, http.StatusTooManyRequests, codeQuotaExceeded, "quota exceeded", nil)
+		return
+	}
+	msg := "monthly AI quota exceeded: call count limit reached"
+	if qe.Dimension == "tokens" {
+		msg = "monthly AI quota exceeded: token budget exhausted"
+	}
+	writeError(w, http.StatusTooManyRequests, codeQuotaExceeded, msg, map[string]any{
+		"dimension": qe.Dimension,
+		"limit":     qe.Limit,
+		"used":      qe.Used,
+		// resetAt 用 RFC3339（UTC）：客户端可以直接显示或算倒计时。
+		"resetAt": qe.ResetAt.UTC().Format(time.RFC3339),
+	})
 }

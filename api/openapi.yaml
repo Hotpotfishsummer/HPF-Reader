@@ -326,6 +326,13 @@ paths:
     post:
       tags: [ai]
       summary: 流式翻译（SSE）
+      description: |
+        成本闸门：**在返回 200 与写入 SSE 之前**完成配额预扣。因此额度不足时
+        得到的是标准 JSON 的 429，而不是一条已经开始吐字的流——一旦写了 200，
+        HTTP 头就无法改回 429。
+
+        每次调用都会记账（写 ai_usage），**失败与中途断开也记**：
+        上游可能已经生成并计费了部分 token，不记就是账目缺口。
       requestBody:
         required: true
         content:
@@ -337,11 +344,28 @@ paths:
           content:
             text/event-stream:
               schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429':
+          description: |
+            本周期配额已耗尽。**不要重试**：这不是限流，等到 resetAt 或提高配额才能恢复。
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuotaExceededError' }
+        '503':
+          description: AI 网关未配置
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /v1/ai/jobs:
     post:
       tags: [ai]
       summary: 提交后台 AI 任务（人名归一化、整书翻译等）
+      description: |
+        入队时预扣「1 次调用 + 一个保守的 token 估计」作为入场费。
+        真实消耗由 worker 在**每个块处理前**逐块结算；超限时任务应置为 paused
+        （可续跑）而不是 failed。也就是说入场预扣是占位，不是一次性买断。
       requestBody:
         required: true
         content:
@@ -353,6 +377,32 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AiJob' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429':
+          description: 本周期配额已耗尽，任务未被创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuotaExceededError' }
+
+  /v1/ai/usage:
+    get:
+      tags: [ai]
+      summary: 查询本周期 AI 配额与用量
+      description: |
+        两个维度都返回：调用次数（防高频小请求）与 token 额度（防单次大任务）。
+        判定时两个都要过，任一超限即 429。
+
+        周期为**自然月（UTC 边界）**：所有实例对「本月」的判定一致，
+        不会出现两台机器各算各的账。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiUsage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /v1/ai/jobs/{jobId}:
     parameters:
@@ -677,6 +727,61 @@ components:
         progress: { type: number, minimum: 0, maximum: 1 }
         result: { type: object, additionalProperties: true, nullable: true }
         error: { type: string, nullable: true }
+
+    QuotaDimension:
+      type: object
+      description: 一个配额维度的用量。
+      required: [used, quota, remaining]
+      properties:
+        used: { type: integer, format: int64, description: 本周期已用量 }
+        quota: { type: integer, format: int64, description: 本周期配额上限 }
+        remaining: { type: integer, format: int64, minimum: 0 }
+
+    AiUsage:
+      type: object
+      description: |
+        两个维度都返回。判定时两个都要过，任一超限即 429——
+        只按调用次数计费会严重失真：划词翻译一次约 2000 字（成本几厘钱），
+        整书翻译一次约 48 万 token（约 1~2 元），两者都算「1 次调用」。
+      required: [periodStart, resetAt, calls, tokens]
+      properties:
+        periodStart: { type: string, format: date-time, description: 本周期起点（UTC 自然月首） }
+        resetAt: { type: string, format: date-time, description: 额度重置时刻（下一个月首） }
+        calls: { $ref: '#/components/schemas/QuotaDimension' }
+        tokens: { $ref: '#/components/schemas/QuotaDimension' }
+        usage:
+          type: object
+          description: 本周期实际记账汇总（按 feature），用于核对配额消耗与真实成本是否一致。
+          additionalProperties:
+            type: object
+            properties:
+              calls: { type: integer, format: int64 }
+              inputTokens: { type: integer, format: int64 }
+              outputTokens: { type: integer, format: int64 }
+              costCents: { type: integer, format: int64, description: 按官方单价折算，单位：分 }
+
+    QuotaExceededError:
+      type: object
+      description: |
+        配额耗尽。**这不是限流**：重试不会成功，必须等 resetAt 或提高配额。
+        code 与 rate_limited 刻意分开，避免客户端做出错误的重试决策。
+      required: [code, message, details]
+      properties:
+        code: { type: string, enum: [quota_exceeded] }
+        message: { type: string }
+        details:
+          type: object
+          required: [dimension, limit, used, resetAt]
+          properties:
+            dimension:
+              type: string
+              enum: [calls, tokens]
+              description: |
+                哪个维度超了。calls = 调用次数用完（高频小请求）；
+                tokens = token 额度用完（通常是跑了整书翻译这类大任务）。
+            limit: { type: integer, format: int64 }
+            used: { type: integer, format: int64 }
+            resetAt: { type: string, format: date-time }
 
     SourceItem:
       type: object

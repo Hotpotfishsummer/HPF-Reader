@@ -56,14 +56,14 @@ func TestRegisterAccountDeviceConflictLeavesNoOrphanUser(t *testing.T) {
 	// 1) 用户 A 正常注册，占用 devID。
 	if _, _, err := s.RegisterAccount(ctx, "a@example.com", "hash-a", "A", DeviceRegistration{
 		ID: devID, Name: "device-a", Platform: "windows",
-	}); err != nil {
+	}, 0); err != nil {
 		t.Fatalf("register A: %v", err)
 	}
 
 	// 2) 用户 B 用同一个 deviceId 注册 → 必须失败，且是「设备被占用」而非「找不到」。
 	_, _, err := s.RegisterAccount(ctx, "b@example.com", "hash-b", "B", DeviceRegistration{
 		ID: devID, Name: "device-b", Platform: "android",
-	})
+	}, 0)
 	if err == nil {
 		t.Fatal("第二个用户用已占用的 deviceId 注册竟然成功了")
 	}
@@ -104,14 +104,14 @@ func TestUpsertDeviceRejectsForeignDevice(t *testing.T) {
 
 	if _, _, err := s.RegisterAccount(ctx, "owner@example.com", "h", "", DeviceRegistration{
 		ID: devID, Name: "owner-device",
-	}); err != nil {
+	}, 0); err != nil {
 		t.Fatalf("register owner: %v", err)
 	}
 	// 另一个用户试图占用同一设备 ID。
 	// other 在 if 之后还要用（传给 UpsertDevice），因此单独声明。
 	other, _, err := s.RegisterAccount(ctx, "other@example.com", "h2", "", DeviceRegistration{
 		ID: "33333333-3333-4333-8333-333333333333",
-	})
+	}, 0)
 	if err != nil {
 		t.Fatalf("register other: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestDeviceNameIsPersistedAndEchoed(t *testing.T) {
 	// dev 在 if 之后还要用，因此单独声明。
 	_, dev, err := s.RegisterAccount(ctx, "named@example.com", "h", "", DeviceRegistration{
 		ID: "44444444-4444-4444-8444-444444444444", Name: "spike-device-A", Platform: "windows", AppVersion: "1.0",
-	})
+	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestDeviceNameNullWhenNotProvided(t *testing.T) {
 	s, ctx := testStore(t)
 	_, dev, err := s.RegisterAccount(ctx, "anon@example.com", "h", "", DeviceRegistration{
 		ID: "55555555-5555-4555-8555-555555555555", Platform: "linux",
-	})
+	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestPushForeignKeyViolationIsClientError(t *testing.T) {
 	s, ctx := testStore(t)
 	u, _, err := s.RegisterAccount(ctx, "push@example.com", "h", "", DeviceRegistration{
 		ID: "66666666-6666-4666-8666-666666666666",
-	})
+	}, 0)
 	if err != nil {
 		t.Fatalf("register: %v", err)
 	}

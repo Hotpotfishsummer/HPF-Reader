@@ -125,6 +125,7 @@ func (s *Server) routes() http.Handler {
 
 	// ---- ai ----
 	mux.HandleFunc("POST /v1/ai/translate", s.requireAuth(s.handleTranslate))
+	mux.HandleFunc("GET /v1/ai/usage", s.requireAuth(s.handleGetAIUsage))
 	mux.HandleFunc("POST /v1/ai/jobs", s.requireAuth(s.handleCreateAIJob))
 	mux.HandleFunc("GET /v1/ai/jobs/{jobId}", s.requireAuth(s.handleGetAIJob))
 

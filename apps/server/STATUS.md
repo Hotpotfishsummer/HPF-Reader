@@ -424,3 +424,287 @@ SELECT email,(SELECT count(*) FROM devices d WHERE d.user_id=u.id) devices
 **部署环境说明**：`deploy/.env` 为本轮验证临时生成（未被提交，含验证用随机密钥），
 `HPF_API_IMAGE=hpf-reader-api:verify`；验证结束后容器与镜像保留在本地，
 「已知问题」§5 第 1 条所述 minio 限制仍适用（本轮走 `HPF_STORAGE_DRIVER=local`）。
+
+---
+
+## 7. M5-1 成本与配额闸门（task-19）
+
+> 背景：这是**上线阻塞**的真实缺陷，不是优化项。
+> 修复前：`ai_usage» 表从建库起从未被 INSERT，`users.quota_ai_calls» 只被读进结构体从未参与比较，
+> `handleTranslate» 直接进流式、无任何前置校验 —— 任何人拿到账号就能无限刷 LLM，账单直接失控。
+
+### 7.1 配额为什么是双维度（按 lead 的修正落地）
+
+按「调用次数」单一维度会严重失真：
+
+| 场景 | 单次规模 | 单次成本 | 计为调用次数 |
+| --- | --- | --- | --- |
+| 划词翻译 | ≤ 2000 字 | 几厘钱 | 1 |
+| 整书翻译（后台任务） | 约 28 万输入 + 20 万输出 token | **约 1~2 元** | 1 |
+
+两者差 3 个数量级，却都算「1 次调用」。若默认 1000 次/月配额被刷满整书任务 = **2000 元/用户/月**。
+
+因此**两个维度都要过，任一超限即 429**：
+
+- `calls»：防高频小请求刷爆 QPS 与账单（沿用 `quota_ai_calls»，默认 1000）；
+- `tokens»：防单次大任务烧钱（新增 `quota_ai_tokens»，默认 500 万 ≈ 每月 10 本整书翻译）。
+
+429 的 `details» 里用 `dimension» 区分（`calls» / `tokens»）——否则用户只知道被拒，不知道该怎么办。
+
+**周期语义：自然月（UTC 边界）**。选 UTC 而不是服务器本地时区，是为了多副本/多区域部署时
+所有实例对「本月」的判定完全一致，不会出现两台机器各算各的账。`resetAt» = 下一个月首。
+
+### 7.2 并发不超发：单条原子 SQL，而不是「先查再写」
+
+`Reserve» 把「判定」与「累加」压进同一条 `UPDATE»：
+
+```sql
+UPDATE users u SET
+    ai_calls_used  = (CASE WHEN u.ai_period_start <> p.period THEN 0 ELSE u.ai_calls_used  END) + 1,
+    ai_tokens_used = (CASE WHEN u.ai_period_start <> p.period THEN 0 ELSE u.ai_tokens_used END) + $2,
+    ai_period_start = p.period
+FROM (SELECT ai_period_for(now()) AS period) p
+WHERE u.id = $1
+  AND (CASE WHEN u.ai_period_start <> p.period THEN 0 ELSE u.ai_calls_used  END) + 1 <= u.quota_ai_calls
+  AND (CASE WHEN u.ai_period_start <> p.period THEN 0 ELSE u.ai_tokens_used END) + $2 <= u.quota_ai_tokens
+RETURNING ...
+```
+
+三个要点：
+
+1. **靠行锁串行化**：后到的事务等前一个提交，再基于最新值重新判定，因此不会出现
+   「10 个请求都读到 used=2、全部判定通过」这种 TOCTOU 超发。
+2. **周期翻转与累加同一条语句**：跨月时若「判定用旧周期、累加用新周期」，账目会错乱。
+3. **预扣 + 结算**，而不是「先调用后记账」。后者等于没有闸门：并发的 N 个请求会同时穿过判定，
+   然后才一起把额度用掉。进流式前先预扣估计值，流结束后用真实用量结算差额。
+
+**这个结构是为 M5-2 留的**：整书任务在**每个块处理前**调用同一个 `Reserve»，超限时把任务置为
+`paused»（可续跑）而不是 `failed»。入场预扣是占位，不是一次性买断。
+
+### 7.3 Token 计数：不要假装精确
+
+请求体带 `stream_options: {include_usage: true}» 让上游在流末尾单独回一帧 usage。
+拿不到时（Ollama 不支持该字段）降级为本地粗估，并在 `ai_usage.usage_source» 标 `estimated»：
+
+| usage_source | 含义 |
+| --- | --- |
+| `upstream» | 上游真的回了 usage |
+| `estimated» | 本地粗估（中文约 1.5 字/token，英文约 4 字符/token） |
+
+两者在成本分析里可信度完全不同，混为一谈会让「按 usage 计费」的结论站不住脚。
+`cost_cents» 只是量级参考，真实账单必须以上游为准。
+
+**捕获 usage 的坑**：usage 帧的 `choices» 通常是空数组，若「没有 delta 就 continue」会把它跳过。
+代码里在遍历 choices **之前**处理 usage 帧。
+
+### 7.4 失败调用也记账
+
+失败也是花钱的：上游可能已经生成并计费了部分 token，不记就是账目缺口。
+`outcome» 三种取值：`ok» / `failed» / `canceled»（客户端中途断开）。
+
+实测（上游指向不可达地址 127.0.0.1:9，openai provider）：
+
+```
+POST /v1/ai/translate → 200 SSE
+event: error
+data: {"code":"service_unavailable","message":"ai: upstream request failed: ... connection refused"}
+
+ai_usage 实际写入的行：
+ id | feature   | model                | input | output | usage_source | outcome | error
+  1 | translate | openai:deepseek-chat |     0 |      0 | estimated    | failed  | ai: upstream request failed: ...
+```
+
+### 7.5 迁移 `00005_ai_usage_quota.sql»
+
+- `ai_usage» 加 `usage_source»（upstream|estimated，带 CHECK 约束）、`outcome»（ok|failed|canceled）、
+  `error»、`request_id»，并加 `(user_id, created_at)» / `(feature, created_at)» 两个索引；
+- `users» 加 `quota_ai_tokens»（默认 500 万）、`ai_calls_used»、`ai_tokens_used»、`ai_period_start»，
+  外加 `CHECK (ai_calls_used >= 0 AND ai_tokens_used >= 0)»；
+- `ai_period_for(timestamptz)» 函数：UTC 自然月首。**独立成函数**而不是把表达式抄进每条 SQL，
+  因为它要出现在 UPDATE 的 SET、WHERE 与诊断查询三处，抄三遍必然在某次改动后漂移，
+  而漂移会导致「判定用旧周期、累加用新周期」这种最难查的账目错误。
+  （函数名用 `ai_period_for» 而不是 `ai_period_start»，避免与同名列产生解析歧义。）
+
+为什么用新增列而不是每次现算周期：让「跨月重置」与「累加」能在同一条 UPDATE 里原子完成。
+
+### 7.6 顺带修掉的第四个缺陷：`HPF_AI_DAILY_QUOTA» 读了不用
+
+`config.AIMaxPerUser»（来自环境变量 `HPF_AI_DAILY_QUOTA»）此前被读进 Config 后**从未被任何代码使用**，
+运维改了环境变量却毫无效果。现在它作为新用户的 `quota_ai_calls» 在注册事务内生效。
+
+### 7.7 新接口 `GET /v1/ai/usage»
+
+返回 `periodStart» / `resetAt» / `calls{used,quota,remaining}» / `tokens{used,quota,remaining}»，
+外加按 feature 的实际记账汇总（用于核对「配额消耗」与「真实成本」是否一致）。
+**只读**：不能顺手把跨月周期翻篇，否则「看一眼用量」就会重置已用量。
+### 7.8 验收证据（真实栈，非 mock）
+
+**环境**：`docker compose» 全栈（postgres:16 + redis:7 + api + caddy + web），镜像 `hpf-reader-api:verify»，
+`HPF_AI_DAILY_QUOTA=1»（把新用户配额压到 1，便于在冒烟里验证 429）。
+
+#### ① 并发不超发：配额 3、并发 10 → 恰好 3 个成功
+
+先把配额真实改成 3（`UPDATE users SET quota_ai_calls = 3»），再并发 10 个请求：
+
+```
+各请求状态码:
+  req1  429      req6  200
+  req2  429      req7  200
+  req3  429      req8  429
+  req4  429      req9  429
+  req5  429      req10 200
+→ 200 成功 3 个，429 拒绝 7 个
+```
+
+数据库侧对账（关键：计数器与记账行数、token 数完全一致）：
+
+```
+         email        | quota_ai_calls | ai_calls_used | usage_rows | tokens
+----------------------+----------------+---------------+------------+--------
+ q3-185358@example.com |              3 |             3 |          3 |    195
+```
+
+429 响应体：
+
+```json
+{"code":"quota_exceeded","message":"monthly AI quota exceeded: call count limit reached",
+ "details":{"dimension":"calls","limit":3,"used":3,"resetAt":"2026-12-01T00:00:00Z"}}
+```
+
+#### ② token 维度耗尽（次数还够也不行）
+
+把 `quota_ai_tokens» 压到 1000、次数保持 1000，发一个约 3400 token 的长文本：
+
+```json
+status=429
+{"code":"quota_exceeded","message":"monthly AI quota exceeded: token budget exhausted",
+ "details":{"dimension":"tokens","limit":1000,"used":0,"resetAt":"2026-12-01T00:00:00Z"}}
+```
+
+两个维度的 `dimension» 分别正确报出 —— 这正是 lead 要求的「用户能知道该怎么办」。
+
+#### ③ 失败调用也记账
+
+见 §7.4：上游不可达时 `ai_usage» 仍写入一行，`outcome=failed»、`error» 有内容、
+且 `ai_calls_used» 计为 1（失败也消耗了调用次数）。
+
+#### ④ ai_usage 表实际行内容
+
+```
+ id | feature   | model | input_tokens | output_tokens | cost_cents | usage_source | outcome | error
+----+-----------+-------+--------------+---------------+------------+--------------+---------+-------
+ 17 | translate | fake  |           51 |             3 |          0 | estimated    | ok      | -
+ 16 | translate | fake  |           53 |             4 |          0 | estimated    | ok      | -
+ 15 | translate | fake  |           53 |             4 |          0 | estimated    | ok      | -
+ 14 | translate | fake  |           57 |             8 |          0 | estimated    | ok      | -
+ 13 | translate | fake  |           57 |             8 |          0 | estimated    | ok      | -
+ 12 | translate | fake  |           57 |             8 |          0 | estimated    | ok      | -
+ 11 | translate | fake  |           61 |            12 |          0 | estimated    | ok      | -
+ 10 | translate | fake  |           61 |            12 |          0 | estimated    | ok      | -
+```
+
+按用户对账（`used_calls = rows»、`used_tok = sum_tok» 全部对齐）：
+
+```
+           email           | q_calls | used_calls |  q_tok  | used_tok | rows | sum_tok
+---------------------------+---------+------------+---------+----------+------+---------
+ q-185337@example.com      |    1000 |         11 | 5000000 |      803 |   11 |     803
+ q3-185358@example.com     |       3 |          3 | 5000000 |      195 |    3 |     195
+ quota-1366-1@example.com  |       1 |          1 | 5000000 |       54 |    1 |      54
+ smoke-28538-1@example.com |       1 |          1 | 5000000 |       57 |    1 |      57
+ smoke-6550-1@example.com  |       1 |          1 | 5000000 |       57 |    1 |      57
+```
+
+（`quota-debug-1@example.com» 与 `smoke-31986-1@example.com» 是注册后未调用的账号，
+`used_calls=0 / rows=0» 同样自洽。）
+
+#### ⑤ 冒烟测试
+
+`deploy/smoke-test.sh» 原有 69 项断言 + 本轮新增 13 项配额断言 = **PASS=82 FAIL=0**：
+
+```
+== 6b. 成本与配额闸门（M5-1） ==
+  PASS  用量接口 = 200
+  PASS  用量返回 calls 维度
+  PASS  用量返回 tokens 维度
+  PASS  用量返回 resetAt
+  PASS  周期为 UTC 自然月首
+  PASS  调用后已记账（出现 translate 汇总）
+  PASS  计数器与记账一致（tokens.used=57 = 53 + 4）
+  -- 配额耗尽（配额=1，第 2 次必须 429）--
+  PASS  配额账号注册 = 201
+  PASS  第 1 次调用 = 200（额度内）
+  PASS  第 2 次调用 = 429（超配额）
+  PASS  429 错误码 = quota_exceeded
+  PASS  429 指明维度 dimension
+  PASS  429 带 resetAt
+
+==== 冒烟结果: PASS=82 FAIL=0 ====
+```
+
+冒烟里的配额用例是**纯黑盒**：不碰 psql（alpine 容器里没有），只靠
+`HPF_AI_DAILY_QUOTA=1» + `QUOTA_TEST=1» 环境变量驱动，保持脚本的可移植性。
+
+#### ⑥ 迁移可重复执行
+
+在一个全新的空库上从零跑 `go run ./cmd/migrate»，00001→00005 全部应用成功：
+
+```
+migration applied  version=00001_init.sql
+migration applied  version=00002_rls.sql
+migration applied  version=00003_pgvector.sql
+migration applied  version=00004_progression_double.sql
+migration applied  version=00005_ai_usage_quota.sql
+migrations up to date
+```
+
+#### ⑦ 单元/集成测试
+
+`internal/store/quota_test.go»（真实 PostgreSQL，未设 `HPF_TEST_DATABASE_URL» 时 skip）：
+
+| 测试 | 断言 |
+| --- | --- |
+| `TestReserveRejectsWhenCallsExhausted» | 次数耗尽 → 维度 `calls»，`resetAt» 在未来 |
+| `TestReserveRejectsWhenTokensExhausted» | token 耗尽 → 维度 `tokens»（次数还够也不行） |
+| `TestReserveConcurrentDoesNotOverIssue» | **10 goroutine 抢 3 个名额 → 恰好 3 成功 / 7 拒绝**，库里计数恰好 3 |
+| `TestSettleAdjustsReservationToActualUsage» | 预扣 1000、实际用 500 → 库里结算为 500 |
+| `TestSettleFailureStillRecordsUsage» | 失败调用仍写入 `outcome=failed» 行且 `input_tokens» 保留 |
+| `TestUsageSourceIsPersisted» | `usage_source=upstream» 如实落库 |
+| `TestPeriodRolloverResetsUsage» | 周期回拨一个月后自动清零重新计数 |
+| `TestReleaseTokensNeverGoesNegative» | 退回额度不会把已用量打成负数 |
+
+其中「并发不超发」那条如果实现改成「先 SELECT 再 UPDATE」，会**稳定失败**（10 个都读到 used=0）。
+
+### 7.9 契约变更（`api/openapi.yaml»）
+
+| 位置 | 变更 |
+| --- | --- |
+| 新增 `GET /v1/ai/usage» | 完整定义，返回双维度 + 按 feature 汇总 |
+| `POST /v1/ai/translate» | 补 400/401/429/503；描述说明「闸门在写 SSE 之前判定」与「失败也记账」 |
+| `POST /v1/ai/jobs» | 补 400/401/404/429；说明入场预扣是占位、块级结算属 M5-2 |
+| 新增 `components.schemas.QuotaDimension» | `used» / `quota» / `remaining» |
+| 新增 `components.schemas.AiUsage» | 双维度 + `periodStart» / `resetAt» + 按 feature 汇总 |
+| 新增 `components.schemas.QuotaExceededError» | `code=quota_exceeded»、`details.dimension» 枚举 `calls\|tokens»、`resetAt» |
+
+校验：PyYAML 解析通过，29 个 `$ref» 全部可解析、无悬空引用，17 条 path。
+
+### 7.10 本轮验证汇总
+
+```
+gofmt -l .                 → 空
+go build ./...             → exit=0
+go vet ./...               → exit=0
+go test ./... -count=1     → 7 个包全 ok（无 DB 路径）
+quota 集成测试（接真库）    → 8 个用例全 PASS
+deploy/smoke-test.sh       → PASS=82 FAIL=0（全栈，含 13 项配额断言）
+```
+
+**已知边界**（不掩饰）：
+
+1. `cost_cents» 按 DeepSeek flash **空闲档**单价折算，只是量级参考；真实账单必须以上游为准，
+   上线后要用真实账单校准（见 `docs/M5-PLAN.md» §8）。
+2. token 估算（1.5 字/token）是经验值，**未在真书上实测**；`usage_source» 已如实标注来源。
+3. 预扣的输出侧估计取「输入估算的一半」，对长输出会偏低；结算时按实际用量补齐，因此账目最终精确，
+   但**闸门判定**在极端长输出场景下可能偏松。真正的精确闸门需要上游 usage 预检，属后续优化。
+4. 本轮只改 `apps/server/**»、`api/openapi.yaml»、`deploy/smoke-test.sh»（仅加断言），
+   未动 `apps/client»、`docs»、`spikes»，**全程未执行 git**。

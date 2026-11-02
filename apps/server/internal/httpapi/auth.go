@@ -109,7 +109,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	// 用户与设备在**同一事务**里创建：deviceId 冲突时整体回滚，
 	// 不会像以前那样留下一个没有任何设备的孤儿用户行。
-	user, device, err := s.store.RegisterAccount(r.Context(), email, hash, req.DisplayName, dev)
+	user, device, err := s.store.RegisterAccount(r.Context(), email, hash, req.DisplayName, dev, s.cfg.AIMaxPerUser)
 	if err != nil {
 		if errors.Is(err, store.ErrConflict) {
 			writeError(w, http.StatusConflict, codeConflict, "email already registered", nil)

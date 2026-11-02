@@ -161,7 +161,12 @@ func upsertDevice(ctx context.Context, q rowQuerier, userID string, dev DeviceRe
 // 失败语义：
 //   - 邮箱已存在      → ErrConflict
 //   - deviceId 归他人 → ErrDeviceTaken（事务回滚，不留用户行）
-func (s *Store) RegisterAccount(ctx context.Context, email, passwordHash, displayName string, dev DeviceRegistration) (User, Device, error) {
+//
+// aiQuotaCalls 是新用户的调用次数配额；<= 0 表示沿用建库时的默认值（1000）。
+// 之所以由调用方传入而不是写死在 SQL 里，是因为它来自配置 HPF_AI_DAILY_QUOTA——
+// 该配置此前被读进 Config.AIMaxPerUser 后**从未被任何代码使用**，
+// 导致运维改了环境变量却毫无效果（又是一个「读了不用」的字段）。
+func (s *Store) RegisterAccount(ctx context.Context, email, passwordHash, displayName string, dev DeviceRegistration, aiQuotaCalls int) (User, Device, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return User{}, Device{}, wrap(err)
@@ -179,6 +184,14 @@ func (s *Store) RegisterAccount(ctx context.Context, email, passwordHash, displa
 			return User{}, Device{}, fmt.Errorf("%w: %v", ErrConflict, err)
 		}
 		return User{}, Device{}, wrap(err)
+	}
+	if aiQuotaCalls > 0 {
+		// 同一事务内设置配额：分开写会出现「用户已提交但配额还是默认值」的窗口。
+		if _, err := tx.Exec(ctx, `UPDATE users SET quota_ai_calls = $2 WHERE id = $1`,
+			user.ID, aiQuotaCalls); err != nil {
+			return User{}, Device{}, wrap(err)
+		}
+		user.QuotaAICalls = aiQuotaCalls
 	}
 	device, err := upsertDevice(ctx, tx, user.ID, dev)
 	if err != nil {

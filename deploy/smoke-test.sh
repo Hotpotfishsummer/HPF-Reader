@@ -218,6 +218,51 @@ contains "SSE 有 delta 事件" "$(cat /tmp/sse)" "event: delta"
 contains "SSE 有 done 事件" "$(cat /tmp/sse)" "event: done"
 contains "SSE Content-Type = text/event-stream" "$(cat /tmp/shdr)" "text/event-stream"
 
+echo "== 6b. 成本与配额闸门（M5-1） =="
+# 用量接口必须两个维度都返回：只按调用次数计费会严重失真
+# （划词一次几厘钱，整书一次约 1~2 元，两者都算「1 次调用」）。
+call GET /v1/ai/usage "$TOKEN"
+check "用量接口 = 200" "$STATUS" "200"
+contains "用量返回 calls 维度" "$BODY" '"calls"'
+contains "用量返回 tokens 维度" "$BODY" '"tokens"'
+contains "用量返回 resetAt" "$BODY" '"resetAt"'
+contains "周期为 UTC 自然月首" "$BODY" '"periodStart":"20'
+
+# 刚翻译过一次，必须已经记账（ai_usage 曾全仓从未 INSERT）
+contains "调用后已记账（出现 translate 汇总）" "$BODY" '"translate"'
+
+# 计数器与记账必须一致：tokens.used = 该 feature 的 input+output
+UTOK=$(printf "%s" "$BODY" | jnum used)
+ATOK=$(printf "%s" "$BODY" | jnum inputTokens)
+OTOK=$(printf "%s" "$BODY" | jnum outputTokens)
+if [ -n "$UTOK" ] && [ -n "$ATOK" ] && [ -n "$OTOK" ] && [ "$UTOK" -eq "$((ATOK + OTOK))" ]; then
+  ok "计数器与记账一致（tokens.used=$UTOK = $ATOK + $OTOK）"
+else
+  bad "计数器与记账不一致：tokens.used=[$UTOK] 记账=[$ATOK]+[$OTOK]"
+fi
+
+# 配额耗尽 → 429。通过 HPF_AI_DAILY_QUOTA 把新用户配额设成 1 来验证：
+# 第 2 次调用必须被拒，且错误码是 quota_exceeded（不是 rate_limited）。
+# 这里刻意不用 psql —— smoke 跑在 alpine 容器里没有 psql，
+# 只用 HTTP + 环境变量，保持脚本的「纯黑盒」性质。
+if [ "${QUOTA_TEST:-0}" = "1" ]; then
+  echo "  -- 配额耗尽（配额=1，第 2 次必须 429）--"
+  QEMAIL="quota-$RANDOM-$$@example.com"
+  call POST /v1/auth/register "" "{\"email\":\"$QEMAIL\",\"password\":\"smoke-test-password-9x\",\"deviceName\":\"quota\"}"
+  check "配额账号注册 = 201" "$STATUS" "201"
+  QTOKEN=$(printf "%s" "$BODY" | jget accessToken)
+  call POST /v1/ai/translate "$QTOKEN" '{"text":"first","targetLang":"zh"}'
+  check "第 1 次调用 = 200（额度内）" "$STATUS" "200"
+  QSTATUS=$(curl -s -o /tmp/q.out -w "%{http_code}" -H "Authorization: Bearer $QTOKEN" -H "Content-Type: application/json" \
+    --data-binary '{"text":"second","targetLang":"zh"}' "$BASE/v1/ai/translate")
+  check "第 2 次调用 = 429（超配额）" "$QSTATUS" "429"
+  contains "429 错误码 = quota_exceeded" "$(cat /tmp/q.out)" '"quota_exceeded"'
+  contains "429 指明维度 dimension" "$(cat /tmp/q.out)" '"dimension"'
+  contains "429 带 resetAt" "$(cat /tmp/q.out)" '"resetAt"'
+else
+  echo "  （跳过配额耗尽用例：设 QUOTA_TEST=1 且 API 侧 HPF_AI_DAILY_QUOTA=1 时启用）"
+fi
+
 echo "== 7. 书源 =="
 call GET "/v1/sources/search?q=austen&source=zlibrary" "$TOKEN"
 check "未知书源 = 400" "$STATUS" "400"
