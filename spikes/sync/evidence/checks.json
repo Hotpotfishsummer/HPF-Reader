@@ -1,9 +1,9 @@
 {
   "summary": {
-    "runId": "mvzhkopb",
-    "startedAt": "2026-11-02T16:41:37.295Z",
-    "finishedAt": "2026-11-02T16:41:38.669Z",
-    "baseUrl": "http://127.0.0.1:18080",
+    "runId": "mw0xn04k",
+    "startedAt": "2026-11-03T16:59:05.444Z",
+    "finishedAt": "2026-11-03T16:59:06.244Z",
+    "baseUrl": "http://127.0.0.1:8080",
     "book": "C:\\Users\\HOTPOTFISH\\Desktop\\AllCode\\HPF-Reader\\testdata\\books\\frankenstein.epub",
     "checks": {
       "total": 52,
@@ -41,7 +41,7 @@
       "id": "C-12",
       "name": "uuidv7 合法且严格递增（8-4-4-4-12，版本位 7）",
       "ok": true,
-      "detail": "01a19d23-4714-7000-8b4a-0bfcd0144775 01a19d23-4715-7000-89ab-499c9e5db392 01a19d23-4715-7001-be6b-fe44ecca9663"
+      "detail": "01a1a259-a167-7000-837d-43cc5f9c80be 01a1a259-a167-7001-ba49-babadd998a0c 01a1a259-a167-7002-94fe-94eb06b6c539"
     },
     {
       "id": "C-04",
@@ -101,7 +101,7 @@
       "id": "E-02",
       "name": "Bearer 认证可用（GET /v1/me）",
       "ok": true,
-      "detail": "spike-a-mvzhkopb@example.com"
+      "detail": "spike-a-mw0xn04k@example.com"
     },
     {
       "id": "E-03",
@@ -131,13 +131,13 @@
       "id": "E-07",
       "name": "创建书籍记录（带 contentHash）",
       "ok": true,
-      "detail": "b73e1887-d3f6-466f-bdb5-cc02081dc1df size=294175"
+      "detail": "62b4b82f-fba8-40d1-84a4-c5f230565369 size=294175"
     },
     {
       "id": "E-08",
       "name": "上传真实 EPUB：201 表示写入新 blob，200 表示命中已有 blob（内容寻址去重语义自洽）",
       "ok": true,
-      "detail": "{\"status\":201,\"body\":{\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deduplicated\":false,\"sizeBytes\":294175}}"
+      "detail": "{\"status\":200,\"body\":{\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deduplicated\":true,\"sizeBytes\":294175}}"
     },
     {
       "id": "E-09",
@@ -173,49 +173,49 @@
       "id": "E-13",
       "name": "设备 B 用同一账号登录成功（独立令牌）",
       "ok": true,
-      "detail": "user=spike-a-mvzhkopb@example.com"
+      "detail": "user=spike-a-mw0xn04k@example.com"
     },
     {
       "id": "E-14",
       "name": "设备列表包含 A 与 B（服务端登记设备）",
       "ok": true,
-      "detail": "[{\"id\":\"a1a1a1a1-0000-7000-8000-2c7865a02922\",\"name\":\"\",\"platform\":\"android\",\"lastSeenAt\":\"2026-11-02T16:41:37Z\"},{\"id\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"name\":\"\",\"platform\":\"windows\",\"lastSeenAt\":\"2026-11-02T16:41:37Z\"}]"
+      "detail": "[{\"id\":\"a1a1a1a1-0000-7000-8000-fbf09e3b22e5\",\"name\":\"spike-device-B\",\"platform\":\"android\",\"lastSeenAt\":\"2026-11-03T16:59:05Z\"},{\"id\":\"a1a1a1a1-0000-7000-8000-c0711152e771\",\"name\":\"spike-device-A\",\"platform\":\"windows\",\"lastSeenAt\":\"2026-11-03T16:59:05Z\"}]"
     },
     {
       "id": "F-01",
-      "name": "缺陷取证：deviceId 已被其它用户占用时 register 返回 404 not_found（语义应为 409）",
+      "name": "跨用户复用 deviceId 注册正确返回 409 conflict",
       "ok": true,
-      "detail": "跨用户复用 deviceId 注册: 实际 404 not_found resource not found"
+      "detail": "跨用户复用 deviceId 注册: 实际 409 conflict deviceId is already registered to another account"
     },
     {
       "id": "F-02",
-      "name": "缺陷取证：非法 UUID 的 opId 触发 500（SQLSTATE 22P02，语义应为 400）",
+      "name": "非法 UUID 的 opId 正确拦截并返回 400 invalid_request",
       "ok": true,
-      "detail": "非法 opId: 实际 500 internal_error sync push failed"
+      "detail": "非法 opId: 实际 400 invalid_request 1 of 1 ops are invalid; the batch was not applied"
     },
     {
       "id": "E-15",
       "name": "引擎自动生成的 deviceId 被服务端接受（合法 UUID）",
       "ok": true,
-      "detail": "01a19d23-48bb-7000-878e-c715609800a2"
+      "detail": "01a1a259-a2bf-7000-bba4-3b92293779c2"
     },
     {
       "id": "S-01",
       "name": "设备 A 推送进度：服务端 applied 且分配游标",
       "ok": true,
-      "detail": "{\"pushed\":1,\"applied\":1,\"rejected\":0,\"appliedChanges\":1,\"cursor\":1,\"errors\":[]}"
+      "detail": "{\"pushed\":1,\"applied\":1,\"rejected\":0,\"appliedChanges\":1,\"cursor\":96,\"errors\":[]}"
     },
     {
       "id": "S-02",
       "name": "设备 B 首同步（snapshot）拿到 A 的进度 0.42",
       "ok": true,
-      "detail": "{\"applied\":3,\"progress\":0.42,\"cursor\":1}"
+      "detail": "{\"applied\":3,\"progress\":0.42,\"cursor\":96}"
     },
     {
       "id": "S-03",
       "name": "设备 B 增量 pull（cursor 断点续传）看到 0.50",
       "ok": true,
-      "detail": "{\"cursorBefore\":1,\"pull\":{\"changes\":1,\"appliedChanges\":1,\"pages\":1,\"cursor\":2},\"progress\":0.5}"
+      "detail": "{\"cursorBefore\":96,\"pull\":{\"changes\":1,\"appliedChanges\":1,\"pages\":1,\"cursor\":97},\"progress\":0.5}"
     },
     {
       "id": "S-04",
@@ -227,13 +227,13 @@
       "id": "S-05",
       "name": "被忽略的 op 不产生变更行：服务端游标不动，其它设备 pull 拉不到",
       "ok": true,
-      "detail": "{\"serverPushCursor\":2,\"serverCursorBefore\":2,\"bChanges\":0,\"bCursor\":2,\"forwardSnapshot\":0.5}"
+      "detail": "{\"serverPushCursor\":97,\"serverCursorBefore\":97,\"bChanges\":0,\"bCursor\":97,\"forwardSnapshot\":0.5}"
     },
     {
       "id": "S-06",
       "name": "跨副本前进被接纳（位置 0.8，最远 0.8）",
       "ok": true,
-      "detail": "{\"cursor\":3,\"server\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"contentHash\":\"sha256:abababababababababababababababababababababababababababababababab\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"explicitRewind\":false,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a19d234a48-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"totalProgression\":0.8,\"updatedAt\":\"2026-11-03T00:41:38.128335+08:00\"}}"
+      "detail": "{\"cursor\":98,\"server\":{\"bookId\":\"62b4b82f-fba8-40d1-84a4-c5f230565369\",\"contentHash\":\"sha256:abababababababababababababababababababababababababababababababab\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-c0711152e771\",\"explicitRewind\":false,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a1a259a390-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"totalProgression\":0.8,\"updatedAt\":\"2026-11-03T16:59:06.00504Z\"}}"
     },
     {
       "id": "S-07",
@@ -251,25 +251,25 @@
       "id": "S-08",
       "name": "显式回退生效（位置 0.1），但最远进度保持 0.8（只增不减）",
       "ok": true,
-      "detail": "{\"hlc\":\"001a19d234ac3-00000000-a1a1a1a1\",\"server\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"explicitRewind\":true,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a19d234ac3-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-03.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-03\",\"locations\":{\"progression\":0.1,\"totalProgression\":0.1}},\"totalProgression\":0.1,\"updatedAt\":\"2026-11-03T00:41:38.250592+08:00\"}}"
+      "detail": "{\"hlc\":\"001a1a259a3b2-00000000-a1a1a1a1\",\"server\":{\"bookId\":\"62b4b82f-fba8-40d1-84a4-c5f230565369\",\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-c0711152e771\",\"explicitRewind\":true,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"hlc\":\"001a1a259a3b2-00000000-a1a1a1a1\",\"locator\":{\"href\":\"OEBPS/chapter-03.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-03\",\"locations\":{\"progression\":0.1,\"totalProgression\":0.1}},\"totalProgression\":0.1,\"updatedAt\":\"2026-11-03T16:59:06.039002Z\"}}"
     },
     {
       "id": "S-09",
       "name": "同 opId 重放：reason=duplicate 且游标不动",
       "ok": true,
-      "detail": "{\"item\":{\"opId\":\"01a19d23-4af0-7000-b53d-f548b7b82a69\",\"status\":\"applied\",\"reason\":\"duplicate\"},\"cursor\":6,\"before\":6}"
+      "detail": "{\"item\":{\"opId\":\"01a1a259-a3c3-7000-93db-532949b579fa\",\"status\":\"applied\",\"reason\":\"duplicate\"},\"cursor\":101,\"before\":101}"
     },
     {
       "id": "S-10",
       "name": "设备 B 最终收敛到服务端权威状态（位置 0.6 / 最远 0.8）",
       "ok": true,
-      "detail": "{\"changes\":4,\"progress\":{\"bookId\":\"b73e1887-d3f6-466f-bdb5-cc02081dc1df\",\"locator\":{\"href\":\"OEBPS/chapter-07.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-07\",\"locations\":{\"progression\":0.6,\"totalProgression\":0.6}},\"totalProgression\":0.6,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"explicitRewind\":false,\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"hlc\":\"001a19d234af0-00000000-a1a1a1a1\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-304578645d67\",\"updatedAt\":\"\"}}"
+      "detail": "{\"changes\":4,\"progress\":{\"bookId\":\"62b4b82f-fba8-40d1-84a4-c5f230565369\",\"locator\":{\"href\":\"OEBPS/chapter-07.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-07\",\"locations\":{\"progression\":0.6,\"totalProgression\":0.6}},\"totalProgression\":0.6,\"furthestLocator\":{\"href\":\"OEBPS/chapter-20.xhtml\",\"type\":\"application/xhtml+xml\",\"title\":\"chapter-20\",\"locations\":{\"progression\":0.8,\"totalProgression\":0.8}},\"furthestProgression\":0.8,\"explicitRewind\":false,\"contentHash\":\"sha256:bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\",\"hlc\":\"001a1a259a3c3-00000000-a1a1a1a1\",\"deviceId\":\"a1a1a1a1-0000-7000-8000-c0711152e771\",\"updatedAt\":\"\"}}"
     },
     {
       "id": "A-01",
       "name": "设备 A 推送标注：服务端 applied 且本地投影可见",
       "ok": true,
-      "detail": "{\"applied\":1,\"id\":\"01a19d23-4b2c-7000-b580-f5d56d61a69b\"}"
+      "detail": "{\"applied\":1,\"id\":\"01a1a259-a3db-7000-a5f1-e5f68722d8a4\"}"
     },
     {
       "id": "A-02",
@@ -293,7 +293,7 @@
       "id": "A-05",
       "name": "服务端 REST 创建的标注被客户端 pull 到（游标只由服务端分配）",
       "ok": true,
-      "detail": "id=90f133f8-3d43-4af7-bfa8-304a95fa3561"
+      "detail": "id=ea636490-9442-4e2a-9bfb-63aa4bab3b38"
     },
     {
       "id": "I-01",

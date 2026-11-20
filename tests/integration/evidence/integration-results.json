@@ -1,0 +1,588 @@
+{
+  "runId": "mwd4v13fugs2",
+  "executedAt": "2026-11-12T05:54:32.469Z",
+  "summary": {
+    "total": 72,
+    "passed": 72,
+    "failed": 0,
+    "totalDurationMs": 1098
+  },
+  "checks": [
+    {
+      "suite": "Docker-Backend",
+      "id": "BK-01",
+      "name": "API 存活探针 /healthz 返回 status=ok",
+      "ok": true,
+      "detail": "{\"status\":\"ok\",\"time\":\"2026-11-12T05:54:31Z\"}",
+      "durationMs": 27
+    },
+    {
+      "suite": "Docker-Backend",
+      "id": "BK-02",
+      "name": "API 就绪探针 /readyz 验证 PostgreSQL 数据库与 Local 存储均正常",
+      "ok": true,
+      "detail": "{\"db\":\"ok\",\"status\":\"ready\",\"storage\":\"local\"}",
+      "durationMs": 3
+    },
+    {
+      "suite": "Docker-Backend",
+      "id": "BK-03",
+      "name": "API Prometheus 指标端点 /metrics 正常暴露 http 指标",
+      "ok": true,
+      "detail": "Length: 9491 bytes, has uptime & requests",
+      "durationMs": 14
+    },
+    {
+      "suite": "Docker-Backend",
+      "id": "BK-04",
+      "name": "Caddy 反向代理 HTTPS /healthz 成功响应且携带完整安全响应头基线",
+      "ok": true,
+      "detail": "Status: 200, HSTS: max-age=31536000; includeSubDomains, X-Content-Type: nosniff",
+      "durationMs": 0
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-01",
+      "name": "新用户注册：返回 AccessToken、RefreshToken 及用户资料",
+      "ok": true,
+      "detail": "user.id: efec70fa-086f-4bbe-8e45-3080f17e4db6, expiresIn: 900",
+      "durationMs": 56
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-02",
+      "name": "重复注册同一邮箱返回 409 conflict",
+      "ok": true,
+      "detail": "重复邮箱注册: actual HTTP 409 [conflict] email already registered",
+      "durationMs": 0
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-03",
+      "name": "错误密码登录返回 401 unauthorized",
+      "ok": true,
+      "detail": "错误口令登录: actual HTTP 401 [invalid_credentials] invalid email or password",
+      "durationMs": 0
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-04",
+      "name": "携带有效 Bearer Token 获取个人资料 (GET /v1/me)",
+      "ok": true,
+      "detail": "me: auth-user-mwd4v13fugs2@example.com",
+      "durationMs": 18
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-05",
+      "name": "设备 B 登录同一账号获取独立令牌对",
+      "ok": true,
+      "detail": "Device B got distinct access & refresh token",
+      "durationMs": 58
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-06",
+      "name": "服务端登记设备清单包含设备 A 与设备 B",
+      "ok": true,
+      "detail": "Device count: 2",
+      "durationMs": 18
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-07",
+      "name": "调用 refresh 接口获得新令牌对（令牌轮换）",
+      "ok": true,
+      "detail": "New refresh token generated",
+      "durationMs": 18
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-08",
+      "name": "旧 RefreshToken 重用被即时拦截（401 unauthorized）",
+      "ok": true,
+      "detail": "旧 refresh 重用: actual HTTP 401 [unauthorized] refresh token already used; session revoked",
+      "durationMs": 0
+    },
+    {
+      "suite": "Auth & Multi-Device",
+      "id": "AU-09",
+      "name": "检测到重用后服务端吊销整个家族（换出的新 refresh 也立即失效）",
+      "ok": true,
+      "detail": "家族被连坐吊销后使用新 refresh: actual HTTP 401 [unauthorized] refresh token already used; session revoked",
+      "durationMs": 0
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U01",
+      "name": "创建书籍元数据：Alice in Wonderland (EPUB)",
+      "ok": true,
+      "detail": "ID: 60053e13-405c-4d35-90c3-1b7b72dc0c57",
+      "durationMs": 13
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U02",
+      "name": "上传 Alice in Wonderland 文件流 (133.6 KB)",
+      "ok": true,
+      "detail": "Status: 200, deduplicated: true, size: 136756",
+      "durationMs": 17
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U03",
+      "name": "创建书籍元数据：Frankenstein (EPUB, 287.3 KB)",
+      "ok": true,
+      "detail": "ID: 4a628729-f5ec-49ee-9ac0-ff84ef7e6ffb",
+      "durationMs": 14
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U04",
+      "name": "上传 Frankenstein 文件流并写入存储",
+      "ok": true,
+      "detail": "Status: 200, size: 294175",
+      "durationMs": 18
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U05",
+      "name": "秒传去重：重复上传同一文件流立即返回 200 且 deduplicated=true",
+      "ok": true,
+      "detail": "Status: 200, deduplicated: true",
+      "durationMs": 13
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U06",
+      "name": "声明哈希与实际传输字节不一致被严格拦截（400 invalid_request）",
+      "ok": true,
+      "detail": "上传内容与声明哈希不符: actual HTTP 400 [invalid_request] contentHash does not match uploaded bytes",
+      "durationMs": 0
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U07",
+      "name": "创建书籍元数据：Pride and Prejudice (EPUB, 594.9 KB)",
+      "ok": true,
+      "detail": "ID: 1260bea3-3200-44d5-bd38-690246744153",
+      "durationMs": 4
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U08",
+      "name": "上传 Pride and Prejudice 大文件流",
+      "ok": true,
+      "detail": "Status: 200, size: 609138",
+      "durationMs": 7
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U09",
+      "name": "HTTP Range 分片请求：返回 206 Partial Content、精确 64 字节并带有 Content-Range 与 ETag",
+      "ok": true,
+      "detail": "Status: 206, Bytes: 64, Range: bytes 0-63/294175, ETag: \"bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662\"",
+      "durationMs": 0
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U10",
+      "name": "全量下载文件与本地测试源文件逐字节比对（SHA-256 吻合）",
+      "ok": true,
+      "detail": "Original: 08a2de3a58226311..., Downloaded: 08a2de3a58226311...",
+      "durationMs": 0
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U11",
+      "name": "更新书籍元数据 (PATCH /v1/books/{id})",
+      "ok": true,
+      "detail": "title: Alice's Adventures in Wonderland (Annotated), readingState: reading",
+      "durationMs": 4
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U12",
+      "name": "软删除书籍 (DELETE /v1/books/{id})",
+      "ok": true,
+      "detail": "",
+      "durationMs": 4
+    },
+    {
+      "suite": "Books & Upload",
+      "id": "BK-U13",
+      "name": "已删除书籍不再出现在普通书库列表中",
+      "ok": true,
+      "detail": "Active items count: 4",
+      "durationMs": 0
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-01",
+      "name": "设备 A 推送阅读进度 (0.25)：服务端接纳并分配单调游标",
+      "ok": true,
+      "detail": "pushed: 1, cursor: 289",
+      "durationMs": 11
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-02",
+      "name": "设备 B 执行快照同步 (snapshot)：精准拿到设备 A 的最新进度 0.25",
+      "ok": true,
+      "detail": "Local prog: 0.25, cursor: 289",
+      "durationMs": 3
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-03",
+      "name": "设备 B 增量 pull：基于 cursor 断点续传捕获 0.50 前进",
+      "ok": true,
+      "detail": "Changes: 1, cursor: 289 -> 290",
+      "durationMs": 3
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-04",
+      "name": "陈旧 HLC 进度写入：服务端判定 older_hlc，忽略变更且不推进游标",
+      "ok": true,
+      "detail": "reasons: [\"older_hlc\"], cursor: 290",
+      "durationMs": 4
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-05",
+      "name": "跨副本前移至 0.85：当前位置与最远进度同步推升至 0.85",
+      "ok": true,
+      "detail": "Progression: 0.85, Furthest: 0.85",
+      "durationMs": 0
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-06",
+      "name": "未声明 explicitRewind 的倒退被服务端拒收 (stale_no_rewind)",
+      "ok": true,
+      "detail": "Reasons: [\"stale_no_rewind\"]",
+      "durationMs": 6
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-07",
+      "name": "显式回滚生效：当前位置退回 0.15，但最远进度基线牢固保持 0.85（只增不减）",
+      "ok": true,
+      "detail": "Current: 0.15, Furthest: 0.85",
+      "durationMs": 0
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-08",
+      "name": "重复提交相同 opId 操作：服务端返回 applied + reason: duplicate，游标不递增",
+      "ok": true,
+      "detail": "status: applied, reason: duplicate, cursor: 292",
+      "durationMs": 4
+    },
+    {
+      "suite": "Sync-Progress",
+      "id": "SP-09",
+      "name": "新设备 C (Web) 登录并完成快照聚合：精准收敛到当前 0.15 / 最远 0.85",
+      "ok": true,
+      "detail": "Device C sees current: 0.15, furthest: 0.85",
+      "durationMs": 0
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-01",
+      "name": "设备 A 创建高亮划线标注并推送到服务端",
+      "ok": true,
+      "detail": "applied: 1, text: \"Curiouser and curiouser!\"",
+      "durationMs": 14
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-02",
+      "name": "设备 B 增量 pull：捕获设备 A 新建的划线标注",
+      "ok": true,
+      "detail": "Device B got annotation: 01a1ce52-71d7-7000-9d06-9d0ecfc4c024",
+      "durationMs": 4
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-03",
+      "name": "设备 A 修改标注颜色与笔记，设备 B 增量 pull 获取最新内容",
+      "ok": true,
+      "detail": "Color: #ff5500, note: \"Updated note on wonderland\"",
+      "durationMs": 3
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-04",
+      "name": "设备 A 软删除标注（写入 tombstone 墓碑标记）",
+      "ok": true,
+      "detail": "",
+      "durationMs": 9
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-05",
+      "name": "设备 B 增量 pull：墓碑生效，本地投影移除该标注",
+      "ok": true,
+      "detail": "Annotation successfully cleared from local state",
+      "durationMs": 3
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-06",
+      "name": "抗复活防御 (Remove-Wins)：陈旧写入无法复活已被墓碑删除的标注",
+      "ok": true,
+      "detail": "Server adjudication: [\"tombstone_wins\"]",
+      "durationMs": 6
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-07",
+      "name": "服务端直接通过 REST API 创建批注，被客户端增量同步无缝捕获",
+      "ok": true,
+      "detail": "",
+      "durationMs": 6
+    },
+    {
+      "suite": "Sync-Annotations",
+      "id": "AN-08",
+      "name": "设备 A pull 获取服务端直建批注并成功合并",
+      "ok": true,
+      "detail": "Annotation ID: 42909955-eba7-446f-ae2e-eeea9c29130a",
+      "durationMs": 3
+    },
+    {
+      "suite": "Offline-Outbox",
+      "id": "OF-01",
+      "name": "网络断开时，所有变更全部保存在本地 Outbox 出站队列中",
+      "ok": true,
+      "detail": "Outbox size: 3",
+      "durationMs": 0
+    },
+    {
+      "suite": "Offline-Outbox",
+      "id": "OF-02",
+      "name": "进程重启持久化验证：从本地存储重新恢复 Outbox 队列条目无损",
+      "ok": true,
+      "detail": "Reloaded items: 3",
+      "durationMs": 0
+    },
+    {
+      "suite": "Offline-Outbox",
+      "id": "OF-03",
+      "name": "网络故障重试呈指数退避分布 (1s, 2s, 4s, 8s, 16s, 30s, 30s)",
+      "ok": true,
+      "detail": "Backoff ladder: [1000,2000,4000,8000,16000,30000,30000]",
+      "durationMs": 0
+    },
+    {
+      "suite": "Offline-Outbox",
+      "id": "OF-04",
+      "name": "恢复网络连接后触发同步：批量出栈并成功提交至服务端",
+      "ok": true,
+      "detail": "pushed: 3, applied: 3, remaining outbox: 0",
+      "durationMs": 10
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-01",
+      "name": "租户 Bob 访问个人书库：列表为空，看不到租户 Alice 的任何书籍",
+      "ok": true,
+      "detail": "Items: 0",
+      "durationMs": 3
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-02",
+      "name": "跨租户读取书籍元数据被拒绝并隐蔽返回 404 not_found",
+      "ok": true,
+      "detail": "Bob 越权读取 Alice 书籍: actual HTTP 404 [not_found] resource not found",
+      "durationMs": 0
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-03",
+      "name": "跨租户直接下载书籍文件被拒绝并返回 404 not_found",
+      "ok": true,
+      "detail": "Actual HTTP Status: 404",
+      "durationMs": 0
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-04",
+      "name": "租户 Bob 拉取同步快照：无书籍、无进度、无批注",
+      "ok": true,
+      "detail": "books=0, progress=0, ann=0",
+      "durationMs": 3
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-05",
+      "name": "租户 Bob 从游标 0 全局拉取：结果为空，无法监听租户 Alice 的 change_log 序列",
+      "ok": true,
+      "detail": "Changes: 0",
+      "durationMs": 2
+    },
+    {
+      "suite": "Multi-Tenant",
+      "id": "MT-06",
+      "name": "租户 Bob 写入相同 bookId 的进度仅进入 Bob 自己的租户分区，Alice 进度绝对隔离不被篡改",
+      "ok": true,
+      "detail": "Alice progression before: 0.15, after: 0.15",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-01",
+      "name": "地址归一化：去空白/补协议/去尾斜杠；空串回落默认地址",
+      "ok": true,
+      "detail": "[\"https://books.example.com\",\"http://192.168.1.10:8080\",\"http://127.0.0.1:8080\",\"http://127.0.0.1:8080\"]",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-02",
+      "name": "保存的地址能被非组件环境（同步引擎/api client）原样读到",
+      "ok": true,
+      "detail": "readServerUrl() = http://192.0.2.10:9000",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-03",
+      "name": "地址变更后同步运行时的 api client 指向新地址（无需重启应用）",
+      "ok": true,
+      "detail": "client.baseUrl = http://127.0.0.1:8080",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-04",
+      "name": "连接探测：真实服务端 /healthz 返回 ok（设置页「测试连接」的底层能力）",
+      "ok": true,
+      "detail": "ok=true, 3ms, status=ok",
+      "durationMs": 3
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-05",
+      "name": "连接探测：不可达地址必须如实返回失败（不伪装成功）",
+      "ok": true,
+      "detail": "ok=false, message=fetch failed",
+      "durationMs": 1
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-06",
+      "name": "换地址后：待推送变更、登录令牌、本地投影全部保留（rebuild 不丢数据）",
+      "ok": true,
+      "detail": "outbox=2, tokenKept=true",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-07",
+      "name": "服务器不可达：一次同步失败但变更仍留在 outbox（离线容灾，不静默丢弃）",
+      "ok": true,
+      "detail": "outbox=2, phase=offline, errors=1",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-08",
+      "name": "地址恢复后：outbox 排空（pushed=2）且服务端权威进度收敛到 0.44",
+      "ok": true,
+      "detail": "pushed=2, outbox=0, server=0.44",
+      "durationMs": 0
+    },
+    {
+      "suite": "Server-Address",
+      "id": "SA-09",
+      "name": "rebuildSyncRuntime 后全局单例被替换为新 runtime，且地址正确",
+      "ok": true,
+      "detail": "http://127.0.0.1:8080 -> http://127.0.0.1:8080",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-01",
+      "name": "新设备登录后拉取云端书库列表",
+      "ok": true,
+      "detail": "云端书籍 4 本",
+      "durationMs": 4
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-02",
+      "name": "内容哈希是跨端身份键：云端条目能与本地文件（sha256）一一对上",
+      "ok": true,
+      "detail": "found=true, id=60053e13-405c-4d35-90c3-1b7b72dc0c57",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-03",
+      "name": "下载云端书籍文件（客户端 books.getFileBytes）",
+      "ok": true,
+      "detail": "136756 bytes",
+      "durationMs": 4
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-04",
+      "name": "下载字节与源文件 SHA-256 完全一致（入库前的校验依据）",
+      "ok": true,
+      "detail": "cloud=08a2de3a58226311..., downloaded=08a2de3a58226311..., bytes=136756",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-05",
+      "name": "篡改一个字节即被哈希校验识破（客户端必须拒绝入库）",
+      "ok": true,
+      "detail": "tampered=b0528d93a2e89562... vs cloud=08a2de3a58226311...",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-06",
+      "name": "本地已存在同 contentHash 时判定为「已在本地」，不重复下载/入库",
+      "ok": true,
+      "detail": "localHashes has downloaded hash = true",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-07",
+      "name": "B 机器在下载后的书上写入笔记并推送（文件同步 + 阅读数据同步同一身份）",
+      "ok": true,
+      "detail": "pushed=1, applied=1, rejected=0, errors=0",
+      "durationMs": 10
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-08",
+      "name": "A 机器 bootstrap 后能看到 B 的笔记（跨端收敛到同一 bookId）",
+      "ok": true,
+      "detail": "text=B 机器下载后写下的笔记, bookId=60053e13-405c-4d35-90c3-1b7b72dc0c57",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-10",
+      "name": "bootstrap 后标注投影按真实 id 建键，不存在 undefined 幽灵条目（回归 BF-08 根因）",
+      "ok": true,
+      "detail": "keys=3, hasRealId=true, hasUndefined=false",
+      "durationMs": 0
+    },
+    {
+      "suite": "Book-File-Sync",
+      "id": "BF-09",
+      "name": "未登录下载云端书籍文件被拒（401，不泄漏内容）",
+      "ok": true,
+      "detail": "status=401",
+      "durationMs": 0
+    }
+  ]
+}

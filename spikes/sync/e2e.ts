@@ -676,11 +676,11 @@ async function main(): Promise<void> {
           deviceName: 'spike-f1b',
           deviceId: devShared,
         }),
-      404,
+      409,
     )
     check(
       'F-01',
-      '缺陷取证：deviceId 已被其它用户占用时 register 返回 404 not_found（语义应为 409）',
+      '跨用户复用 deviceId 注册正确返回 409 conflict',
       reuseDevice.ok,
       reuseDevice.detail,
     )
@@ -702,11 +702,11 @@ async function main(): Promise<void> {
             },
           ] as never,
         }),
-      500,
+      400,
     )
     check(
       'F-02',
-      '缺陷取证：非法 UUID 的 opId 触发 500（SQLSTATE 22P02，语义应为 400）',
+      '非法 UUID 的 opId 正确拦截并返回 400 invalid_request',
       badOp.ok,
       badOp.detail,
     )
