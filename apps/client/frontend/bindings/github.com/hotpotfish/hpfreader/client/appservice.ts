@@ -19,6 +19,13 @@ export function DataDir(): $CancellablePromise<string> {
 }
 
 /**
+ * OpenDataDir 在系统文件管理器中打开数据目录。
+ */
+export function OpenDataDir(): $CancellablePromise<void> {
+    return $Call.ByID(3774760905);
+}
+
+/**
  * Platform 返回宿主平台标识：windows / darwin / linux / android / ios。
  */
 export function Platform(): $CancellablePromise<string> {

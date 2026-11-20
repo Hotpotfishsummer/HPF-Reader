@@ -40,6 +40,16 @@ export function ImportBook(path: string): $CancellablePromise<$models.BookSummar
 }
 
 /**
+ * ImportBookBytes 把内存中的书籍字节写入本地书库（前端下载云端文件后调用）。
+ * 
+ * 与 ImportBook 共用同一条去重/落盘路径：id = sha256(data) 前 16 位，
+ * 重复内容直接返回已有条目，**不重复写文件、不覆盖已有元数据**。
+ */
+export function ImportBookBytes(payload: $models.ImportBookPayload): $CancellablePromise<$models.BookSummary> {
+    return $Call.ByID(1942261093, payload);
+}
+
+/**
  * ImportBookWithDialog 打开文件选择框并直接把选中的书导入书库。
  */
 export function ImportBookWithDialog(): $CancellablePromise<$models.BookSummary> {

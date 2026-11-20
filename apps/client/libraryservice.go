@@ -26,6 +26,19 @@ type BookSummary struct {
 	AddedAt     string `json:"addedAt"`
 }
 
+// ImportBookPayload 是"把内存中的书籍字节写入本地书库"的入参（前端下载云端文件后调用）。
+//
+// name 是原始文件名（用于推断标题/扩展名与落盘文件名）；title/author/format 允许用
+// **云端元数据**覆盖文件推断值（云端 title 常常比文件名准确）。Data 为原始字节。
+// 经 Wails 绑定时 Data 会序列化为 base64 字符串（前端 Uint8Array -> base64）。
+type ImportBookPayload struct {
+	Name   string `json:"name"`
+	Title  string `json:"title,omitempty"`
+	Author string `json:"author,omitempty"`
+	Format string `json:"format,omitempty"`
+	Data   []byte `json:"data"`
+}
+
 // LibraryChangedEvent 是书库变更事件的载荷。
 type LibraryChangedEvent struct {
 	Reason string `json:"reason"`
@@ -137,7 +150,63 @@ func (s *LibraryService) ImportBook(path string) (BookSummary, error) {
 	if err != nil {
 		return BookSummary{}, fmt.Errorf("read %s: %w", path, err)
 	}
-	sum := sha256.Sum256(raw)
+	name := filepath.Base(path)
+	return s.importBytes(importRequest{
+		Name:   name,
+		Title:  strings.TrimSuffix(name, filepath.Ext(name)),
+		Format: strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), "."),
+		Data:   raw,
+	})
+}
+
+// ImportBookBytes 把内存中的书籍字节写入本地书库（前端下载云端文件后调用）。
+//
+// 与 ImportBook 共用同一条去重/落盘路径：id = sha256(data) 前 16 位，
+// 重复内容直接返回已有条目，**不重复写文件、不覆盖已有元数据**。
+func (s *LibraryService) ImportBookBytes(payload ImportBookPayload) (BookSummary, error) {
+	name := strings.TrimSpace(payload.Name)
+	if name == "" {
+		name = strings.TrimSpace(payload.Title)
+	}
+	if name == "" {
+		return BookSummary{}, errors.New("book name is empty")
+	}
+	// 只对"来自网络下载的字节"做格式校验：本地文件对话框导入保持宽松，
+	// 因为用户可能导入服务端/第三方工具产出的非常规容器（历史行为，不能收紧）。
+	format := normalizeBookFormat(payload.Format, name)
+	if err := validateBookData(format, payload.Data); err != nil {
+		return BookSummary{}, err
+	}
+	return s.importBytes(importRequest{
+		Name:   name,
+		Title:  payload.Title,
+		Author: payload.Author,
+		Format: format,
+		Data:   payload.Data,
+	})
+}
+
+// importRequest 是 ImportBook / ImportBookBytes 的共同输入（内部类型，不进 bindings）。
+type importRequest struct {
+	Name   string
+	Title  string
+	Author string
+	Format string
+	Data   []byte
+}
+
+// importBytes 是唯一的入库实现：sha256 去重 -> 落盘 -> 写索引（格式校验由调用方决定）。
+func (s *LibraryService) importBytes(req importRequest) (BookSummary, error) {
+	if len(req.Data) == 0 {
+		return BookSummary{}, errors.New("book data is empty")
+	}
+	name := filepath.Base(strings.TrimSpace(req.Name))
+	if name == "" || name == "." || name == string(filepath.Separator) {
+		return BookSummary{}, errors.New("book name is empty")
+	}
+	format := normalizeBookFormat(req.Format, name)
+
+	sum := sha256.Sum256(req.Data)
 	hash := hex.EncodeToString(sum[:])
 	id := hash[:16]
 
@@ -145,25 +214,33 @@ func (s *LibraryService) ImportBook(path string) (BookSummary, error) {
 	existing, ok := s.index.Books[id]
 	s.mu.RUnlock()
 	if ok {
+		// 去重命中：同一份内容永远只落一个文件，元数据以首次入库为准。
 		return existing, nil
 	}
 
 	if _, err := s.indexPath(); err != nil {
 		return BookSummary{}, err
 	}
-	name := filepath.Base(path)
-	dst := filepath.Join(s.dir, "books", id+strings.ToLower(filepath.Ext(name)))
-	if err := os.WriteFile(dst, raw, 0o644); err != nil {
+	ext := strings.ToLower(filepath.Ext(name))
+	if format != "" {
+		ext = "." + format
+	}
+	dst := filepath.Join(s.dir, "books", id+ext)
+	if err := os.WriteFile(dst, req.Data, 0o644); err != nil {
 		return BookSummary{}, fmt.Errorf("write %s: %w", dst, err)
 	}
 
+	title := strings.TrimSpace(req.Title)
+	if title == "" {
+		title = strings.TrimSuffix(name, filepath.Ext(name))
+	}
 	rec := BookSummary{
 		ID:          id,
-		Title:       strings.TrimSuffix(name, filepath.Ext(name)),
-		Author:      "",
-		Format:      strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), "."),
+		Title:       title,
+		Author:      strings.TrimSpace(req.Author),
+		Format:      format,
 		ContentHash: hash,
-		SizeBytes:   int64(len(raw)),
+		SizeBytes:   int64(len(req.Data)),
 		AddedAt:     time.Now().UTC().Format(time.RFC3339),
 	}
 	s.mu.Lock()
@@ -174,6 +251,43 @@ func (s *LibraryService) ImportBook(path string) (BookSummary, error) {
 	}
 	s.emit("imported", id)
 	return rec, nil
+}
+
+// normalizeBookFormat 归一化格式串：显式 format 优先，否则从文件名扩展名推断。
+func normalizeBookFormat(format, name string) string {
+	f := strings.ToLower(strings.TrimSpace(format))
+	f = strings.TrimPrefix(f, ".")
+	if f != "" {
+		return f
+	}
+	return strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
+}
+
+// validateBookData 拒绝空数据与"扩展名说是电子书、内容根本不是"的损坏数据。
+// 只用于 ImportBookBytes（云端下载）：下载是自动路径，坏字节必须在入库前挡住；
+// ImportBook（用户显式选择的本地文件）保持宽松，不做过度校验以免挡住真实可读文件。
+// 未知格式（含 txt）只要求非空。
+func validateBookData(format string, raw []byte) error {
+	if len(raw) == 0 {
+		return errors.New("book data is empty")
+	}
+	switch format {
+	case "epub", "cbz":
+		// EPUB / CBZ 都是 ZIP 容器。
+		if len(raw) < 4 || raw[0] != 'P' || raw[1] != 'K' {
+			return fmt.Errorf("corrupted %s: missing ZIP header", strings.ToUpper(format))
+		}
+	case "pdf":
+		if len(raw) < 5 || string(raw[:5]) != "%PDF-" {
+			return errors.New("corrupted PDF: missing %PDF- header")
+		}
+	case "mobi", "azw3":
+		// PalmDB 头部：偏移 60 处必须是 "BOOKMOBI"。
+		if len(raw) < 68 || string(raw[60:68]) != "BOOKMOBI" {
+			return fmt.Errorf("corrupted %s: missing BOOKMOBI header", strings.ToUpper(format))
+		}
+	}
+	return nil
 }
 
 // ReadBookBytes 读取书籍原始字节（供前端交给 foliate-js 渲染）。

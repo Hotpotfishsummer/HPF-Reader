@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os/exec"
 	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -29,3 +30,21 @@ func (s *AppService) Version() string { return AppVersion }
 
 // DataDir 返回客户端本地数据目录的绝对路径。
 func (s *AppService) DataDir() (string, error) { return dataDir() }
+
+// OpenDataDir 在系统文件管理器中打开数据目录。
+func (s *AppService) OpenDataDir() error {
+	dir, err := dataDir()
+	if err != nil {
+		return err
+	}
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("explorer", dir).Start()
+	case "darwin":
+		return exec.Command("open", dir).Start()
+	case "linux":
+		return exec.Command("xdg-open", dir).Start()
+	default:
+		return nil
+	}
+}

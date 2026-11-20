@@ -15,9 +15,87 @@ export interface BookSummary {
 }
 
 /**
+ * DownloadItem 描述一个下载项。
+ */
+export interface DownloadItem {
+    "id": string;
+    "url": string;
+    "filename": string;
+    "sizeBytes": number;
+
+    /**
+     * "completed", "downloading", "failed"
+     */
+    "status": string;
+    "downloadedAt": string;
+    "filePath": string;
+}
+
+/**
+ * ImportBookPayload 是"把内存中的书籍字节写入本地书库"的入参（前端下载云端文件后调用）。
+ * 
+ * name 是原始文件名（用于推断标题/扩展名与落盘文件名）；title/author/format 允许用
+ * **云端元数据**覆盖文件推断值（云端 title 常常比文件名准确）。Data 为原始字节。
+ * 经 Wails 绑定时 Data 会序列化为 base64 字符串（前端 Uint8Array -> base64）。
+ */
+export interface ImportBookPayload {
+    "name": string;
+    "title"?: string;
+    "author"?: string;
+    "format"?: string;
+    "data": string | null;
+}
+
+/**
  * LibraryChangedEvent 是书库变更事件的载荷。
  */
 export interface LibraryChangedEvent {
     "reason": string;
     "bookId"?: string;
+}
+
+/**
+ * ProxyConfig 存储代理配置信息。
+ */
+export interface ProxyConfig {
+    "enabled": boolean;
+
+    /**
+     * "http" 或 "socks5"
+     */
+    "type": string;
+
+    /**
+     * 默认 "127.0.0.1"
+     */
+    "host": string;
+
+    /**
+     * 默认 7890
+     */
+    "port": number;
+}
+
+/**
+ * ProxyTestResult 是代理测试结果。
+ */
+export interface ProxyTestResult {
+    "success": boolean;
+    "latencyMs": number;
+    "message": string;
+}
+
+/**
+ * RelayTransportInfo 是交给前端的连接信息（Wails 会生成对应 TS 模型）。
+ */
+export interface RelayTransportInfo {
+    /**
+     * BaseURL 形如 http://127.0.0.1:<随机端口>。
+     */
+    "baseURL": string;
+
+    /**
+     * Token 每次进程启动都不同；前端把它放进 X-HPF-Relay 头。
+     */
+    "token": string;
 }
