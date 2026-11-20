@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -98,6 +99,14 @@ func (s *Server) handleTranslate(w http.ResponseWriter, r *http.Request) {
 	//
 	// 预扣的 token 数是**输入估算 + 输出上限的一半**：输出长度未知，
 	// 取输入估算的一半作为保守估计。真实用量在 Settle 时结算差额。
+	//
+	// 顺序是先查全站预算、再做用户预扣：全站预算检查是纯读（不写库），
+	// 先做它可以避免「全站已超额时还白白消耗一次用户预扣」。
+	if err := s.checkGlobalAIBudget(r.Context()); err != nil {
+		s.metrics.IncAI(false)
+		writeQuotaExceeded(w, err)
+		return
+	}
 	reserved := int64(ai.EstimateRequestTokens(aiReq))
 	reserved += reserved / 2
 	if reserved < 1 {
@@ -172,6 +181,27 @@ func (s *Server) handleTranslate(w http.ResponseWriter, r *http.Request) {
 		s.metrics.IncAI(false)
 		s.writeSSE(w, flusher, "error", map[string]any{"code": codeUnavailable, "message": errMsg})
 	}
+}
+
+// checkGlobalAIBudget 做全站月度调用上限判定（HPF_AI_GLOBAL_MONTHLY_CALLS）。
+//
+// 为什么需要这道闸门：每用户配额只约束「一个账号能花多少」。注册开放时
+// 攻击者注册 N 个账号就得到 N 份额度，账单按 N 倍增长——每用户配额对
+// 「多账号绕过」完全无效。全站上限是最后一道成本闸门。
+//
+// 实现上刻意**直接查库、不加缓存层**：
+//   - AI 调用本身要花几秒到几十秒，一次 SUM 聚合的开销可以忽略；
+//   - 缓存会引入「多个副本各算各的账」和「缓存未失效导致超额放行」两种新失效模式，
+//     而这道闸门存在的意义就是防超额，用缓存换来的性能提升不值这个风险。
+//
+// store 层未配置（例如只跑路由的最小 Server）时直接放行：
+// 这些测试不覆盖成本语义，让它们因为「没有数据库」而 500 反而是噪声。
+func (s *Server) checkGlobalAIBudget(ctx context.Context) error {
+	limit := s.cfg.AIGlobalMonthlyCalls
+	if limit <= 0 || s.store == nil {
+		return nil
+	}
+	return s.store.CheckGlobalAICallBudget(ctx, limit)
 }
 
 // settleAI 用真实用量结算预扣并记账。
@@ -251,6 +281,14 @@ func (s *Server) handleCreateAIJob(w http.ResponseWriter, r *http.Request) {
 	// 超限时把任务置为 paused（可续跑）而不是 failed。
 	// 也就是说这里的预扣是「占位」，不是「一次性买断」——
 	// 这正是 M5-2 需要的结构，不要把它改成一锤子买卖。
+	//
+	// 全站预算必须在入队前查：否则多账号可以把无数个任务塞进队列，
+	// 每个任务都是「已经答应了用户会跑」的承诺，等到 worker 才发现超额时
+	// 用户已经在等结果了（而且队列里的任务会一直堆到下个月）。
+	if err := s.checkGlobalAIBudget(r.Context()); err != nil {
+		writeQuotaExceeded(w, err)
+		return
+	}
 	const jobReserveTokens = 100000 // 约一本中等篇幅书的入场估计，块级结算会修正
 	if _, err := s.store.Reserve(r.Context(), claims.UserID, jobReserveTokens); err != nil {
 		var qe *store.ErrQuotaExceeded
@@ -272,6 +310,32 @@ func (s *Server) handleCreateAIJob(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, toAIJobDTO(job))
 }
 
+// handleListAIJobs 查询用户的 AI 任务列表，支持 ?bookId=...
+func (s *Server) handleListAIJobs(w http.ResponseWriter, r *http.Request) {
+	claims, _ := claimsFrom(r.Context())
+	bookID := r.URL.Query().Get("bookId")
+	if bookID != "" && !idgen.IsUUID(bookID) {
+		writeError(w, http.StatusBadRequest, codeInvalidRequest, "bookId must be a UUID", nil)
+		return
+	}
+	limit := 50
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	jobs, err := s.store.ListAIJobs(r.Context(), claims.UserID, bookID, limit)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	out := make([]aiJobDTO, len(jobs))
+	for i, j := range jobs {
+		out[i] = toAIJobDTO(j)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // handleGetAIJob 查询任务状态。
 func (s *Server) handleGetAIJob(w http.ResponseWriter, r *http.Request) {
 	claims, _ := claimsFrom(r.Context())
@@ -286,6 +350,53 @@ func (s *Server) handleGetAIJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toAIJobDTO(job))
+}
+
+type translationChunkDTO struct {
+	ChunkIndex   int     `json:"chunkIndex"`
+	ChapterIndex int     `json:"chapterIndex"`
+	SourceText   string  `json:"sourceText"`
+	OutputText   *string `json:"outputText"`
+	Status       string  `json:"status"`
+}
+
+type jobChunksResponse struct {
+	JobID  string                `json:"jobId"`
+	Chunks []translationChunkDTO `json:"chunks"`
+}
+
+// handleGetAIJobChunks 返回指定任务的翻译分块列表。
+func (s *Server) handleGetAIJobChunks(w http.ResponseWriter, r *http.Request) {
+	claims, _ := claimsFrom(r.Context())
+	jobID := r.PathValue("jobId")
+	if !idgen.IsUUID(jobID) {
+		writeError(w, http.StatusBadRequest, codeInvalidRequest, "jobId must be a UUID", nil)
+		return
+	}
+	job, err := s.store.GetAIJob(r.Context(), claims.UserID, jobID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	chunks, err := s.store.ListChunks(r.Context(), job.ID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	dtos := make([]translationChunkDTO, len(chunks))
+	for i, c := range chunks {
+		dtos[i] = translationChunkDTO{
+			ChunkIndex:   c.ChunkIndex,
+			ChapterIndex: c.ChapterIndex,
+			SourceText:   c.SourceText,
+			OutputText:   c.OutputText,
+			Status:       c.Status,
+		}
+	}
+	writeJSON(w, http.StatusOK, jobChunksResponse{
+		JobID:  job.ID,
+		Chunks: dtos,
+	})
 }
 
 func toAIJobDTO(j store.AIJob) aiJobDTO {

@@ -35,9 +35,19 @@ type Config struct {
 	RefreshTokenTTL time.Duration
 	Issuer          string
 	// 登录失败保护
-	LoginMaxFailures int
-	LoginLockWindow  time.Duration
-	RegisterOpen     bool
+	//
+	// LoginMaxFailures 是「同一账号 + 同一来源 IP」在窗口内允许的失败次数：
+	// 超过后该 IP 对该账号的失败请求直接 429，避免单个 IP 把账号锁死。
+	// LoginAccountLockFailures 是账号级锁定阈值（可跨 IP 累计），用于审计与
+	// 分布式爆破兜底；它不再阻断「口令正确」的登录，因此不能被用来做 DoS。
+	LoginMaxFailures         int
+	LoginAccountLockFailures int
+	LoginLockWindow          time.Duration
+	RegisterOpen             bool
+
+	// HashConcurrency 是口令哈希（Argon2id，64MiB/次）的并发闸门。
+	// 每个并发请求约占 64MiB 内存，必须设上限，否则少量并发就能把容器打爆。
+	HashConcurrency int
 
 	// 限流（每 IP 每分钟）
 	RateLimitAuth  int
@@ -51,6 +61,14 @@ type Config struct {
 	AIModel      string
 	AITimeout    time.Duration
 	AIMaxPerUser int
+	// AIGlobalMonthlyCalls 是**全站**每月 AI 调用次数上限（0 = 不限）。
+	//
+	// 为什么需要它：每用户配额只防「单个账号烧钱」，防不住「多账号绕过」——
+	// 注册开放时，攻击者注册 N 个账号就能拿到 N 份配额，账单按 N 倍增长。
+	// 全站上限是最后一道成本闸门：它不区分账号，直接约束「这个月一共能调多少次」。
+	// 默认 0（不限）是刻意的：自托管单用户场景下它没有意义，
+	// 只有对外开放注册或多租户部署时才需要显式设置。
+	AIGlobalMonthlyCalls int
 	// AIJobLease 是后台任务的租约时长：worker 超过这么久没更新 locked_at，
 	// 任务就被判定为卡死并退回 queued。
 	// 太短会把「慢慢跑的长任务」误判成卡死（重复烧钱），太长则崩溃后要等很久才恢复。
@@ -108,8 +126,10 @@ func LoadMigrate() (Config, error) {
 
 // parse 从环境变量读出配置（不做跨字段校验）。
 func parse() Config {
+	env := getStr("HPF_ENV", "dev")
+	prod := env == "prod"
 	c := Config{
-		Env:       getStr("HPF_ENV", "dev"),
+		Env:       env,
 		Addr:      getStr("HPF_ADDR", ":8080"),
 		LogLevel:  getStr("HPF_LOG_LEVEL", "info"),
 		LogFormat: getStr("HPF_LOG_FORMAT", "json"),
@@ -128,22 +148,26 @@ func parse() Config {
 		RefreshTokenTTL: getDur("HPF_REFRESH_TOKEN_TTL", 30*24*time.Hour),
 		Issuer:          getStr("HPF_JWT_ISSUER", "hpf-reader"),
 
-		LoginMaxFailures: getInt("HPF_LOGIN_MAX_FAILURES", 5),
-		LoginLockWindow:  getDur("HPF_LOGIN_LOCK_WINDOW", 15*time.Minute),
-		RegisterOpen:     getBool("HPF_REGISTER_OPEN", true),
+		// 生产环境默认关闭注册：注册开放 + 无邮箱验证 = 任何人都能拿 AI/存储配额。
+		LoginMaxFailures:         getInt("HPF_LOGIN_MAX_FAILURES", 5),
+		LoginAccountLockFailures: getInt("HPF_LOGIN_ACCOUNT_LOCK_FAILURES", 20),
+		LoginLockWindow:          getDur("HPF_LOGIN_LOCK_WINDOW", 15*time.Minute),
+		RegisterOpen:             getBool("HPF_REGISTER_OPEN", !prod),
+		HashConcurrency:          getInt("HPF_HASH_CONCURRENCY", 4),
 
 		RateLimitAuth:  getInt("HPF_RATE_LIMIT_AUTH", 20),
 		RateLimitAPI:   getInt("HPF_RATE_LIMIT_API", 600),
 		TrustedProxies: getList("HPF_TRUSTED_PROXIES", nil),
 
-		AIProvider:       getStr("HPF_AI_PROVIDER", "fake"),
-		AIBaseURL:        getStr("HPF_AI_BASE_URL", "https://api.deepseek.com/v1"),
-		AIAPIKey:         getStr("HPF_AI_API_KEY", ""),
-		AIModel:          getStr("HPF_AI_MODEL", "deepseek-chat"),
-		AITimeout:        getDur("HPF_AI_TIMEOUT", 60*time.Second),
-		AIMaxPerUser:     getInt("HPF_AI_DAILY_QUOTA", 1000),
-		AIJobLease:       getDur("HPF_AI_JOB_LEASE", 15*time.Minute),
-		AIJobMaxAttempts: getInt("HPF_AI_JOB_MAX_ATTEMPTS", 3),
+		AIProvider:           getStr("HPF_AI_PROVIDER", "fake"),
+		AIBaseURL:            getStr("HPF_AI_BASE_URL", "https://api.deepseek.com/v1"),
+		AIAPIKey:             getStr("HPF_AI_API_KEY", ""),
+		AIModel:              getStr("HPF_AI_MODEL", "deepseek-chat"),
+		AITimeout:            getDur("HPF_AI_TIMEOUT", 60*time.Second),
+		AIMaxPerUser:         getInt("HPF_AI_DAILY_QUOTA", 1000),
+		AIGlobalMonthlyCalls: getInt("HPF_AI_GLOBAL_MONTHLY_CALLS", 0),
+		AIJobLease:           getDur("HPF_AI_JOB_LEASE", 15*time.Minute),
+		AIJobMaxAttempts:     getInt("HPF_AI_JOB_MAX_ATTEMPTS", 3),
 
 		SourcesTimeout: getDur("HPF_SOURCES_TIMEOUT", 8*time.Second),
 		GutendexURL:    getStr("HPF_GUTENDEX_URL", "https://gutendex.com"),
@@ -159,10 +183,23 @@ func parse() Config {
 		QueueDriver: getStr("HPF_QUEUE_DRIVER", "none"),
 		RedisURL:    getStr("REDIS_URL", ""),
 
-		MetricsEnabled: getBool("HPF_METRICS_ENABLED", true),
-		CORSOrigins:    getList("HPF_CORS_ORIGINS", []string{"*"}),
+		// 指标默认只在非生产开启：/metrics 会暴露路由与流量分布，
+		// 一旦部署拓扑让 Caddy 的 remote_ip 规则失效（隧道/前置代理/直连 8080），
+		// 它就是公网可读的。生产必须显式 opt-in。
+		MetricsEnabled: getBool("HPF_METRICS_ENABLED", !prod),
+		// 默认不放开任何跨域来源。桌面端是 wails:// 原生壳、Web 端与 API 同源，
+		// 都不需要 CORS；关闭后即使未来出现 XSS 也拿不到跨域读能力。
+		CORSOrigins: getList("HPF_CORS_ORIGINS", nil),
 	}
 	return c
+}
+
+// 仓库里出现过的固定密钥：任何人拿到公开仓库就能伪造 token，生产必须拒绝。
+// 这类检查不能用「grep CHANGE_ME」代替 —— 示例里曾经放的就是一个形态合法的真实串。
+var knownLeakedJWTSecrets = []string{
+	"CHANGE_ME_generate_with_openssl_rand_base64_32", // deploy/.env.example 旧默认值（公开仓库）
+	"dev-insecure-secret-change-me",                  // dev 兜底密钥（= 历史 "dev-" 开头的老值）
+	"unused-by-migration",                            // 迁移进程占位符
 }
 
 // Validate 做跨字段校验。用户可在调用前自行设置 JWTSecret（测试用）。
@@ -174,8 +211,20 @@ func (c *Config) Validate() error {
 		// 开发环境给出固定密钥，保证重启后 token 不失效（仅限 dev）。
 		c.JWTSecret = "dev-insecure-secret-change-me"
 	}
-	if len(c.JWTSecret) < 16 && c.Env == "prod" {
-		return fmt.Errorf("HPF_JWT_SECRET must be at least 16 bytes")
+	if c.Env == "prod" {
+		// HS256 的安全性完全取决于密钥熵：16 字节的穷举空间不够，且示例值
+		// 一旦被照抄就是公开密钥。
+		if len(c.JWTSecret) < 32 {
+			return fmt.Errorf("HPF_JWT_SECRET must be at least 32 bytes when HPF_ENV=prod (got %d)", len(c.JWTSecret))
+		}
+		if strings.Contains(strings.ToUpper(c.JWTSecret), "CHANGE_ME") {
+			return fmt.Errorf("HPF_JWT_SECRET is still the template placeholder; generate one with: openssl rand -base64 48")
+		}
+		for _, known := range knownLeakedJWTSecrets {
+			if c.JWTSecret == known {
+				return fmt.Errorf("HPF_JWT_SECRET equals a value published in this repository; generate a new one with: openssl rand -base64 48")
+			}
+		}
 	}
 	switch c.StorageDriver {
 	case "local":
@@ -199,6 +248,18 @@ func (c *Config) Validate() error {
 	}
 	if c.MaxUploadSize <= 0 {
 		return fmt.Errorf("HPF_MAX_UPLOAD_BYTES must be positive")
+	}
+	if c.HashConcurrency <= 0 {
+		return fmt.Errorf("HPF_HASH_CONCURRENCY must be positive")
+	}
+	if c.AIGlobalMonthlyCalls < 0 {
+		// 负数没有语义：它既不是「不限」（那是 0），也不是有效上限。
+		// 静默当 0 处理会让「我明明设了值却完全没生效」变成一个查不出的谜。
+		return fmt.Errorf("HPF_AI_GLOBAL_MONTHLY_CALLS must be >= 0 (0 means unlimited), got %d", c.AIGlobalMonthlyCalls)
+	}
+	if c.LoginMaxFailures > 0 && c.LoginAccountLockFailures < c.LoginMaxFailures {
+		// 账号级阈值低于单 IP 阈值没有意义：按单 IP 阈值兜底。
+		c.LoginAccountLockFailures = c.LoginMaxFailures
 	}
 	return nil
 }

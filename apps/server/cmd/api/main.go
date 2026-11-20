@@ -7,13 +7,17 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -40,6 +44,21 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		if err := healthcheck(os.Args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "healthcheck failed: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	// 子命令：离线建号。
+	// 生产环境 HPF_REGISTER_OPEN=false 时没有任何 HTTP 入口能创建账号，
+	// 而为了建第一个号临时开放注册会同时向公网扫描器敞开注册接口。
+	// 因此提供一条只在本机/容器内执行的一次性命令：
+	//
+	//	api createuser --email you@example.com [--password-stdin] [--name 昵称]
+	//
+	// 口令默认从 stdin 读（避免出现在 shell 历史与 ps 输出里）。
+	if len(os.Args) > 1 && os.Args[1] == "createuser" {
+		if err := createUser(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "createuser failed: %v\n", err)
 			os.Exit(1)
 		}
 		return
@@ -75,6 +94,77 @@ func healthcheck(args []string) error {
 	return nil
 }
 
+// createUser 实现 createuser 子命令：在数据库里直接创建一个已激活的账号。
+//
+// 设计要点：
+//   - 口令**只从 stdin 读**，不接受 `--password` 参数：命令行参数会进 shell 历史、
+//     也会出现在 `ps` / 容器 inspect 里。
+//   - 复用与 HTTP 注册完全相同的 argon2id 参数（auth.DefaultArgon2Params），
+//     保证离线建的号和接口建的号在存储格式上没有区别。
+//   - 不检查 HPF_REGISTER_OPEN：这条命令本身就是「注册关闭时」的应急入口，
+//     但它需要能连到数据库，等价于运维权限。
+//   - 邮箱已存在时报错退出，不做静默覆盖（否则会意外重置别人的口令）。
+func createUser(args []string) error {
+	fs := flag.NewFlagSet("createuser", flag.ExitOnError)
+	email := fs.String("email", "", "账号邮箱（必填）")
+	name := fs.String("name", "", "显示名称（可选）")
+	passwordStdin := fs.Bool("password-stdin", false, "从标准输入读取口令（推荐）")
+	password := fs.String("password", "", "口令（不推荐：会进 shell 历史，仅用于自动化）")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	*email = strings.TrimSpace(*email)
+	if *email == "" {
+		return errors.New("--email is required")
+	}
+	if !strings.Contains(*email, "@") {
+		return fmt.Errorf("invalid email %q", *email)
+	}
+
+	pw := *password
+	if *passwordStdin {
+		raw, err := io.ReadAll(io.LimitReader(os.Stdin, 4096))
+		if err != nil {
+			return fmt.Errorf("read password from stdin: %w", err)
+		}
+		pw = strings.TrimRight(string(raw), "\r\n")
+	}
+	if len(pw) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
+	if len(pw) > 200 {
+		return errors.New("password must be at most 200 characters")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	logger := logging.New(cfg.LogLevel, cfg.LogFormat)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	pool, err := db.Connect(ctx, cfg.DatabaseURL, cfg.DBMaxConns, cfg.DBConnectTimout)
+	if err != nil {
+		return fmt.Errorf("connect database: %w", err)
+	}
+	defer pool.Close()
+
+	hash, err := auth.HashPassword(pw, auth.DefaultArgon2Params)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	st := store.New(pool)
+	u, err := st.CreateUser(ctx, *email, hash, *name)
+	if err != nil {
+		return fmt.Errorf("create user: %w", err)
+	}
+	logger.Info("user created",
+		"user_id", u.ID, "email", u.Email, "role", u.Role, "status", u.Status)
+	fmt.Printf("created user %s (%s)\n", u.Email, u.ID)
+	return nil
+}
+
 func run() error {
 	cfg, err := config.Load()
 	if err != nil {
@@ -88,7 +178,17 @@ func run() error {
 		"addr", cfg.Addr,
 		"storage", cfg.StorageDriver,
 		"ai_provider", cfg.AIProvider,
-		"queue", cfg.QueueDriver)
+		"queue", cfg.QueueDriver,
+		// 只打印密钥指纹（sha256 前 8 位），便于核对「生产用的是不是模板里的值」。
+		"jwt_key_fp", jwtFingerprint(cfg.JWTSecret))
+	if cfg.IsProd() {
+		if cfg.RegisterOpen {
+			logger.Warn("registration is OPEN in production: anyone can create an account and consume the AI/storage quota; set HPF_REGISTER_OPEN=false unless public signup is intended")
+		}
+		if cfg.MetricsEnabled {
+			logger.Warn("/metrics is enabled in production: it must not be reachable from the public internet (Caddy restricts it with remote_ip; a tunnel or direct 8080 mapping bypasses that)")
+		}
+	}
 
 	// 根 context：收到 SIGINT/SIGTERM 时取消，触发优雅关闭。
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -159,6 +259,8 @@ func run() error {
 		MaxAttempts:     cfg.AIJobMaxAttempts,
 		IdempotencyTTL:  7 * 24 * time.Hour,
 		CleanupInterval: time.Hour,
+		// 全站月度调用上限：worker 逐块烧钱，必须与 HTTP 层看同一个数。
+		GlobalMonthlyCalls: cfg.AIGlobalMonthlyCalls,
 	})
 	workerDone := make(chan struct{})
 	go func() {
@@ -230,4 +332,11 @@ func buildSourceRegistry(cfg *config.Config) *sources.Registry {
 		)
 	}
 	return sources.NewRegistry(searchers...)
+}
+
+// jwtFingerprint 返回密钥的短指纹：用于在启动日志里核对「生产用的是不是模板里的值」，
+// 不泄露密钥本身。
+func jwtFingerprint(secret string) string {
+	sum := sha256.Sum256([]byte(secret))
+	return hex.EncodeToString(sum[:4])
 }

@@ -182,6 +182,21 @@ func (w *Worker) runBookTranslate(ctx context.Context, job store.AIJob) (transla
 		}
 
 		// ---- 配额闸门：每块前预扣（M5-1 预留的结构）----
+		//
+		// 全站预算先查：它是「最后一道成本闸门」，不能因为某个任务在
+		// 全站超额之前就已入队就被绕过。超了就暂停（可续跑），
+		// 已完成块全部保留，额度恢复后接着来。
+		if err := w.checkGlobalBudget(ctx); err != nil {
+			var qe *store.ErrQuotaExceeded
+			if errors.As(err, &qe) {
+				log.Info("site-wide AI call budget exhausted; pausing job (resumable)",
+					"used", qe.Used, "limit", qe.Limit, "chunk", chunk.ChunkIndex)
+				res.Paused = true
+				res.DoneChunks = w.countDone(ctx, job.ID)
+				return res, errJobPaused
+			}
+			return res, fmt.Errorf("check global budget: %w", err)
+		}
 		reserve := int64(ai.EstimateTokens(chunk.SourceText)) +
 			int64(ai.EstimateTokens(chunk.SourceText))/2
 		if _, err := w.deps.Store.Reserve(ctx, job.UserID, reserve); err != nil {

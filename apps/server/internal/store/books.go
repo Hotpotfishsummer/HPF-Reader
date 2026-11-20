@@ -271,6 +271,19 @@ func (s *Store) GetBookFile(ctx context.Context, contentHash string) (BookFile, 
 	return f, wrap(err)
 }
 
+// BookBytesUsed 返回用户当前占用的存储字节数（按逻辑大小统计有效书籍）。
+//
+// 秒传（同一 hash 已被他人上传）不会新增物理字节，但用户的书架仍然「占用」
+// 这份书的逻辑大小 —— 配额按逻辑大小计算，否则换个小号就能无限存书。
+func (s *Store) BookBytesUsed(ctx context.Context, userID string) (int64, error) {
+	var used int64
+	err := s.pool.QueryRow(ctx, `
+		SELECT COALESCE(SUM(file_size), 0)::bigint
+		FROM books
+		WHERE user_id = $1 AND deleted_at IS NULL`, userID).Scan(&used)
+	return used, wrap(err)
+}
+
 // AttachBookFile 把已登记的文件绑定到书籍记录。
 func (s *Store) AttachBookFile(ctx context.Context, userID, bookID, contentHash string, size int64) (Book, error) {
 	row := s.pool.QueryRow(ctx, `

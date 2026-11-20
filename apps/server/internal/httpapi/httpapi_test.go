@@ -206,3 +206,64 @@ func TestClientIPHonoursTrustedProxiesOnly(t *testing.T) {
 		t.Fatalf("unlisted proxy: got %q, want the socket address", got)
 	}
 }
+
+// 关键回归：XFF 最左侧是**客户端可伪造**的。真实客户端必须从右往左
+// 跳过可信跳后取第一个不可信地址，否则前置代理一追加就能让每个请求
+// 换一个假 IP，把 20 次/分的登录限流彻底绕过。
+func TestClientIPTakesFirstUntrustedHopFromTheRight(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "172.18.0.5:4000" // Caddy 容器
+	// 攻击者伪造了最左侧的 9.9.9.9；真实客户端 203.0.113.7 是 Caddy 写入的最后一跳。
+	req.Header.Set("X-Forwarded-For", "9.9.9.9, 203.0.113.7")
+
+	if got := ClientIP(req, []string{"172.16.0.0/12"}); got != "203.0.113.7" {
+		t.Fatalf("got %q, want the right-most untrusted hop 203.0.113.7", got)
+	}
+	// 支持 CIDR 形式的可信代理（单个 IP 也仍然可用）。
+	if got := ClientIP(req, []string{"172.16.0.0/12", "10.0.0.0/8"}); got != "203.0.113.7" {
+		t.Fatalf("got %q with mixed trusted list", got)
+	}
+}
+
+func TestClientIPAllTrustedTakesLeftmost(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "172.18.0.5:4000"
+	req.Header.Set("X-Forwarded-For", "192.168.1.10")
+	if got := ClientIP(req, []string{"172.16.0.0/12", "192.168.0.0/16"}); got != "192.168.1.10" {
+		t.Fatalf("got %q, want the left-most hop when the whole chain is trusted", got)
+	}
+}
+
+// 安全头必须由应用本身提供：一旦部署拓扑绕过 Caddy（直连 8080 / 前置代理），
+// 这些基线保护不能凭空消失。
+func TestSecurityHeadersPresentOnErrorResponses(t *testing.T) {
+	_, h := newTestServer(t)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/me", nil))
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rec.Code)
+	}
+	checks := map[string]string{
+		"Strict-Transport-Security": "max-age=31536000",
+		"X-Content-Type-Options":    "nosniff",
+		"X-Frame-Options":           "SAMEORIGIN",
+		"Referrer-Policy":           "no-referrer",
+	}
+	for name, want := range checks {
+		if got := rec.Header().Get(name); !strings.Contains(got, want) {
+			t.Fatalf("%s = %q, want to contain %q", name, got, want)
+		}
+	}
+}
+
+// 通配来源 + Allow-Credentials 是非法组合：通配时必须拒绝携带凭据。
+func TestCORSWildcardDoesNotAllowCredentials(t *testing.T) {
+	_, h := newTestServer(t)
+	req := httptest.NewRequest(http.MethodOptions, "/v1/books", nil)
+	req.Header.Set("Origin", "https://app.example")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if got := rec.Header().Get("Access-Control-Allow-Credentials"); got != "" {
+		t.Fatalf("wildcard origin must not allow credentials, got %q", got)
+	}
+}

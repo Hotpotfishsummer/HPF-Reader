@@ -132,18 +132,30 @@ func queryInt64(r *http.Request, key string, def int64) (int64, error) {
 //	dimension=tokens → token 额度用完，通常是跑了整书翻译这种大任务。
 //
 // 只回一句「quota exceeded」的话，用户完全不知道下一步该做什么。
+//
+// scope 区分「你自己的额度」与「全站额度」（global）：
+// 前者可以等重置或提额自救，后者换账号也没用——必须让客户端能区分，
+// 否则用户会以为是自己账号的问题，反复重试或去注册小号。
 func writeQuotaExceeded(w http.ResponseWriter, err error) {
 	var qe *store.ErrQuotaExceeded
 	if !errors.As(err, &qe) {
 		writeError(w, http.StatusTooManyRequests, codeQuotaExceeded, "quota exceeded", nil)
 		return
 	}
+	scope := qe.Scope
+	if scope == "" {
+		scope = "user"
+	}
 	msg := "monthly AI quota exceeded: call count limit reached"
 	if qe.Dimension == "tokens" {
 		msg = "monthly AI quota exceeded: token budget exhausted"
 	}
+	if scope == "global" {
+		msg = "site-wide monthly AI call budget exhausted; retry after the reset time"
+	}
 	writeError(w, http.StatusTooManyRequests, codeQuotaExceeded, msg, map[string]any{
 		"dimension": qe.Dimension,
+		"scope":     scope,
 		"limit":     qe.Limit,
 		"used":      qe.Used,
 		// resetAt 用 RFC3339（UTC）：客户端可以直接显示或算倒计时。

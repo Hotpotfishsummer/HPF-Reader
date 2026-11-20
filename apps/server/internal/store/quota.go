@@ -33,11 +33,19 @@ type ErrQuotaExceeded struct {
 	Limit     int64
 	Used      int64
 	ResetAt   time.Time
+	// Scope 区分「这个账号的额度」与「全站额度」：global 表示
+	// 全站月度上限已耗尽（与用户自己的用量无关，换个账号也一样被拒）。
+	// 空字符串等价于 "user"，以保持既有调用点不用改。
+	Scope string
 }
 
 func (e *ErrQuotaExceeded) Error() string {
-	return fmt.Sprintf("store: quota exceeded (%s): used %d of %d, resets at %s",
-		e.Dimension, e.Used, e.Limit, e.ResetAt.UTC().Format(time.RFC3339))
+	scope := e.Scope
+	if scope == "" {
+		scope = "user"
+	}
+	return fmt.Sprintf("store: quota exceeded (%s/%s): used %d of %d, resets at %s",
+		scope, e.Dimension, e.Used, e.Limit, e.ResetAt.UTC().Format(time.RFC3339))
 }
 
 // Is 让 errors.Is(err, ErrQuotaExceeded) 对这种指针类型也成立。
@@ -106,6 +114,78 @@ func scanQuota(row pgx.Row) (QuotaSnapshot, error) {
 // 与 SQL 里的 ai_period_for() 保持一致：都在 UTC 边界上按自然月切分。
 func nextPeriodStart(periodStart time.Time) time.Time {
 	return periodStart.UTC().AddDate(0, 1, 0)
+}
+
+// GlobalQuota 是全站维度的用量快照（供 HPF_AI_GLOBAL_MONTHLY_CALLS 判定）。
+type GlobalQuota struct {
+	PeriodStart time.Time
+	ResetAt     time.Time
+	CallsUsed   int64
+	CallsLimit  int64
+}
+
+// Exhausted 报告全站调用次数是否已用尽（limit <= 0 表示不限）。
+func (g GlobalQuota) Exhausted() bool {
+	return g.CallsLimit > 0 && g.CallsUsed >= g.CallsLimit
+}
+
+// GlobalAICalls 汇总**全站**本周期（UTC 自然月）的 AI 调用次数。
+//
+// 数据来源是 users.ai_calls_used 而不是 ai_usage 的行数，原因有两条：
+//
+//  1. **时点正确**：ai_calls_used 在 Reserve（进流式之前）就 +1，而 ai_usage
+//     要等 Settle 才写入。用 ai_usage 计数等于「先花钱后记账」，
+//     并发的 N 个请求会全部读到同一个旧值一起穿过闸门。
+//  2. **成本低**：users 表有 (id) 主键、量级远小于 ai_usage 的流水表，
+//     一次 SUM 聚合即可；ai_usage 每次调用一行，一个月可能上百万行。
+//
+// 只统计 ai_period_start = 当前周期的行：跨月未活动的用户还停在旧周期，
+// 他们的历史计数属于上个月，必须排除，否则「新月份一开局就已经超额」。
+//
+// 这是**尽力而为**的闸门：它没有行锁，N 个并发请求可能同时看到「还剩 1 次」
+// 而一起通过。要严格串行化需要一条独立的全局计数行（见 STATUS 里的遗留风险），
+// 当前实现刻意选择「多放行几次」而不是「引入单点锁」——见调用点的说明。
+func (s *Store) GlobalAICalls(ctx context.Context, limit int) (GlobalQuota, error) {
+	var g GlobalQuota
+	var calls int64
+	err := s.pool.QueryRow(ctx, `
+		SELECT ai_period_for(now()),
+		       COALESCE(SUM(ai_calls_used) FILTER (WHERE ai_period_start = ai_period_for(now())), 0)
+		FROM users`).Scan(&g.PeriodStart, &calls)
+	if err != nil {
+		return GlobalQuota{}, wrap(err)
+	}
+	g.CallsUsed = calls
+	g.CallsLimit = int64(limit)
+	g.ResetAt = nextPeriodStart(g.PeriodStart)
+	return g, nil
+}
+
+// CheckGlobalAICallBudget 在**用户自己的配额判定之外**再加一道全站闸门。
+//
+// 存在的理由：每用户配额只约束「一个账号能花多少」。注册开放时，
+// 攻击者注册 N 个账号就得到 N 份额度，账单按 N 倍增长——
+// 每用户配额对「多账号绕过」完全无效。全站上限是最后一道成本闸门。
+//
+// limit <= 0 表示不限，此时直接返回 nil（不查库）。
+func (s *Store) CheckGlobalAICallBudget(ctx context.Context, limit int) error {
+	if limit <= 0 {
+		return nil
+	}
+	g, err := s.GlobalAICalls(ctx, limit)
+	if err != nil {
+		return err
+	}
+	if !g.Exhausted() {
+		return nil
+	}
+	return &ErrQuotaExceeded{
+		Dimension: "calls",
+		Limit:     g.CallsLimit,
+		Used:      g.CallsUsed,
+		ResetAt:   g.ResetAt,
+		Scope:     "global",
+	}
 }
 
 // Reserve 在**进入流式之前**原子地预扣一次调用与若干 token 额度。

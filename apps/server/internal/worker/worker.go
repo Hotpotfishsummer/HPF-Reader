@@ -37,6 +37,12 @@ type Deps struct {
 	StaleJobAfter time.Duration
 	// MaxAttempts 是重试上限：超过就不再退回 queued，避免毒任务无限重跑烧钱。
 	MaxAttempts int
+	// GlobalMonthlyCalls 是**全站**每月 AI 调用上限（0 = 不限）。
+	//
+	// worker 必须也看这个数：HTTP 层只在「入队」时拦一次，而一个整书翻译
+	// 任务会在队列里存活很久、逐块烧钱。若只在入队时判定，任务入队后
+	// 全站额度被别的账号吃光，worker 依然会把它跑完——闸门等于没生效。
+	GlobalMonthlyCalls int
 }
 
 // Worker 轮询并处理后台任务。
@@ -114,6 +120,23 @@ func (w *Worker) drain(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
+		// 取任务前先看全站月度预算。
+		//
+		// 为什么必须在**取任务之前**判：一旦 ClaimAIJob 把任务置为 running，
+		// 就欠了用户一个「会跑完」的承诺；随后发现全站超额再把它 pause 回去，
+		// 会制造「任务反复 running→paused→queued」的抖动。
+		// 直接不取任务，队列里的任务保持 queued，额度恢复后自然会被处理。
+		if err := w.checkGlobalBudget(ctx); err != nil {
+			var qe *store.ErrQuotaExceeded
+			if errors.As(err, &qe) {
+				w.deps.Logger.Warn("site-wide AI call budget exhausted; leaving jobs queued",
+					"used", qe.Used, "limit", qe.Limit, "reset_at", qe.ResetAt.UTC())
+				return
+			}
+			// 查库失败不能当成「没超额」继续跑：那等于闸门在数据库抖动时自动失效。
+			w.deps.Logger.Error("check global AI budget failed; skipping this drain round", "error", err)
+			return
+		}
 		job, err := w.deps.Store.ClaimAIJob(ctx, w.id)
 		if err != nil {
 			if err == store.ErrNotFound {
@@ -124,6 +147,14 @@ func (w *Worker) drain(ctx context.Context) {
 		}
 		w.process(ctx, job)
 	}
+}
+
+// checkGlobalBudget 报告全站月度调用预算是否还有余量（limit <= 0 表示不限）。
+func (w *Worker) checkGlobalBudget(ctx context.Context) error {
+	if w.deps.GlobalMonthlyCalls <= 0 || w.deps.Store == nil {
+		return nil
+	}
+	return w.deps.Store.CheckGlobalAICallBudget(ctx, w.deps.GlobalMonthlyCalls)
 }
 
 // process 处理单个任务：按 kind 分派到具体实现。

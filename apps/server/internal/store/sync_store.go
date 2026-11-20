@@ -534,8 +534,20 @@ func (y *SyncStore) Snapshot(ctx context.Context, userID string) (syncengine.Pro
 		return proj, err
 	}
 
+	// ★ 快照里的标注必须是**自带身份**的完整对象：
+	//   annotations 表的 payload 列存的是客户端上行载荷（{type,locator,text,note,bookId}），
+	//   **不含 id**（id 在表主键 / op 的 entityId 上）。直接把 payload 当作标注对象返回，
+	//   客户端 applySnapshot 就会写出 annotations[undefined] 这一条幽灵记录 ——
+	//   新设备首同步时"服务端明明有标注，本机却按 id 查不到"。
+	//   这里用 jsonb 拼接把权威列补进去（右侧同级键覆盖左侧），并补上时间戳，
+	//   使快照与 /sync/pull 的载荷结构一致。
 	annRows, err := y.s.pool.Query(ctx, `
-		SELECT payload FROM annotations
+		SELECT COALESCE(payload, '{}'::jsonb) || jsonb_build_object(
+			'id', id,
+			'bookId', book_id,
+			'createdAt', to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+			'updatedAt', to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+		) FROM annotations
 		WHERE user_id = $1 AND deleted_at IS NULL ORDER BY created_at, id`, userID)
 	if err != nil {
 		return proj, wrap(err)

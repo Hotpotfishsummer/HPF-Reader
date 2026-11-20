@@ -138,14 +138,35 @@ func (s *Server) metricsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// corsMiddleware 处理跨域。允许来源由 HPF_CORS_ORIGINS 配置（默认 *）。
+// securityHeadersMiddleware 补齐与传输层无关的安全响应头。
+//
+// 这些头原本只由 deploy/Caddyfile 提供，一旦部署拓扑里 API 不经过 Caddy
+// （例如直接把域名映射到容器 8080），保护就全部消失。放在应用层后，
+// 无论前面是 Caddy、Nginx、隧道还是直连，基线都在。
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		// 明文 HTTP 下浏览器会忽略 HSTS，因此无条件设置是安全的。
+		h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "SAMEORIGIN")
+		h.Set("Referrer-Policy", "no-referrer")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// corsMiddleware 处理跨域。允许来源由 HPF_CORS_ORIGINS 配置（默认不放开）。
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin != "" && s.originAllowed(origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			// 只有明确的来源白名单才允许携带凭据；`*` + credentials
+			// 是非法组合，回显任意来源更等于给未来的 CSRF 开绿灯。
+			if !s.corsWildcard() {
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+			}
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
 			w.Header().Set("Access-Control-Expose-Headers", "X-Request-Id, ETag, Content-Range, Accept-Ranges")
@@ -157,6 +178,15 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) corsWildcard() bool {
+	for _, o := range s.cfg.CORSOrigins {
+		if o == "*" {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) originAllowed(origin string) bool {
@@ -238,6 +268,12 @@ func routeLabel(r *http.Request) string {
 
 // ClientIP 解析客户端 IP。只有在受信代理后面才采信 X-Forwarded-For，
 // 否则任何人都能伪造 IP 绕过限流。
+//
+// 解析方式是业界标准的「从右往左」：RemoteAddr 是不可伪造的 TCP 对端，
+// 只有它落在可信网段时才读取 XFF；然后从最右侧开始跳过可信跳，
+// 遇到的第一个不可信地址就是真实客户端。旧实现直接取 XFF 最左侧
+// （客户端可以随便填），在前置代理使用 `$proxy_add_x_forwarded_for`
+// 追加的情况下等于把限流键完全交给攻击者。
 func ClientIP(r *http.Request, trusted []string) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -246,21 +282,56 @@ func ClientIP(r *http.Request, trusted []string) string {
 	if len(trusted) == 0 {
 		return host
 	}
-	for _, t := range trusted {
-		if t == "*" || t == host {
-			xff := r.Header.Get("X-Forwarded-For")
-			if xff == "" {
-				return host
-			}
-			parts := strings.Split(xff, ",")
-			for _, p := range parts {
-				if p = strings.TrimSpace(p); p != "" {
-					return p
-				}
-			}
+	peer := net.ParseIP(host)
+	if peer == nil || !trustedIP(peer, trusted) {
+		return host
+	}
+	xff := r.Header.Get("X-Forwarded-For")
+	if strings.TrimSpace(xff) == "" {
+		return host
+	}
+	entries := make([]string, 0, 4)
+	for _, p := range strings.Split(xff, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			entries = append(entries, p)
 		}
 	}
-	return host
+	if len(entries) == 0 {
+		return host
+	}
+	for i := len(entries) - 1; i >= 0; i-- {
+		ip := net.ParseIP(entries[i])
+		if ip == nil {
+			// 无法解析的条目：按「不可信」处理，直接用原串做限流键。
+			return entries[i]
+		}
+		if trustedIP(ip, trusted) {
+			continue
+		}
+		return entries[i]
+	}
+	// 整条链都是可信网段（例如内网反代 + 内网客户端）：最左侧最接近真实来源。
+	return entries[0]
+}
+
+// trustedIP 判断 ip 是否落在可信代理列表内。列表元素可以是单个 IP，也可以是 CIDR。
+func trustedIP(ip net.IP, trusted []string) bool {
+	for _, t := range trusted {
+		t = strings.TrimSpace(t)
+		if t == "*" {
+			return true
+		}
+		if strings.Contains(t, "/") {
+			if _, n, err := net.ParseCIDR(t); err == nil && n.Contains(ip) {
+				return true
+			}
+			continue
+		}
+		if parsed := net.ParseIP(t); parsed != nil && parsed.Equal(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func strconvItoa(n int) string {

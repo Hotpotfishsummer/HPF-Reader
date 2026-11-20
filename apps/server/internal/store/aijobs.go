@@ -54,14 +54,22 @@ func (s *Store) GetAIJob(ctx context.Context, userID, id string) (AIJob, error) 
 	return scanAIJob(row)
 }
 
-// ListAIJobs 列出用户的任务。
-func (s *Store) ListAIJobs(ctx context.Context, userID string, limit int) ([]AIJob, error) {
+// ListAIJobs 列出用户的任务，支持按 bookID 过滤。
+func (s *Store) ListAIJobs(ctx context.Context, userID, bookID string, limit int) ([]AIJob, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	rows, err := s.pool.Query(ctx, `
-		SELECT `+aiJobColumns+` FROM ai_jobs WHERE user_id = $1
-		ORDER BY created_at DESC LIMIT $2`, userID, limit)
+	var rows pgx.Rows
+	var err error
+	if bookID != "" {
+		rows, err = s.pool.Query(ctx, `
+			SELECT `+aiJobColumns+` FROM ai_jobs WHERE user_id = $1 AND book_id = $2::uuid
+			ORDER BY created_at DESC LIMIT $3`, userID, bookID, limit)
+	} else {
+		rows, err = s.pool.Query(ctx, `
+			SELECT `+aiJobColumns+` FROM ai_jobs WHERE user_id = $1
+			ORDER BY created_at DESC LIMIT $2`, userID, limit)
+	}
 	if err != nil {
 		return nil, wrap(err)
 	}

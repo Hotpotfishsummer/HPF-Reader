@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // User 是 users 表的领域映射。
@@ -65,17 +66,30 @@ func (s *Store) GetUserByID(ctx context.Context, id string) (User, error) {
 }
 
 // RegisterLoginFailure 累加失败次数；达到阈值时锁定账号。
-// 返回累加后的失败次数是否已达到上限。
+//
+// 两个刻意的细节：
+//   - 锁定时长用 make_interval(secs => $3) 而不是 `$3::interval`：
+//     后者依赖把 Go 的 duration 字符串（"15m0s"）当 interval 字面量解析，
+//     一旦解析失败这条 SQL 会静默报错，锁定就等于从未生效；
+//   - 旧的锁定窗口过期后把计数清零，否则计数永远 ≥ 阈值，
+//     之后每次失败都会立刻重新锁定（变成永久锁定）。
 func (s *Store) RegisterLoginFailure(ctx context.Context, userID string, maxFailures int, lockWindow time.Duration) error {
 	_, err := s.pool.Exec(ctx, `
 		UPDATE users
-		SET failed_logins = failed_logins + 1,
+		SET failed_logins = (CASE
+		        WHEN locked_until IS NOT NULL AND locked_until < now() THEN 0
+		        ELSE failed_logins
+		    END) + 1,
 		    locked_until = CASE
-		        WHEN failed_logins + 1 >= $2 THEN now() + $3::interval
+		        WHEN (CASE
+		            WHEN locked_until IS NOT NULL AND locked_until < now() THEN 0
+		            ELSE failed_logins
+		        END) + 1 >= $2
+		        THEN now() + make_interval(secs => $3)
 		        ELSE locked_until
 		    END,
 		    updated_at = now()
-		WHERE id = $1`, userID, maxFailures, lockWindow.String())
+		WHERE id = $1`, userID, maxFailures, lockWindow.Seconds())
 	return wrap(err)
 }
 
@@ -112,6 +126,15 @@ type DeviceRegistration struct {
 // rowQuerier 同时被 *pgxpool.Pool 与 pgx.Tx 满足，便于让同一段 SQL 既能独立执行也能进事务。
 type rowQuerier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// execQuerier 同时被 *pgxpool.Pool 与 pgx.Tx 满足（Exec 版本）。
+//
+// 存在的理由与 rowQuerier 相同：改密要在**一个事务**里同时更新口令并吊销全部
+// refresh token，而登出也要执行同一段吊销 SQL。没有这个接口就只能把
+// 「吊销全部 token」的 SQL 抄两份，两份迟早会漂移（一份改了另一份忘了）。
+type execQuerier interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 }
 
 // UpsertDevice 注册设备或刷新 last_seen_at。id 由客户端提供（稳定标识）。
@@ -295,14 +318,67 @@ func (s *Store) RevokeRefreshToken(ctx context.Context, tokenHash string) error 
 }
 
 // RevokeAllUserRefreshTokens 吊销用户全部 refresh token（改密码 / 注销 / 强制下线）。
+//
+// 这是「改密即全会话下线」的基础：refresh token 是会话的根，
+// 只要它还有一条未吊销，攻击者就能一直换到新的 access token，
+// 改密码就完全白改。access token 本身不落库、无法逐个吊销，
+// 只能靠 15 分钟短 TTL 自然过期（见 auth.Claims 的注释）。
 func (s *Store) RevokeAllUserRefreshTokens(ctx context.Context, userID string) (int64, error) {
-	tag, err := s.pool.Exec(ctx, `
+	return revokeAllUserRefreshTokens(ctx, s.pool, userID)
+}
+
+// revokeAllUserRefreshTokens 是「吊销该用户全部未吊销 token」的唯一 SQL 实现。
+//
+// 抽成接受 execQuerier 的包内函数，是为了让改密能在**一个事务**里完成
+// 「换口令 + 吊销全部会话」；否则这段 SQL 会被抄成两份，迟早漂移。
+func revokeAllUserRefreshTokens(ctx context.Context, q execQuerier, userID string) (int64, error) {
+	tag, err := q.Exec(ctx, `
 		UPDATE refresh_tokens SET revoked_at = now()
 		WHERE user_id = $1 AND revoked_at IS NULL`, userID)
 	if err != nil {
 		return 0, wrap(err)
 	}
 	return tag.RowsAffected(), nil
+}
+
+// ChangePassword 更新口令哈希，并在**同一事务**里吊销该用户全部 refresh token。
+//
+// 为什么必须是一个事务：口令泄露后用户改密，是唯一能自救的动作。
+// 如果「换口令」与「吊销会话」分成两步：
+//   - 换成功、吊销失败 → 攻击者的会话继续有效，用户以为已经安全了（最糟的失效模式）；
+//   - 吊销成功、换失败 → 用户被全端踢下线，但旧口令仍然有效。
+//
+// 两种半成品状态都不可接受，所以压进一个事务。
+//
+// 同时清零 failed_logins / locked_until：用户刚刚证明了知道当前口令，
+// 保留旧的失败计数只会让他在新口令下继续被 429 拦（和登录路径的清零语义一致）。
+//
+// 返回被吊销的 token 数（用于审计与日志）。
+func (s *Store) ChangePassword(ctx context.Context, userID, passwordHash string) (int64, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, wrap(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE users SET password_hash = $2, failed_logins = 0, locked_until = NULL, updated_at = now()
+		WHERE id = $1`, userID, passwordHash)
+	if err != nil {
+		return 0, wrap(err)
+	}
+	if tag.RowsAffected() == 0 {
+		// 用户不存在（token 有效但账号已被删）：不能假装改成功了。
+		return 0, ErrNotFound
+	}
+	revoked, err := revokeAllUserRefreshTokens(ctx, tx, userID)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return 0, wrap(err)
+	}
+	return revoked, nil
 }
 
 // DeleteExpiredRefreshTokens 清理过期 token（由定时任务调用）。
