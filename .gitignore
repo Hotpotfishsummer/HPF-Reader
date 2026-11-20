@@ -49,3 +49,6 @@ Thumbs.db
 # spikes output
 spikes/**/build/
 spikes/**/node_modules/
+
+# 集成测试的前端构建镜像（由 run-all 从前端产物复制，可随时再生成）
+tests/integration/.build/
