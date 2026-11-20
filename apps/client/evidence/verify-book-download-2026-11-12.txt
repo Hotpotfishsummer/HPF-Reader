@@ -1,0 +1,46 @@
+== 准备 ==
+  书籍文件 : C:\Users\HOTPOTFISH\Desktop\AllCode\HPF-Reader\testdata\books\frankenstein.epub
+  字节数   : 294175
+  sha256   : bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662
+
+== 1. 账号 ==
+  PASS  注册并拿到 accessToken
+  PASS  第二个账号（越权对照）
+
+== 2. 上传 ==
+  PASS  建书返回 id
+  PASS  上传文件返回 contentHash
+  PASS  上传返回的 sizeBytes 与实际一致
+  PASS  上传成功（201 新建 / 200 秒传去重）
+  PASS  同一本书重传同一文件 → 200（幂等，不是 409）
+  PASS  重传后 contentHash 不变
+
+== 3. 下载（完整字节） ==
+  PASS  下载字节数 == 上传字节数
+  PASS  下载字节的 sha256 == 上传时的 sha256（逐字节一致）
+  PASS  Content-Length == 实际字节数
+  PASS  Content-Type 是 epub
+  PASS  响应带 ETag（内容哈希）
+
+== 4. 缓存与 Range ==
+  PASS  带 If-None-Match 再取 → 304
+  PASS  Range 请求 → 206
+  PASS  Range 返回 100 字节
+  PASS  Range 字节与原文件对应区间一致
+
+== 5. 错误分支 ==
+  PASS  未上传文件的书 → 404
+  PASS  别人的书 → 404（不泄露存在性）
+  PASS  未登录 → 401
+
+== 6. 列表契约 ==
+  PASS  列表里能找到刚上传的书
+  PASS  列表返回 contentHash 为 sha256:<hex>
+  PASS  列表返回 sizeBytes
+
+== 7. 配额：幂等重传不重复计费 ==
+  PASS  配额=书大小 时重传同一本书仍然成功（不重复计费）
+
+==== 汇总: PASS=24 FAIL=0 ====
+ALL DOWNLOAD CHECKS PASSED
+

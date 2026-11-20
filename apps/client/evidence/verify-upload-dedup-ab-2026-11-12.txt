@@ -1,0 +1,14 @@
+# 上传连接不被掐断 —— A/B 复现与验证
+# 日期: 2026-11-12
+# 旧服务端 = 没有 drainRequestBody 修复的二进制
+# 新服务端 = 含 drainRequestBody 修复
+# 工具: scripts/verify-upload-dedup-ab.ps1 + scripts/verify-upload-connection.js (裸 socket)
+# 说明: curl 对"服务端提前回响应"是宽容的(照样 200、退出码 0)，测不出这个问题；
+#       裸 socket 才复刻浏览器的处境(持续写 body，观察写入端有没有被对端打断)。
+
+== 上传连接不被掐断 A/B（裸 socket，模拟浏览器） ==
+  FAIL  old(no drain fix)  exit=3  SOCKET_ERROR=ECONNRESET SENT=393216/8388608 (read ECONNRESET)
+  PASS  new(drain fix)  exit=0  BODY_SENT=8388608/8388608 | RESPONSE=HTTP/1.1 200 OK SENT=8388608/8388608
+
+旧服务端：★ 上传被掐断    新服务端：整份 body 送达
+结论：服务端"提前回响应但不读完请求体"正是上传被掐断的根因；读完请求体后即修复。
