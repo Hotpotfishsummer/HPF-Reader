@@ -132,11 +132,38 @@ docker compose build --no-cache api  # 重建镜像
 ## 安全清单
 
 - [ ] `.env` 里的 `CHANGE_ME_*` 已全部替换为随机值（`grep CHANGE_ME .env` 应为空）
+- [ ] `HPF_JWT_SECRET` 是**新生成**的 48 字节随机值（`openssl rand -base64 48`），不是模板里的任何值；启动日志的 `jwt_key_fp` 每次部署都应不同
+- [ ] `HPF_REGISTER_OPEN=false`（除非你确实要做公开注册，且已接受 AI/磁盘被消耗的代价）
+- [ ] `HPF_METRICS_ENABLED=false`（或确认 `/metrics` 从公网确实返回 403）
+- [ ] `HPF_CORS_ORIGINS` 为空或只有你自己的来源（不要 `*`）
+- [ ] `HPF_TRUSTED_PROXIES` 是具体网段（默认 `172.28.0.0/24` = edge 网络），**不是 `*`**
 - [ ] `HPF_DOMAIN` 指向真实域名且 80/443 可达（否则 Caddy 签不出证书）
-- [ ] 公网只暴露 80/443；postgres/redis/minio 保持 internal 网络
+- [ ] 公网只暴露 80/443；postgres/redis/minio 保持 internal 网络；**不要**给 api 加 `ports:` 映射（那会绕过 Caddy 的全部安全头与 /metrics 限制）
 - [ ] `/metrics` 与 `/healthz` 已限制为内网访问：用**公网来源**验证返回 403（从 Docker 网络内部访问会按设计放行，属正常）
 - [ ] 已配置备份任务，并完成一次恢复演练
+- [ ] `HPF_AI_GLOBAL_MONTHLY_CALLS` 已按暴露面设置（对外开放注册建议 50000，单人自托管保持 0）：
+      只靠每用户配额挡不住「批量注册小号」，全站预算是最后一道账单闸门
+- [ ] 注册关闭时，首个账号用离线子命令创建，**不要**为了建号临时开放注册：
+      ```bash
+      docker compose exec -T api /app/api createuser \
+        --email you@example.com --name 'Owner' --password-stdin
+      ```
+      口令从 stdin 读，不进 shell 历史 / `ps` / `docker inspect`
+
+### 关于「域名映射到容器端口」
+
+结论取决于映射到哪个端口，差别是数量级的：
+
+| 拓扑 | TLS | 安全头 | `/metrics` | 限流键 | 判定 |
+|---|---|---|---|---|---|
+| 域名 → `caddy:443`（推荐） | ✅ | ✅ | 内网限定 | 真实客户端 IP | 可用 |
+| 域名 → 前置代理/隧道 → `caddy:443` | ✅ | ✅ | ⚠️ 可能公网可见 | ⚠️ 可能全站共用一个桶 | 需在 Caddy 里配 `trusted_proxies` |
+| 域名 → `api:8080`（绕过 Caddy） | ⚠️ 明文 | ❌ 全丢 | ❌ 公网可见 | ⚠️ 可伪造 | 不要这样做 |
+
+应用层已经自带安全响应头，因此第三种拓扑不再「完全裸奔」，但明文传输与 `/metrics` 暴露仍然不可接受。
+
 ---
+
 
 ## 部署到 kr-server（用户的服务器）
 
@@ -163,8 +190,10 @@ cd ~/hpf-reader/deploy
 cp .env.example .env
 grep CHANGE_ME .env            # 必须为空，否则继续改
 #   HPF_DOMAIN=你的域名   ACME_EMAIL=你的邮箱
-#   HPF_JWT_SECRET / POSTGRES_PASSWORD 用 openssl rand -base64 32 生成
-#   HPF_ENV=prod，HPF_REGISTER_OPEN 视需要关闭
+#   HPF_JWT_SECRET 用 openssl rand -base64 48 生成（少于 32 字节或等于模板值时
+#   服务端会拒绝启动 —— 这是有意的，别绕过去）
+#   POSTGRES_PASSWORD 用 openssl rand -base64 24 生成
+#   HPF_ENV=prod；HPF_REGISTER_OPEN 默认已是 false
 
 # 3) 起栈（首次会构建 api 镜像）
 docker compose up -d --build
@@ -173,13 +202,15 @@ docker compose run --rm migrate       # api 也会自动迁移，这一步用于
 # 4) 验证
 curl -sS https://$HPF_DOMAIN/healthz    # {"status":"ok"}
 curl -sS https://$HPF_DOMAIN/readyz     # 应真 ping 数据库
+curl -s -o /dev/null -w '%{http_code}\n' https://$HPF_DOMAIN/metrics   # 期望 403
+curl -s -o /dev/null -w '%{http_code}\n' https://$HPF_DOMAIN/v1/books  # 期望 401
 docker compose ps                       # 全部 healthy
 ```
 
 ### 首次部署后立刻要做的两件事
 
 1. **改默认域名与邮箱**：`HPF_DOMAIN` 不对，Caddy 会反复重试签证书并可能触发 Let\'s Encrypt 限流。
-2. **验证注册开关**：`HPF_REGISTER_OPEN=true` 时任何人都能注册。公网部署建议先设 `false`，用第一次注册的管理员账号，再决定是否开放。
+2. **确认注册开关**：默认已是 `HPF_REGISTER_OPEN=false`。需要新账号时临时改成 `true` 注册完立刻改回（或直接往 users 表插一条），不要长期开放。
 
 ### 无对象存储的注意事项
 

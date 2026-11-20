@@ -1,0 +1,109 @@
+# HPF-Reader 容器化部署（kr-server）
+#
+# 与 deploy/docker-compose.yml 的差异（这是**生产覆盖文件**，不改仓库里的开发版）：
+#   - 不启动 caddy 容器：宿主机已有系统级 Caddy 负责 TLS 与子域名分流，
+#     它 reverse_proxy 到本文件发布的 127.0.0.1:8080。
+#   - 不启动 redis：当前 HPF_QUEUE_DRIVER=none，Postgres 表队列即可。
+#   - api 只发布到 127.0.0.1，绝不对外（公网入口只有宿主机 Caddy 的 80/443）。
+#   - 镜像固定小版本，postgres 用 pgvector 版（迁移 00003 会自动启用 vector）。
+#
+# 用法：
+#   cd /home/admin/hpf && docker compose up -d
+#   docker compose logs -f api
+
+name: hpf-reader
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hpf_reader}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      # 小机器：与 deploy/.env 里的调优保持一致
+      POSTGRES_INITDB_WALDIR: /var/lib/postgresql/wal
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=48MB
+      - -c
+      - max_connections=40
+      - -c
+      - wal_compression=on
+      - -c
+      - log_min_duration_statement=2000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-hpf_reader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
+    networks: [backend]
+
+  api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${HPF_VERSION:-dev}
+    image: hpf-reader-api:${HPF_VERSION:-dev}
+    restart: unless-stopped
+    env_file:
+      - ./etc/hpf.env
+    environment:
+      HPF_ENV: prod
+      HPF_ADDR: ":8080"
+      HPF_AUTO_MIGRATE: "true"
+      HPF_STORAGE_DRIVER: local
+      HPF_STORAGE_DIR: /data/files
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hpf_reader}?sslmode=disable
+      # 本栈内 api 只被宿主机 Caddy 访问（经 host.docker.internal / 网关地址）。
+      # 容器网络里 API 的对端是 docker 网关（172.x），因此这里信任 Docker 私有网段，
+      # 由 Caddy 注入的 X-Forwarded-For 才是真实客户端 IP。
+      HPF_TRUSTED_PROXIES: "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16"
+    volumes:
+      - bookfiles:/data/files
+    ports:
+      # 只绑本机回环：宿主机 Caddy 反代到这里。绝不能写成 0.0.0.0:8080。
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 640m
+    memswap_limit: 640m
+    pids_limit: 512
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "/app/api", "healthcheck", "--url", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks: [backend]
+
+volumes:
+  pgdata:
+  bookfiles:
+
+networks:
+  backend:
+    driver: bridge

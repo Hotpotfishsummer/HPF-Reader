@@ -126,8 +126,10 @@ services:
       # compose 内部服务名即主机名；redis 预留给队列（当前实现用 Postgres 表队列，见 STATUS.md）
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hpf_reader}?sslmode=disable
       REDIS_URL: redis://redis:6379/0
-      # Caddy 在同一 bridge 网络内，因此信任网段内的 X-Forwarded-For
-      HPF_TRUSTED_PROXIES: "${HPF_TRUSTED_PROXIES:-*}"
+      # 只有来自这些地址的请求才采信 X-Forwarded-For。
+      # 默认值 = 下面 edge 网络的固定网段（caddy 就落在其中）。
+      # 填 * 等于允许任何人伪造 IP：绕过登录限流 + 污染审计日志，因此不要用。
+      HPF_TRUSTED_PROXIES: "${HPF_TRUSTED_PROXIES:-172.28.0.0/24}"
     volumes:
       - bookfiles:/data/files
     depends_on:
@@ -137,6 +139,18 @@ services:
         condition: service_healthy
       # 注意：minio 是可选 profile，这里**故意不写 depends_on**，否则没有对象存储时整栈起不来。
     networks: [backend, edge]
+    # 资源上限：一次 Argon2 哈希占 64MiB，没有上限时少量并发就能把宿主机内存打爆，
+    # 而 OOM 会连带 postgres（同一台机器）一起被杀。
+    mem_limit: ${HPF_API_MEM_LIMIT:-768m}
+    memswap_limit: ${HPF_API_MEM_LIMIT:-768m}
+    pids_limit: 512
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
       test: ["CMD", "/app/api", "healthcheck", "--url", "http://127.0.0.1:8080/healthz"]
       interval: 30s
@@ -145,12 +159,14 @@ services:
       start_period: 20s
 
   caddy:
-    image: caddy:2-alpine
+    # 固定小版本：浮动 tag 会在重拉时静默升级（行为漂移不可复现）。
+    image: caddy:2.10-alpine
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
+      # Windows 宿主机默认排除 UDP 443（Hyper-V/NAT 保留），Linux 生产环境可开启 HTTP/3：
+      # - "443:443/udp"
     environment:
       HPF_DOMAIN: ${HPF_DOMAIN:?set HPF_DOMAIN in .env}
       ACME_EMAIL: ${ACME_EMAIL:-}
@@ -163,6 +179,8 @@ services:
       api:
         condition: service_healthy
     networks: [edge]
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "caddy", "version"]
       interval: 30s
@@ -200,5 +218,10 @@ networks:
   # 仅内部：postgres / redis / minio 不对外暴露
   backend:
     internal: true
-  # 对外：caddy 与 api
+  # 对外：caddy 与 api。
+  # 固定网段：HPF_TRUSTED_PROXIES 的默认值依赖它（只有来自该网段的 XFF 才被采信）。
+  # 若改成别的网段，务必同步改 .env 里的 HPF_TRUSTED_PROXIES。
   edge:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

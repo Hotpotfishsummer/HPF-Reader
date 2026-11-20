@@ -11,12 +11,19 @@
 	servers {
 		protocols h1 h2 h3
 	}
+	# 不要在这里配 trusted_proxies 的默认值。
+	# 语义提醒：Caddy 只采信**显式**配置的 trusted_proxies 传来的 X-Forwarded-For；
+	# 未配置时会忽略入站 XFF 并自行改写为直连对端地址（这正是我们想要的）。
+	# 若将来在 Caddy 前面再挂 Cloudflare/Nginx/隧道，必须在这里显式写
+	#   trusted_proxies static <前置代理CIDR>
+	# 否则所有请求的来源都会被记成前置代理的 IP（限流退化成全站一个桶），
+	# 而且下面 @internal 的 remote_ip 判断也会被绕过（/metrics 变公网可读）。
 }
 
 {$HPF_DOMAIN} {
 	encode zstd gzip
 
-	# 安全响应头基线
+	# 安全响应头基线（应用层也有一份，这里是给静态文件与 Caddy 自己生成的响应用的）
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
@@ -25,7 +32,10 @@
 		-Server
 	}
 
-	# 健康与指标：只允许内网/运维访问（公网暴露 /metrics 会泄露路由与流量结构）
+	# 健康与指标：只允许内网/运维访问（公网暴露 /metrics 会泄露路由与流量结构）。
+	# 注意 remote_ip 匹配的是**直连对端**，不可由请求头伪造；但反过来说，
+	# 只要前面多了一层本机/内网代理，这个白名单就会失效 —— 因此生产环境
+	# 请同时保持 HPF_METRICS_ENABLED=false。
 	@ops path /healthz /readyz /metrics
 	handle @ops {
 		@internal remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
@@ -46,7 +56,10 @@
 		}
 	}
 
-	# 静态前端占位
+	# 静态前端占位。
+	# 注意 try_files 的 SPA 语义：非 /v1 的未知路径都会回落成 index.html（200）。
+	# 这是前端路由所必需的，扫描器看到的「200 命中」噪音无法完全避免；
+	# 但 /v1/* 已经在上面被 handle 独占，API 拼写错误会如实返回 API 的 404 JSON。
 	handle {
 		root * /srv/www
 		try_files {path} /index.html
