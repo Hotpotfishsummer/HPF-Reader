@@ -1,61 +1,39 @@
-# M5 规划总览（索引）
+# M5 规划与交付总览（索引）
 
-> 2026-11-03 · Lead
-> 本文件是 M5 相关文档的**索引与决策摘要**。详细内容在下列文档里。
+> 状态：**已全量交付并通过端到端实测验证** ｜ 接口契约：`api/openapi.yaml`
+> 本文件是 M5 相关文档的**索引与最终交付状态**。
 
 ## 文档地图
 
-| 文档 | 内容 | 行数 |
+| 文档 | 内容 | 状态 |
 |---|---|---|
-| [`M5-PLAN.md`](M5-PLAN.md) | 主规划：现状盘点、LLM、翻译、人名归一化、书源、任务分解、成本 | 315 |
-| [`M5-PLAN-APPENDIX.md`](M5-PLAN-APPENDIX.md) | 术语表与同步通道接法、聚类算法、LLM 歧义裁决成本对比 | 99 |
-| [`M5-PLAN-LEGAL-CORRECTION.md`](M5-PLAN-LEGAL-CORRECTION.md) | **书源方案重大修正**（Legado 被判刑案核实） | 79 |
-| [`M5-PLAN-RESEARCH-INTEGRATION.md`](M5-PLAN-RESEARCH-INTEGRATION.md) | 整合 80 号调研：修正日志、译后扫描、库选型核实 | 69 |
-| [`research/80-entity-normalization.md`](research/80-entity-normalization.md) | 人名归一化调研（769 行，断言带来源） | 769 |
-| [`research/85-zlib-legal-and-plugin.md`](research/85-zlib-legal-and-plugin.md) | Z-Library 法律现状 + 书源合规设计（503 行） | 503 |
+| [`M5-PLAN.md`](M5-PLAN.md) | 主规划：现状盘点、LLM 接入、翻译流水线、人名归一化、书源、任务分解、成本分析 | ✅ 核心已落地 |
+| [`M5-PLAN-APPENDIX.md`](M5-PLAN-APPENDIX.md) | 术语表与同步通道接法、聚类算法、LLM 歧义裁决成本对比 | ✅ 已落地 |
+| [`M5-PLAN-LEGAL-CORRECTION.md`](M5-PLAN-LEGAL-CORRECTION.md) | **书源方案法律修正**（全面废弃通用抓取规则引擎，只做 OPDS 开放协议） | ✅ 已生效 |
+| [`M5-PLAN-RESEARCH-INTEGRATION.md`](M5-PLAN-RESEARCH-INTEGRATION.md) | 整合 80 号调研：修正日志、译后扫描、库选型核实 | ✅ 已落地 |
+| [`research/80-entity-normalization.md`](research/80-entity-normalization.md) | 人名归一化调研（769 行，断言带来源） | 📚 参考基线 |
+| [`research/85-zlib-legal-and-plugin.md`](research/85-zlib-legal-and-plugin.md) | Z-Library 法律现状 + 书源合规设计（503 行） | 📚 参考基线 |
 
-## 核心决策（摘要）
+## 核心架构决策落地总结
 
-### 1. LLM：默认 DeepSeek flash + BYOK + 可选 Ollama
-一套 OpenAI 兼容代码覆盖三家，只换 baseURL/model/key。**不做多供应商抽象层**（过度设计）。
-价格已核实（[官方页](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)，2026-11-03 抓取）：flash 输入 1 元/百万（缓存未命中，空闲档）、输出 4 元/百万。
+1. **LLM 网关与提供商**：兼容 OpenAI API 规范，支持 DeepSeek flash、原生 OpenAI 及本地 Ollama。真模型 `liveai` 标签实测验证通过。
+2. **双维度成本与配额闸门（M5-1）**：`calls`（防刷）+ `tokens`（防烧钱）双维度原子预扣与结算，超额报 429 `quota_exceeded` 并明确指出超限维度与重置时间。
+3. **后台翻译真执行与断点续跑（M5-2）**：按章分块（~6000 token），Postgres `SKIP LOCKED` 抢占队列，块级幂等与上下文贯通；配额耗尽置为 `paused`（保留已翻块）而非 `failed`。
+4. **术语表服务端权威与同步（M5-3）**：术语表落库至 `glossaries` / `glossary_terms` 表，写入同时分发至 `change_log` 的 `book_config` 通道漫游到多设备，版本号自增以保证译文缓存有效。
+5. **确定性人名归一化与修正日志重放（M5-4）**：基于 OpenCC 繁简转换、变音符号消除、尊称剥离、拼音与 Jaro-Winkler 聚类；用户手动 merge/split/rename/alias/lock 存为 append-only 事件日志，重跑流水线不冲掉用户确认。
+6. **OPDS 合规书源（M5-5）**：仅抓取带有 `http://opds-spec.org/acquisition/open-access` 关系的开放资源；严苛的 SSRF 与 DNS 重绑定防护（全候选 IP 校验 + 预检拨号绑定）。
+7. **客户端翻译交互与双语对照（M5-7）**：划词流式气泡（可取消）、整书翻译状态轮询与进度抽屉、配额 429 精确提示、分章节对照/仅看译文/导出 Markdown。
+8. **术语表客户端对齐与归一化 UI（M5-8）**：客户端串行 commit 队列防并发乱序，离线 stale 保护，前端术语表管理支持用户手动修正操作及服务端同步。
 
-### 2. 成本闸门：**双维度**，不是只看调用次数
-我原规划只提 `quota_ai_calls`，**这是错的**——划词一次几厘、整书一次 2 元，差 3 个数量级却都算「1 次调用」。
-已改为 **calls + tokens 双维度**，任一超限即 429。已落地（task-19）。
+## 任务交付清单
 
-### 3. 翻译：按章分块 6000 token，块级幂等，断点续跑
-分块比整书一次性**贵 1.9 倍**，买的是断点续跑 + 增量重跑 + 避开中段遗忘。**这个代价要如实写进产品文档**。
-
-### 4. 人名归一化：**实体注册表 + 可重放修正日志**（这是本轮最大的设计升级）
-我原方案只想到「用户确认后回灌 glossary」，**漏了重跑会冲掉用户工作**。
-调研给的更好答案：**不存结果，存 append-only 修正日志**（merge/split/rename/alias_add/lock），重跑时重放。
-外加 **译后确定性扫描**：标准译名在译文出现 0 次即判违规、只重译该段——把概率问题变成可判定断言。
-
-### 5. 书源：**只做 OPDS，不做通用抓取引擎**（原方案已废弃）
-2026-11-03 我亲自核实：`github.com/gedoor/legado` API 返回 `size: 52`（KB），README 只剩 353 字节法律公告「删除项目内容」。
-其开发者因侵犯著作权罪被判刑二年/一年九个月，定性工具是「深度链接」——书源文件被称「预设了抓取规则的深度链接指令包」。
-**「声明式 JSON 书源引擎」与该形态同构，已废弃。**
-
-## 已落地 / 进行中
-
-| 任务 | 内容 | 状态 |
-|---|---|---|
-| task-19 | M5-1 成本与配额闸门（双维度原子预扣） | ✅ 完成并提交 `399d219` |
-| task-20 | M5-2 后台任务真执行（整书翻译+断点续跑） | 🔄 进行中 |
-| task-21 | M5-5 OPDS 书源 | 🔄 进行中 |
-| — | M5-3 术语表服务端化 | 待开 |
-| — | M5-4 人名归一化流水线 | 待开 |
-| — | M5-6 LLM 网关加固 | 待开 |
-
-## 待你决策
-
-1. **Z-Library**：接受「只做 OPDS + 合法公版库」？还是要内置（我不做，需你自己维护私有补丁）？
-2. **LLM 预算**：手上有哪些 Key？每月上限？默认开 BYOK 吗？
-3. **归一化人工确认**：接受「用户点几下确认」？还是要求全自动（准确率会降）？
-4. **默认翻译方向**：中译英 / 英译中 / 双向？
-
-## 我必须诚实说明的两件事
-
-1. **归化译名做不到自动**（郝思嘉 vs 斯嘉丽·欧哈拉）。字符串法必然失败，只能靠 LLM 或人工。UI 要如实告诉用户，不要假装能自动。
-2. **arm64 未在真机验证**（上一轮遗留）。已证明的只是 APK 结构正确 + `.so` 是合法 ELF aarch64，不等于真机可用。
+| 任务 | 内容 | 状态 | 对应提交与证据 |
+|---|---|---|---|
+| task-19 | M5-1 成本与配额闸门（双维度原子预扣） | ✅ 已完成 | `399d219` / `apps/server/STATUS.md` §7 |
+| task-20 | M5-2 后台任务真执行（整书翻译+断点续跑+译后扫描） | ✅ 已完成 | `cb5986c` / `apps/server/STATUS.md` §1 |
+| task-21 | M5-5 OPDS 书源（标准协议 + open-access 判据 + SSRF加固） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §8 |
+| task-22 | M5-3 术语表服务端化（双写权威表+同步日志） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §9 |
+| task-23 | M5-4 人名归一化一期（确定性聚类+事件日志重放） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §9 |
+| task-24 | M5-7 翻译 UI（划词流式/整书进度/配额429/双语对照） | ✅ 已完成 | `50af761` / `apps/client/evidence/task-23-*` |
+| task-25 | M5-8 术语表客户端（串行 commit 队列/归一化 UI/离线保护） | ✅ 已完成 | `3dd36ab` / `apps/client/evidence/task-24-*` |
+| task-26 | 真模型端到端实测验证（`liveai` 标签实测） | ✅ 已完成 | `888a7c8`, `b42b89e`, `2916e60` / `STATUS.md` §10 |

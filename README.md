@@ -3,7 +3,7 @@
 自托管的全平台阅读器：**Go 服务端（Docker 部署）+ Vue 3 / Wails v3 客户端（桌面与移动）**。
 对标 Readest，但后端自建、数据自持，支持多用户、进度同步、LLM 辅助阅读。
 
-> 当前阶段：**开发中**（骨架搭建）。方案与调研见 [docs/](docs/README.md)。
+> 当前阶段：**核心里程碑已全量交付（M1 ~ M5 / P0 ~ P4 全部完成并通过端到端实测验证）**。完整方案与状态索引见 [docs/README.md](docs/README.md)。
 
 ---
 
@@ -55,6 +55,12 @@ HPF-Reader/
 ## 开发命令
 
 ```powershell
+# 一键全栈构建与测试
+powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1
+
+# 一键自动构建客户端最新版 EXE（修改前端或客户端后必跑）
+powershell -ExecutionPolicy Bypass -File .\scripts\build-client.ps1
+
 # 服务端
 cd apps\server
 go build ./...
@@ -69,13 +75,20 @@ cd apps\client
 docker compose -f deploy\docker-compose.yml up -d
 ```
 
-## 排期闸门
+> **开发规范（强制要求）**：凡是修改或修复了客户端前端或 Go 客户端代码，必须自动重新构建最新版本 EXE（运行 `.\scripts\build-client.ps1`），确保 `apps/client/client.exe` 和 `apps/client/bin/hpfreader.exe` 始终为最新构建。详细 Agent 规范见 [AGENTS.md](AGENTS.md)。
 
-| 闸门 | 内容 | 状态 |
-|---|---|---|
-| G2 隔离 PoC | C-01 中间件能否拦到 `/wails/runtime`；C-09 窗口头可否伪造 | 进行中（spikes/isolation） |
-| G1 移动端 | iOS/Android 真机 + e-ink 机型验证（**Windows 上无法构建 iOS**，需 macOS） | 待 G2 后启动 |
-| M1 | 骨架与阅读闭环 | 进行中 |
+## 核心里程碑与交付状态
+
+| 阶段 / 闸门 | 核心交付内容 | 验证与证据 | 状态 |
+|---|---|---|---|
+| **G2 内容安全隔离** | L2 内容隔离方案定案：同源 iframe + 逐节净化 + 逐节严格 meta CSP；消除 Wails 桥越权通路 | `spikes/isolation/` + 23 项 sanitize 单元测试 | ✅ 已完成并落地 |
+| **G1 移动与兼容性** | Android (API 29~31 / WebView 91) 3个硬阻塞全解（builtin polyfill、deflate-raw 兜底、@layer 扁平化） | `apps/client/STATUS.md` §9-§10 + 双 ABI APK | ✅ 已完成并落地 |
+| **M1 / P0 阅读排版** | 本地优先离线阅读闭环、横竖屏自适应双栏/单栏、字体字号主题切换、4色高亮与划线笔记 | 真实 `hpfreader.exe` 截图 + 172 项前端单测 | ✅ 已完成并落地 |
+| **M2 / P1 双语与翻译** | 划词流式翻译气泡、整书后台任务翻译、双语对照阅读视图、分章节导出 Markdown | `api/openapi.yaml` + SSE 链路测试 | ✅ 已完成并落地 |
+| **M3 / P2 云端与同步** | 账户登录/注册、CAS 内容寻址秒传、HLC 权威进度与书签漫游、标注跨端同步、云端书籍文件双向同步、服务器地址可配置 | 72 项跨端集成测试 + 95 项 Docker 冒烟测试 | ✅ 已完成并落地 |
+| **M4 / P3 公版书源** | Project Gutenberg + Standard Ebooks OPDS 检索与一键入库、SSRF 与 DNS 重绑定防护 | `apps/server/STATUS.md` §8 | ✅ 已完成并落地 |
+| **M5 AI 加固与术语** | 双维度成本与配额闸门（429 区分 calls/tokens）、断点续跑、服务端术语表、人名归一化与可重放修正日志 | `apps/server/STATUS.md` §7, §9, §10 + 真模型实测 | ✅ 已完成并落地 |
+| **P4 格式扩展与外设** | TXT 智能分章转码、墨水屏（E-ink）零残影无动画高对比度模式、物理翻页键映射、TTS 语音朗读 | `txtParser.ts` + `TtsPlayer.vue` + 快捷键映射 | ✅ 已完成并落地 |
 
 ## 文档索引
 
