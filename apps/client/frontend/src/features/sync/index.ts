@@ -30,3 +30,14 @@ export * from './types'
 export { configureSyncEngine, createSyncRuntime, defaultApiBaseUrl, getSyncEngine, getSyncRuntime } from './runtime'
 export type { SyncRuntime, SyncRuntimeOptions } from './runtime'
 export { useSyncStatus } from './composables/useSyncStatus'
+export {
+  createSyncCoordinator,
+  DEFAULT_AUTO_SYNC_MS,
+  DEFAULT_AUTH_POLL_MS,
+  DEFAULT_VISIBILITY_THROTTLE_MS,
+  getSyncCoordinator,
+  notifyAuthChanged,
+  startSyncLifecycle,
+  stopSyncLifecycle,
+} from './coordinator'
+export type { SyncCoordinator, SyncCoordinatorDeps, SyncEngineLike } from './coordinator'

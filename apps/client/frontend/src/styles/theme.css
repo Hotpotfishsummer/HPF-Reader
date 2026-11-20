@@ -112,3 +112,13 @@ foliate-view {
 foliate-view::part(filter) {
   filter: var(--reader-filter, none);
 }
+
+/* ---------- 桌面无边框窗口：交互元素默认不可拖拽 ---------- */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  --wails-draggable: no-drag;
+}

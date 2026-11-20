@@ -53,10 +53,16 @@ export function describeQuota(error: QuotaError, now: number = Date.now()): Quot
   const dimensionLabel = error.dimension === 'calls' ? '调用次数' : 'token 额度'
   const reset = formatResetTime(error.resetAt)
   const countdown = formatCountdown(error.resetAt, now)
-  const title = `本周期${dimensionLabel}已用完`
+  const global = error.scope === 'global'
+  // 全站额度用完时，标题必须点明「服务方」而不是「你」：
+  // 说成「你本月次数已用完」会让用户去注册小号，而小号同样会被拦。
+  const title = global
+    ? `服务方本月${dimensionLabel}总额度已用完`
+    : `本周期${dimensionLabel}已用完`
   const detail =
     (countdown ? `${countdown}后自动恢复（${reset}）` : `将于 ${reset} 恢复`)
     + `；已用 ${error.used} / ${error.limit}`
+    + (global ? '；这是全站共享额度，换账号或注册新账号都无法绕过' : '')
   return { title, detail }
 }
 

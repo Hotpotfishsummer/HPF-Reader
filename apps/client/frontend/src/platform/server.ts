@@ -4,6 +4,7 @@ import type {
   ImportBookResult,
   OpenBookPayload,
   Platform,
+  ProxyConfig,
   SyncStatus,
 } from './types'
 
@@ -68,6 +69,11 @@ export function createServerPlatform(options: ServerPlatformOptions): Platform {
   return {
     kind: 'web',
     capabilities: ['sync.outbox', 'system.openExternal'],
+    // Web 目标直接用浏览器原生 fetch：没有本机 Go 中继，也没有 --ignore-certificate-errors，
+    // 证书校验由浏览器自己完成（这正是 web 端的正常语义）。
+    async resolveApiTransport() {
+      return null
+    },
     files: {
       async importBookFromDialog(): Promise<ImportBookResult | null> {
         // 浏览器没有原生文件对话框抽象（<input type=file> 需要用户手势 + 组件配合），
@@ -117,6 +123,11 @@ export function createServerPlatform(options: ServerPlatformOptions): Platform {
         const dto = (await res.json()) as BookDto & { readingState?: string | null }
         return dto.readingState ?? ''
       },
+      async importBookBytes(): Promise<BookRecord> {
+        // Web 目标没有本地书库（capabilities 不含 'library.local'）。
+        // 这里必须**显式失败**：静默返回一条假记录会让 UI 以为书已经离线可读。
+        throw new Error('Web 平台不支持写入本地书库（缺少 library.local 能力）')
+      },
       onChanged() {
         // Web 目标没有 Go 侧事件总线；M1 只提供手动刷新（Query 失效）。
         return () => {}
@@ -138,6 +149,65 @@ export function createServerPlatform(options: ServerPlatformOptions): Platform {
       async openExternal(url: string): Promise<void> {
         window.open(url, '_blank', 'noopener,noreferrer')
       },
+    },
+    window: {
+      hasControls: false,
+      isMacTrafficLights: false,
+      async minimize() {},
+      async toggleMaximize() {},
+      async close() {},
+      async isMaximized() {
+        return false
+      },
+      async toggleFullscreen() {
+        if (typeof document !== 'undefined') {
+          if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen?.()
+          } else {
+            await document.exitFullscreen?.()
+          }
+        }
+      },
+      async isFullscreen() {
+        return typeof document !== 'undefined' ? Boolean(document.fullscreenElement) : false
+      },
+      onFullscreenChanged(listener: (isFs: boolean) => void) {
+        if (typeof document === 'undefined') return () => {}
+        const h = () => listener(Boolean(document.fullscreenElement))
+        document.addEventListener('fullscreenchange', h)
+        return () => document.removeEventListener('fullscreenchange', h)
+      },
+    },
+    browser: {
+      async openURL(url: string): Promise<void> {
+        window.open(url, '_blank', 'noopener,noreferrer')
+      },
+      async close(): Promise<void> {},
+    },
+    proxy: {
+      async getConfig() {
+        return { enabled: false, type: 'http', host: '127.0.0.1', port: 7890 }
+      },
+      async saveConfig() {},
+      async testProxy() {
+        return { success: false, latencyMs: 0, message: 'Web 环境不支持本地系统代理设置' }
+      },
+      async detectSystemProxy(): Promise<ProxyConfig> {
+        return { enabled: false, type: 'http', host: '127.0.0.1', port: 7890 }
+      },
+    },
+    downloads: {
+      async listDownloads() {
+        return []
+      },
+      async startDownload() {
+        throw new Error('Web 环境请使用浏览器直接下载')
+      },
+      async importToLibrary() {
+        throw new Error('Web 环境请使用导入对话框')
+      },
+      async openDownloadsFolder() {},
+      async deleteDownload() {},
     },
   }
 }

@@ -9,14 +9,33 @@ import { useGlossary } from '@/features/ai/glossaryStore'
 import TranslateBubble from '@/features/ai/components/TranslateBubble.vue'
 import BookTranslatePanel from '@/features/ai/components/BookTranslatePanel.vue'
 import GlossaryPanel from '@/features/ai/components/GlossaryPanel.vue'
+import BilingualView from '@/features/ai/components/BilingualView.vue'
+import { useTts } from '@/features/tts/useTts'
+import TtsPlayer from '@/features/tts/components/TtsPlayer.vue'
+import ReaderSettingsPopover from './components/ReaderSettingsPopover.vue'
+import ReaderSearchPanel from './components/ReaderSearchPanel.vue'
+import ReaderDrawer, { type DrawerTab } from './components/ReaderDrawer.vue'
+import ReaderBookmarksPopover from './components/ReaderBookmarksPopover.vue'
+import { useAnnotations, type AnnotationItem } from './annotationStore'
+import { usePageTurnAnimation } from './usePageTurnAnimation'
+import './pageTurnAnimations.css'
+import { useApi } from '@/api'
 import { usePlatform } from '@/platform'
 import { SAMPLE_BOOK_ID, getRememberedBook, isLocalOnlyBook, rememberBook } from './bookSession'
 import { useFoliateEngine, type RelocateDetail } from './useFoliateEngine'
 import { useReaderLayout, COLUMN_GAP_PERCENT } from './useReaderLayout'
-import { bridgeSectionDocument } from './bridge'
+import { bridgeSectionDocument, createWheelTurnHandler } from './bridge'
 import { anchorFromRange } from './coords'
 import { buildReaderStyles, resolveReaderTokens } from './readerStyles'
-import { resolveProgress, rememberProgress } from './progressStore'
+import {
+  cacheResolvedProgress,
+  rememberProgress,
+  resolveProgress,
+  resolveReaderProgress,
+  type RemoteProgress,
+} from './progressStore'
+import { createProgressSync } from './progressSync'
+import { getSyncEngine, getSyncRuntime } from '@/features/sync/runtime'
 import ReaderToolbar from './components/ReaderToolbar.vue'
 
 const route = useRoute()
@@ -52,13 +71,225 @@ const toc = shallowRef<{ label: string; target: string | number }[]>([])
 const progress = ref(0)
 const chapterLabel = ref('')
 const tocOpen = ref(layout.value.tocMode === 'sidebar')
-/** AI 面板开关（互斥：同时只开一个，避免叠在一起看不清）。 */
+const drawerTab = ref<DrawerTab>('toc')
+/** 侧栏 / 弹窗面板状态 */
 const aiPanelOpen = ref(false)
 const glossaryOpen = ref(false)
+const typographyOpen = ref(false)
+const bilingualOpen = ref(false)
+const ttsOpen = ref(false)
+const searchOpen = ref(false)
+const bookmarksOpen = ref(false)
+const currentCfi = ref('')
+const currentExcerpt = ref('')
+const currentChapterIndex = ref(0)
+
+/** 沉浸式阅读：控制顶部状态栏/工具栏的显示与隐藏 */
+const toolbarVisible = ref(true)
+/** 全屏状态 */
+const isFullscreen = ref(false)
+let cleanupFullscreenWatcher: (() => void) | undefined
+let unbindHostWheel: (() => void) | undefined
+
+function focusReadingArea(): void {
+  try {
+    if (currentDoc?.defaultView) {
+      currentDoc.defaultView.focus()
+      return
+    }
+  } catch {
+    // 跨域或未就绪防护
+  }
+  hostRef.value?.focus()
+}
+
+function toggleToolbar(): void {
+  toolbarVisible.value = !toolbarVisible.value
+}
+
+async function toggleFullscreen(): Promise<void> {
+  try {
+    if (platform.window?.toggleFullscreen) {
+      await platform.window.toggleFullscreen()
+    }
+    if (platform.window?.isFullscreen) {
+      isFullscreen.value = await platform.window.isFullscreen()
+    } else {
+      isFullscreen.value = !isFullscreen.value
+    }
+  } catch {
+    isFullscreen.value = !isFullscreen.value
+  }
+}
+
+const api = useApi()
+
+/**
+ * ★ task-4：同步引擎只对"服务端也有的书"生效。
+ *
+ * 桌面本机书库（`library.local`）、内置示例书、直接拖进来的本地文件 —— 这些书服务端
+ * 根本没有，拿它们去同步只会制造噪音。所以 `syncBookEligible` 为 false 时：
+ *   - 进度：`getEngine()` 返回 undefined → 节流器直接跳过，零网络请求；
+ *   - 标注：走旧的 REST 兜底路径（未登录语义）。
+ */
+const syncBookEligible = computed(() => !isSample.value && !isLocalOnlyBook(bookId.value))
+
+/** 惰性取引擎：服务器地址变更后 runtime 会重建，缓存实例会踩到旧会话。 */
+function resolveEngine() {
+  if (!syncBookEligible.value) return undefined
+  if (contentHashKnown && !isHexHash(contentHash)) return undefined
+  return getSyncEngine()
+}
+
+/** 只有 hex 哈希（sha256 的前 16 位 / 全 64 位）才可能与云端 contentHash 对上。 */
+function isHexHash(value: string | null): boolean {
+  return typeof value === 'string' && /^[0-9a-f]{16,64}$/i.test(value)
+}
+
+/** 已登录才推/拉：未登录时阅读器是纯本地的（与 task-12 行为一致）。 */
+function isLoggedIn(): boolean {
+  try {
+    return getSyncRuntime().session.accessToken !== null
+  } catch {
+    return false
+  }
+}
+
+const annotations = useAnnotations(() => bookId.value, () => api, {
+  getEngine: resolveEngine,
+  isLoggedIn,
+})
+
+/**
+ * ★ task-4：进度入队的节流器。
+ *
+ * 位置变化非常频繁（滚动/翻页每帧都可能触发 relocate），所以：
+ *   - 本地 localStorage 仍然**每次都写**（同步、廉价、保证秒开）；
+ *   - 云端入队按「≥2s 或进度变化 ≥0.5%」节流；用户显式跳转立即入队。
+ *
+ * 映射不到 server bookId（书还没上传到云端）时它自己会跳过 —— 不伪造 id。
+ */
+const progressSync = createProgressSync({
+  getContentHash: () => contentHash,
+  getEngine: resolveEngine,
+  isLoggedIn,
+})
+
+/**
+ * ★ 统一的"跳转到某位置"入口：目录 / 书签 / 搜索 / 章节 / 结果列表都走它。
+ *
+ * 下一处 relocate 会被标记成**用户显式跳转**：节流器立即入队，并且如果位置真的
+ * 往后退，会带上 `explicitRewind: true`（服务端"允许回退且不覆盖历史最远"的信号）。
+ * 自然翻页走 engine.next()/prev()，不经过这里 —— 于是不会误标。
+ */
+async function jumpTo(target: string | number | { fraction: number }): Promise<void> {
+  progressSync.markExplicitJump()
+  await engine.goTo(target)
+  // ★ 这里**不**主动 flush：goTo 会触发 relocate，那一次带着 explicit 标记、不受节流限制。
+  //   如果目标位置与当前页相同，relocate 不会发 —— 那说明位置压根没变，没有东西需要同步。
+  //   （提前 flush 反而会把"跳转前的旧位置"发上去。）
+}
+
+/**
+ * 打开书时 foliate 会先发一次 relocate（= 续读位置本身）。
+ *
+ * ★ 那一次**不同步**：续读位置可能比云端"历史最远"更靠前（用户上次只是翻回去看看），
+ *   把它推上去会无谓地触发一次 rewind 语义。真正的阅读位置从下一次翻页开始同步。
+ */
+let progressSyncReady = false
+
+/**
+ * 入队一次进度；引擎/存储异常都不能打断阅读。
+ *
+ * 用户显式跳转不需要在这里做特殊处理：`jumpTo` 已经打了 explicit 标记，
+ * 该标记会让**紧随其后的这次 relocate** 绕过节流，并携带正确的 explicitRewind。
+ */
+function applyProgressSync(bookId: string, location: RelocateDetail): void {
+  if (!progressSyncReady) return
+  try {
+    progressSync.handleRelocate(bookId, {
+      cfi: location.cfi,
+      fraction: location.fraction,
+      index: location.index,
+    })
+  } catch (error) {
+    console.warn('[reader] 进度入队失败（本地已保存，稍后同步会补上）', error)
+  }
+}
+
+const bookmarkedItems = computed(() => {
+  return annotations.items.value.filter((a) => a.type === 'bookmark')
+})
+
+const isBookmarked = computed(() => {
+  const cfi = currentCfi.value || lastCfi
+  if (!cfi) return false
+  return annotations.items.value.some((a) => a.type === 'bookmark' && a.cfi === cfi)
+})
+
+async function toggleBookmark(): Promise<void> {
+  const cfi = currentCfi.value || lastCfi
+  if (!cfi) return
+  const existing = annotations.items.value.find((a) => a.type === 'bookmark' && a.cfi === cfi)
+  if (existing) {
+    await annotations.remove(existing.id)
+  } else {
+    const snippet = currentExcerpt.value || getCurrentReadableText().replace(/\s+/g, ' ').slice(0, 150)
+    await annotations.add({
+      type: 'bookmark',
+      cfi,
+      chapterTitle: chapterLabel.value || t('reader.title'),
+      progression: progress.value,
+      text: snippet || undefined,
+    })
+  }
+}
+
+async function handleEditNote(ann: AnnotationItem): Promise<void> {
+  const current = ann.note ?? ''
+  const updated = window.prompt(t('reader.editNote') || '编辑想法/备注', current)
+  if (updated !== null && updated !== current) {
+    await annotations.update(ann.id, { note: updated.trim() })
+  }
+}
+
+const tts = useTts()
+
+function getCurrentReadableText(): string {
+  if (selectionText.value) return selectionText.value
+  if (!currentDoc?.body) return ''
+  return (currentDoc.body.innerText || currentDoc.body.textContent || '').trim()
+}
+
+function startTts(): void {
+  const text = getCurrentReadableText()
+  if (!text) return
+  const lang = settings.locale === 'zh-CN' ? 'zh-CN' : 'en-US'
+  tts.speak(text, lang)
+}
+
+function toggleTts(): void {
+  if (ttsOpen.value) {
+    tts.stop()
+    ttsOpen.value = false
+  } else {
+    ttsOpen.value = true
+    startTts()
+  }
+}
 const sanitizeSummary = ref('')
 const selectionRectCount = ref(0)
 /** 续读提示：只在"确实从上次位置继续"时显示一次。 */
 const resumedFrom = ref('')
+/**
+ * ★ task-4：本次打开用的是**云端权威进度**（另一台设备读到的位置）。
+ * locator 在下面 `loadBook` 里解析，这里存服务端信息用于提示与后续 enqueue。
+ */
+const remoteResume = ref<RemoteProgress | null>(null)
+/** 当前书的 contentHash：用来把本地书映射到 server bookId（内容哈希是唯一桥梁）。 */
+let contentHash: string | null = null
+/** contentHash 是否已经是"可信的完整哈希"（否则不写进进度 op，避免服务端按错副本合并）。 */
+let contentHashKnown = false
 
 /**
  * ★ 当前章节文档：仅用于挂监听与算坐标（coords.ts 需要它）。
@@ -152,18 +383,26 @@ function closeBubble(): void {
   bubbleAnchor.value = null
 }
 
+const FONT_MAP: Record<string, string> = {
+  serif: 'Georgia, "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif',
+  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+  kaiti: '"KaiTi", "STKaiti", "BiauKai", serif',
+  system: 'system-ui, -apple-system, sans-serif',
+}
+
 function readerStyleInput() {
   // ★ 必须解析成具体值：CSS 变量不跨文档继承，直接写 var(...) 进 iframe 会静默失效。
   const tokens = resolveReaderTokens()
   return {
-    fontFamily: tokens.fontFamily,
+    fontFamily: FONT_MAP[settings.fontFamily] || tokens.fontFamily,
     fontSize: settings.fontSize,
     lineHeight: settings.lineHeight,
     letterSpacing: 0.01,
     marginBlock: 32,
     paper: tokens.paper,
     ink: tokens.ink,
-    textIndent: false,
+    textIndent: settings.textIndent,
+    einkMode: settings.einkMode,
   }
 }
 
@@ -173,16 +412,23 @@ function readerStyleInput() {
  * 真实的页边距取 `min(用户设置, 当前窗口允许的最大值)`：用户偏好优先，
  * 但竖屏窄窗下不能让页边距把正文挤没。
  */
+let lastColumns: 1 | 2 = 1
+
 function applyLayout(): void {
   const state = layout.value
+  const columnsChanged = lastColumns !== state.columns
+  lastColumns = state.columns
+
   engine.setLayout({
     columns: state.columns,
     maxInlineSize: state.maxInlineSize,
     marginInline: Math.min(settings.marginInline, state.maxMarginInline),
     columnGapPercent: COLUMN_GAP_PERCENT,
   })
-  // 分栏数与单栏宽度都变了，重排后把阅读位置拉回去（不丢位置）。
-  if (lastCfi) {
+  // 只有分栏数发生实质切换（如横竖屏旋转 1 栏 ↔ 2 栏）时，才需要强制把阅读位置拉回去；
+  // 普通尺寸微调交由 paginator 原生 ResizeObserver 与 #anchor 机制平滑重排，
+  // 避免微调窗口尺寸或侧栏折叠时重复调用 goTo 打断分页状态。
+  if (columnsChanged && lastCfi) {
     void engine.goTo(lastCfi).catch(() => {
       // 位置在当前屏已经不存在（例如旋转后落在最后一页之外）：忽略，
       // paginator 自己的 #anchor 机制会把位置夹到最近的有效页。
@@ -205,6 +451,7 @@ const engine = useFoliateEngine(() => hostRef.value, {
     toc.value = (book.toc ?? []).map((item) => ({ label: item.label, target: item.href }))
     applyStyles()
     applyLayout()
+    setTimeout(() => focusReadingArea(), 50)
   },
   onError(error) {
     loading.value = false
@@ -213,8 +460,20 @@ const engine = useFoliateEngine(() => hostRef.value, {
   onRelocate(location: RelocateDetail) {
     progress.value = Math.round(location.fraction * 100)
     chapterLabel.value = location.tocLabel
-    if (location.cfi) lastCfi = location.cfi
+    currentChapterIndex.value = location.index
+    if (location.cfi) {
+      lastCfi = location.cfi
+      currentCfi.value = location.cfi
+    }
+    if (location.excerpt) {
+      currentExcerpt.value = location.excerpt
+    } else {
+      const fallback = getCurrentReadableText().replace(/\s+/g, ' ').slice(0, 150)
+      if (fallback) currentExcerpt.value = fallback
+    }
     persistProgress(location)
+    // 首次 relocate 是"续读位置本身"，从第二次开始才是真正的阅读位置。
+    progressSyncReady = true
   },
   onLoad(doc) {
     // 每次换页 / 换章节都会来一次：先清掉旧监听，再挂新的。
@@ -222,10 +481,20 @@ const engine = useFoliateEngine(() => hostRef.value, {
     currentDoc = doc
     unbridge = bridgeSectionDocument(doc, {
       onWheel: (delta) => {
-        if (delta > 0) void engine.next()
-        else void engine.prev()
+        if (delta > 0) void turnPage('next')
+        else void turnPage('prev')
       },
       onKey: (event) => handleKey(event),
+      onClick: ({ clientX, innerWidth }) => {
+        if (clientX < innerWidth * 0.25) {
+          void turnPage('prev')
+        } else if (clientX > innerWidth * 0.75) {
+          void turnPage('next')
+        } else {
+          // 点击正文中间区域：切换顶栏/状态栏沉浸式显示与隐藏
+          toggleToolbar()
+        }
+      },
       onSelection: (selection) => {
         // ★ 只把值交给 Vue；Range 是活对象，留在闭包变量里（§5.2 规则 3）。
         selectionRange = selection?.range ?? null
@@ -245,6 +514,7 @@ const engine = useFoliateEngine(() => hostRef.value, {
       },
     })
     applyStyles()
+    setTimeout(() => focusReadingArea(), 50)
   },
   onExternalLink(href) {
     if (href) void platform.system.openExternal(href)
@@ -252,6 +522,13 @@ const engine = useFoliateEngine(() => hostRef.value, {
   onSanitize(stats) {
     sanitizeSummary.value = `剥离 ${stats.removedElements} 元素 / ${stats.removedAttributes} 属性 / ${stats.removedCssUrls} 条 CSS 外链`
   },
+})
+
+const { animClasses, turnPage } = usePageTurnAnimation({
+  getAnimation: () => settings.pageTurnAnimation,
+  isEinkMode: () => settings.einkMode,
+  onNext: () => engine.next(),
+  onPrev: () => engine.prev(),
 })
 
 function applyStyles(): void {
@@ -268,7 +545,10 @@ function applyStyles(): void {
 function persistProgress(location: RelocateDetail): void {
   if (!location.cfi || location.cfi === lastSaved) return
   lastSaved = location.cfi
+  // 本地优先：localStorage 每次都写（同步、必须成功）。
   rememberProgress(bookId.value, location.cfi, location.fraction, progressBackend.value)
+  // 云端：节流后入队（无映射 / 未登录 / 本机书库时自动跳过）。
+  applyProgressSync(bookId.value, location)
 }
 
 function cycleTheme(): void {
@@ -277,19 +557,87 @@ function cycleTheme(): void {
 }
 
 function handleKey(event: KeyboardEvent): void {
+  if (event.key === 'F11') {
+    event.preventDefault()
+    void toggleFullscreen()
+    return
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+    event.preventDefault()
+    if (event.shiftKey) {
+      bookmarksOpen.value = !bookmarksOpen.value
+    } else {
+      void toggleBookmark()
+    }
+    return
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+    event.preventDefault()
+    searchOpen.value = !searchOpen.value
+    if (searchOpen.value) {
+      aiPanelOpen.value = false
+      glossaryOpen.value = false
+      bilingualOpen.value = false
+      typographyOpen.value = false
+    }
+    return
+  }
   switch (event.key) {
     case 'ArrowRight':
     case 'PageDown':
     case ' ':
       event.preventDefault()
-      void engine.next()
+      void turnPage('next')
       break
     case 'ArrowLeft':
     case 'PageUp':
       event.preventDefault()
-      void engine.prev()
+      void turnPage('prev')
       break
     case 'Escape':
+      if (bookmarksOpen.value) {
+        bookmarksOpen.value = false
+        break
+      }
+      if (searchOpen.value) {
+        searchOpen.value = false
+        break
+      }
+      if (typographyOpen.value) {
+        typographyOpen.value = false
+        break
+      }
+      if (bilingualOpen.value) {
+        bilingualOpen.value = false
+        break
+      }
+      if (ttsOpen.value) {
+        tts.stop()
+        ttsOpen.value = false
+        break
+      }
+      if (aiPanelOpen.value) {
+        aiPanelOpen.value = false
+        break
+      }
+      if (glossaryOpen.value) {
+        glossaryOpen.value = false
+        break
+      }
+      if (layout.value.tocMode === 'overlay' && tocOpen.value) {
+        tocOpen.value = false
+        break
+      }
+      // 如果顶部状态栏隐藏，按 Escape 呼出状态栏
+      if (!toolbarVisible.value) {
+        toolbarVisible.value = true
+        break
+      }
+      // 如果全屏，按 Escape 退出全屏
+      if (isFullscreen.value) {
+        void toggleFullscreen()
+        break
+      }
       void goBack()
       break
     default:
@@ -319,15 +667,66 @@ async function openBytes(file: File, lastLocation: string): Promise<void> {
   }
 }
 
+/** 重新打开一本书之前，把本文件的"每本书"状态复位。 */
+function resetBookScopedState(): void {
+  resumedFrom.value = ''
+  remoteResume.value = null
+  contentHash = null
+  contentHashKnown = false
+  lastSaved = ''
+  progressSyncReady = false
+  progressSync.reset()
+}
+
+/**
+ * 打开书时的进度解析（task-4 验收项的落点）。
+ *
+ * 优先级：**云端权威（比本地更远 / 本地无记录） > 本地缓存 > platform**。
+ * 解析出结果后立刻回填本地缓存 —— 否则下一次打开又会回到旧位置。
+ * 传给 foliate 的始终是字面 locator（我们的本地缓存本来就是 foliate 的 CFI 串）。
+ */
+async function resolveOpenProgress(bookId: string, hash: string | null): Promise<string> {
+  if (!syncBookEligible.value) {
+    // 本机书库 / 示例书 / 直接打开的本地文件：不做云端解析，行为与 task-12 完全一致。
+    return resolveProgress(bookId, progressBackend.value)
+  }
+
+  // 已登录时先跑一次完整同步（推 outbox + 拉到 head），保证投影是新鲜的：
+  // 否则刚登录 / 刚换设备时 engine.local 还是空的，云端进度会被漏掉。
+  if (isLoggedIn()) {
+    try {
+      await resolveEngine()?.run()
+    } catch (error) {
+      // 离线是正常情况：用现有投影 + 本地缓存继续。
+      console.warn('[reader] 打开前同步失败，使用本地/现有投影', error)
+    }
+  }
+
+  const resolved = await resolveReaderProgress({
+    bookId,
+    contentHash: hash,
+    engine: resolveEngine(),
+    platform: progressBackend.value,
+  })
+
+  if (resolved.source === 'remote') {
+    remoteResume.value = resolved.remote
+  }
+  // 本地缓存 / platform 命中：回填一次（保留原有百分比，platform 命中时按 0 记）。
+  if (resolved.locator && resolved.source !== 'remote') {
+    cacheResolvedProgress(bookId, resolved.locator)
+  }
+  return resolved.locator
+}
+
 async function loadBook(): Promise<void> {
   loading.value = true
   failed.value = null
+  resetBookScopedState()
   try {
-    // ★ 先解析进度，再打开 —— 顺序不能反：foliate 的 init() 只在 open 时接受 lastLocation。
-    const saved = await resolveProgress(bookId.value, progressBackend.value)
-
     if (isSample.value) {
       // 示例书走 URL：fetch 后转成 File 交给 foliate-js。
+      const saved = await resolveOpenProgress(bookId.value, null)
       const res = await fetch('/sample/sample.epub')
       if (!res.ok) throw new Error(`sample.epub: ${res.status}`)
       const blob = await res.blob()
@@ -344,6 +743,12 @@ async function loadBook(): Promise<void> {
       payload = await platform.library.openBook(bookId.value)
       rememberBook(payload)
     }
+    contentHash = payload.book.contentHash || null
+    contentHashKnown = isHexHash(contentHash)
+
+    // ★ 先解析进度，再打开 —— 顺序不能反：foliate 的 init() 只在 open 时接受 lastLocation。
+    const saved = await resolveOpenProgress(bookId.value, contentHash)
+
     // 用 ArrayBuffer 构造 Blob：Uint8Array<ArrayBufferLike> 不满足 BlobPart 的类型要求
     // （它可能是 SharedArrayBuffer 视图），复制成确定的 ArrayBuffer 最稳妥。
     const bytes = new Uint8Array(payload.bytes)
@@ -352,6 +757,7 @@ async function loadBook(): Promise<void> {
     })
     if (saved) resumedFrom.value = saved
     await openBytes(file, saved)
+    void annotations.refresh()
   } catch (error) {
     loading.value = false
     failed.value = error instanceof Error ? error.message : String(error)
@@ -360,11 +766,21 @@ async function loadBook(): Promise<void> {
 
 // ★ 横竖屏 / 宽窄屏切换 → 触发引擎重排（防抖）。
 watch(() => [layout.value.columns, layout.value.maxMarginInline], reflow)
-// 用户在设置里改了字号/页边距：样式与几何都要重算。
-watch(() => [settings.fontSize, settings.lineHeight, settings.marginInline], () => {
-  applyStyles()
-  reflow()
-})
+// 用户在设置里改了字号/页边距/字体/缩进/墨水屏：样式与几何都要重算。
+watch(
+  () => [
+    settings.fontSize,
+    settings.lineHeight,
+    settings.marginInline,
+    settings.fontFamily,
+    settings.textIndent,
+    settings.einkMode,
+  ],
+  () => {
+    applyStyles()
+    reflow()
+  },
+)
 // ★ 换主题（含"夜间模式"按钮）必须重写 iframe 里的样式表：
 //   主文档的 data-reader-theme 变化不会自动传播到章节文档。
 // flush: 'post' —— data-reader-theme 属性由 stores/settings.ts 的 watcher 写，
@@ -382,98 +798,194 @@ watch(() => layout.value.tocMode, (mode, previous) => {
   if (mode === 'sidebar' && previous === 'overlay' && !tocOpen.value) tocOpen.value = true
 })
 
-onMounted(() => {
-  void loadBook()
-  // 主文档也要挂键盘监听：iframe 被替换的瞬间焦点会丢。
-  window.addEventListener('keydown', onWindowKey)
-})
+function isInteractiveElement(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false
+  const tag = target.tagName.toLowerCase()
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable
+}
 
 function onWindowKey(event: KeyboardEvent): void {
-  // 焦点在 iframe 里时由 bridge 处理；这里是兜底，避免"快捷键偶尔失灵"。
-  if (event.target === document.body || event.target === document.documentElement) {
-    handleKey(event)
+  // 只要焦点不在输入控件内，按键一律响应（方向键翻页、全屏快捷键等）
+  if (isInteractiveElement(event.target)) return
+  handleKey(event)
+}
+
+function onWindowMouseMove(event: MouseEvent): void {
+  // 沉浸模式（顶栏隐藏时），鼠标移至顶部边缘自动呼出
+  if (!toolbarVisible.value && event.clientY <= 8) {
+    toolbarVisible.value = true
   }
 }
 
+onMounted(async () => {
+  void loadBook()
+  window.addEventListener('keydown', onWindowKey)
+  window.addEventListener('mousemove', onWindowMouseMove)
+
+  if (platform.window?.isFullscreen) {
+    try {
+      isFullscreen.value = await platform.window.isFullscreen()
+    } catch {
+      // 容错
+    }
+  }
+  if (platform.window?.onFullscreenChanged) {
+    cleanupFullscreenWatcher = platform.window.onFullscreenChanged((val) => {
+      isFullscreen.value = val
+    })
+  }
+
+  // 给宿主容器挂载滚轮翻页监听：在文字外围、两侧留白区域滚动鼠标也能翻页
+  if (hostRef.value) {
+    const hostWheel = createWheelTurnHandler((delta) => {
+      if (delta > 0) void turnPage('next')
+      else void turnPage('prev')
+    })
+    const el = hostRef.value
+    el.addEventListener('wheel', hostWheel, { passive: false })
+    unbindHostWheel = () => el.removeEventListener('wheel', hostWheel)
+  }
+})
+
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onWindowKey)
+  window.removeEventListener('mousemove', onWindowMouseMove)
+  cleanupFullscreenWatcher?.()
+  unbindHostWheel?.()
+  tts.stop()
   unbridge?.()
   unbridge = null
   currentDoc = null
+  // ★ 离开阅读页前把"最后一页"的进度入队：节流窗口内未发的部分不能丢。
+  try {
+    if (progressSyncReady) progressSync.flush()
+  } catch (error) {
+    console.warn('[reader] 退出时进度入队失败（本地已保存）', error)
+  }
   void engine.close()
 })
 </script>
 
 <template>
-  <div class="relative flex h-full w-full overflow-hidden" :data-orientation="layout.orientation">
-    <ReaderToolbar
-      :chapter="chapterLabel"
-      :progress="progress"
-      :toc-open="tocOpen"
-      :sanitize-summary="sanitizeSummary"
-      :compact="layout.compact"
-      :orientation="layout.orientation"
-      :columns="layout.columns"
-      :theme-label="themeLabel"
-      :title="t('reader.title')"
-      @back="goBack"
-      @prev="engine.prev()"
-      @next="engine.next()"
-      @toggle-toc="tocOpen = !tocOpen"
-      @cycle-theme="cycleTheme"
-      @toggle-ai="aiPanelOpen = !aiPanelOpen; glossaryOpen = false"
-      @toggle-glossary="glossaryOpen = !glossaryOpen; aiPanelOpen = false"
-    />
+  <div class="relative flex h-full w-full overflow-hidden bg-[var(--reader-paper)]" :data-orientation="layout.orientation">
+    <Transition name="toolbar-slide">
+      <ReaderToolbar
+        v-if="toolbarVisible"
+        :chapter="chapterLabel"
+        :progress="progress"
+        :toc-open="tocOpen"
+        :sanitize-summary="sanitizeSummary"
+        :compact="layout.compact"
+        :orientation="layout.orientation"
+        :columns="layout.columns"
+        :theme-label="themeLabel"
+        :title="t('reader.title')"
+        :bookmarked="isBookmarked"
+        :bookmarks-open="bookmarksOpen"
+        :bookmark-count="bookmarkedItems.length"
+        :search-open="searchOpen"
+        :typography-open="typographyOpen"
+        :bilingual-open="bilingualOpen"
+        :tts-open="ttsOpen"
+        :ai-open="aiPanelOpen"
+        :glossary-open="glossaryOpen"
+        :is-fullscreen="isFullscreen"
+        @back="goBack"
+        @prev="turnPage('prev')"
+        @next="turnPage('next')"
+        @toggle-toc="tocOpen = !tocOpen"
+        @cycle-theme="cycleTheme"
+        @toggle-ai="aiPanelOpen = !aiPanelOpen; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
+        @toggle-glossary="glossaryOpen = !glossaryOpen; aiPanelOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
+        @toggle-bilingual="bilingualOpen = !bilingualOpen; aiPanelOpen = false; glossaryOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
+        @toggle-tts="toggleTts"
+        @toggle-typography="typographyOpen = !typographyOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; searchOpen = false; bookmarksOpen = false"
+        @toggle-search="searchOpen = !searchOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; bookmarksOpen = false"
+        @toggle-bookmark="toggleBookmark"
+        @toggle-bookmarks="bookmarksOpen = !bookmarksOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false"
+        @toggle-fullscreen="toggleFullscreen"
+      />
+    </Transition>
 
-    <div class="flex min-h-0 w-full flex-1 pt-12">
-      <!-- 宽屏横屏：目录常驻侧栏（不覆盖正文），可折叠 -->
-      <aside
-        v-if="layout.tocMode === 'sidebar' && tocOpen"
-        data-testid="toc-sidebar"
-        class="w-64 shrink-0 overflow-auto border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] p-3"
-      >
-        <h2 class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
-          {{ t('reader.toc') }}
-        </h2>
-        <ul class="space-y-0.5">
-          <li v-for="item in toc" :key="item.label + String(item.target)">
-            <button
-              type="button"
-              class="w-full rounded px-2 py-1 text-left text-sm leading-snug text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
-              @click="openTocItem(item.target)"
-            >
-              {{ item.label }}
-            </button>
-          </li>
-        </ul>
-      </aside>
+    <div
+      class="flex min-h-0 w-full flex-1 transition-[padding] duration-200 ease-in-out"
+      :class="toolbarVisible ? 'pt-12' : 'pt-0'"
+    >
+      <!-- 宽屏横屏：目录常驻侧栏（不覆盖正文），带平滑折叠动画 -->
+      <Transition name="toc-sidebar" @after-enter="reflow" @after-leave="reflow">
+        <aside
+          v-if="layout.tocMode === 'sidebar' && tocOpen"
+          data-testid="toc-sidebar"
+          class="w-72 shrink-0 overflow-hidden border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] p-3 flex flex-col"
+        >
+          <ReaderDrawer
+            v-model:tab="drawerTab"
+            :toc="toc"
+            :annotations="annotations.items.value"
+            :engine="engine"
+            :book-title="chapterLabel || t('reader.title')"
+            :compact="layout.compact"
+            :show-close="false"
+            @jump-toc="openTocItem"
+            @jump-annotation="(ann) => { void jumpTo(ann.cfi) }"
+            @jump-cfi="(cfi) => { void jumpTo(cfi) }"
+            @delete-annotation="(ann) => annotations.remove(ann.id)"
+            @edit-note="handleEditNote"
+          />
+        </aside>
+      </Transition>
 
       <!-- 阅读区：必须是有确定尺寸的容器，否则 paginator 算出 0 页 = 白屏 -->
-      <div ref="hostRef" data-testid="reader-host" class="relative min-h-0 min-w-0 flex-1" />
+      <div
+        ref="hostRef"
+        data-testid="reader-host"
+        tabindex="-1"
+        class="relative min-h-0 min-w-0 flex-1 overflow-hidden outline-none [perspective:1200px]"
+        :class="animClasses"
+        @click.self="focusReadingArea"
+      />
     </div>
 
-    <!-- 窄屏 / 竖屏：目录走覆盖层，不挤压正文宽度 -->
-    <aside
-      v-if="tocOpen && layout.tocMode === 'overlay'"
-      data-testid="toc-overlay"
-      class="absolute inset-y-0 left-0 z-20 w-[80vw] max-w-xs overflow-auto border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] p-4 shadow-xl"
+    <!-- 窄屏 / 竖屏：目录遮罩层 + 抽屉动画 -->
+    <Transition name="fade">
+      <div
+        v-if="tocOpen && layout.tocMode === 'overlay'"
+        data-testid="toc-backdrop"
+        class="fixed inset-0 z-20 bg-black/40 backdrop-blur-[1px]"
+        @click="tocOpen = false"
+      />
+    </Transition>
+    <Transition name="drawer-slide">
+      <aside
+        v-if="tocOpen && layout.tocMode === 'overlay'"
+        data-testid="toc-overlay"
+        class="absolute inset-y-0 left-0 z-30 w-[85vw] max-w-sm overflow-hidden border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] p-4 shadow-xl flex flex-col"
+      >
+        <ReaderDrawer
+          v-model:tab="drawerTab"
+          :toc="toc"
+          :annotations="annotations.items.value"
+          :engine="engine"
+          :book-title="chapterLabel || t('reader.title')"
+          :compact="layout.compact"
+          :show-close="true"
+          @close="tocOpen = false"
+          @jump-toc="(target) => { openTocItem(target); tocOpen = false }"
+          @jump-annotation="(ann) => { void jumpTo(ann.cfi); tocOpen = false }"
+          @jump-cfi="(cfi) => { void jumpTo(cfi); tocOpen = false }"
+          @delete-annotation="(ann) => annotations.remove(ann.id)"
+          @edit-note="handleEditNote"
+        />
+      </aside>
+    </Transition>
+
+    <!-- 沉浸全屏阅读时的微型底角进度提示（极淡透明度，避免干扰阅读） -->
+    <div
+      v-if="!toolbarVisible && !loading"
+      class="pointer-events-none absolute bottom-2 right-4 z-10 select-none text-[11px] tabular-nums tracking-wider text-[var(--color-text-secondary)] opacity-35"
     >
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold">{{ t('reader.toc') }}</h2>
-        <button type="button" class="rounded px-2 py-1 text-sm" @click="tocOpen = false">✕</button>
-      </div>
-      <ul class="space-y-1">
-        <li v-for="item in toc" :key="item.label + String(item.target)">
-          <button
-            type="button"
-            class="w-full rounded px-2 py-1 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
-            @click="openTocItem(item.target)"
-          >
-            {{ item.label }}
-          </button>
-        </li>
-      </ul>
-    </aside>
+      {{ chapterLabel ? `${chapterLabel} · ` : '' }}{{ progress }}%
+    </div>
 
     <p
       v-if="loading"
@@ -496,8 +1008,82 @@ onBeforeUnmount(() => {
       data-testid="reader-resumed"
       class="absolute bottom-3 left-3 z-20 rounded-full bg-[var(--color-surface-raised)]/90 px-3 py-1 text-xs text-[var(--color-text-secondary)] shadow"
     >
+      <!-- ★ task-4：位置来自云端权威进度时明确告知（多设备用户的关键反馈）。 -->
+      <span v-if="remoteResume" data-testid="reader-resumed-cloud" class="mr-1" aria-hidden="true">☁</span>
       {{ t('reader.resumed', { n: progress }) }}
     </p>
+
+    <!-- 排版与翻页动画设置 Popover (Aa) -->
+    <div
+      v-if="typographyOpen"
+      class="fixed inset-0 z-20"
+      @click="typographyOpen = false"
+    />
+    <ReaderSettingsPopover
+      :open="typographyOpen"
+      @close="typographyOpen = false"
+    />
+
+    <!-- 双语对照面板 (⇄ 译) -->
+    <BilingualView
+      v-if="bilingualOpen"
+      :book-id="bookId"
+      :current-chapter-index="currentChapterIndex"
+      @jump-to-chapter="(idx) => jumpTo(idx)"
+      @close="bilingualOpen = false"
+    />
+
+    <!-- TTS 朗读播放条 (🔊) -->
+    <TtsPlayer
+      v-if="ttsOpen"
+      :status="tts.status.value"
+      :rate="tts.rate.value"
+      :text="tts.currentText.value || getCurrentReadableText()"
+      @play="startTts"
+      @pause="tts.pause()"
+      @resume="tts.resume()"
+      @stop="tts.stop()"
+      @update:rate="(r) => (tts.rate.value = r)"
+      @close="tts.stop(); ttsOpen = false"
+    />
+
+    <!-- 搜索面板 (🔍) -->
+    <div
+      v-if="searchOpen"
+      class="fixed inset-0 z-20"
+      @click="searchOpen = false"
+    />
+    <div
+      v-if="searchOpen"
+      class="absolute left-2 sm:left-4 top-14 z-30 flex max-h-[calc(100vh-4.5rem)] w-[min(92vw,24rem)] flex-col rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] shadow-2xl overflow-hidden"
+    >
+      <ReaderSearchPanel
+        :open="searchOpen"
+        :engine="engine"
+        :compact="layout.compact"
+        @jump="(cfi) => jumpTo(cfi)"
+        @close="searchOpen = false"
+      />
+    </div>
+
+    <!-- 书签查看与管理 Popover (★ / 🔖) -->
+    <div
+      v-if="bookmarksOpen"
+      class="fixed inset-0 z-20"
+      @click="bookmarksOpen = false"
+    />
+    <ReaderBookmarksPopover
+      :open="bookmarksOpen"
+      :bookmarks="bookmarkedItems"
+      :current-cfi="currentCfi"
+      :current-chapter="chapterLabel"
+      :is-current-bookmarked="isBookmarked"
+      @close="bookmarksOpen = false"
+      @jump="(b) => { void jumpTo(b.cfi); bookmarksOpen = false }"
+      @delete="(b) => void annotations.remove(b.id)"
+      @toggle-current="toggleBookmark"
+      @update-note="(b, note) => void annotations.update(b.id, { note })"
+    />
 
     <!-- 整书翻译面板 -->
     <BookTranslatePanel
@@ -551,3 +1137,53 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
+
+<style scoped>
+/* 宽屏侧边栏折叠/展开动画 */
+.toc-sidebar-enter-active,
+.toc-sidebar-leave-active {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, padding 0.25s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.toc-sidebar-enter-from,
+.toc-sidebar-leave-to {
+  width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  opacity: 0;
+  border-right-width: 0 !important;
+}
+
+/* 窄屏抽屉滑入滑出动画 */
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+.drawer-slide-enter-from,
+.drawer-slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+/* 顶部状态栏/工具栏滑入滑出动画 */
+.toolbar-slide-enter-active,
+.toolbar-slide-leave-active {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+.toolbar-slide-enter-from,
+.toolbar-slide-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* 通用淡入淡出遮罩 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

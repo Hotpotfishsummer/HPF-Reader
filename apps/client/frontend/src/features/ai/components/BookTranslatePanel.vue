@@ -23,7 +23,10 @@ const props = defineProps<{
   bookTitle: string
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  'open-bilingual': [jobId?: string]
+}>()
 
 const { t } = useI18n()
 const job = useBookTranslateJob()
@@ -123,6 +126,16 @@ function start(): void {
         @click="start"
       >
         {{ job.phase.value === 'idle' ? t('ai.startBook') : t('ai.startBook') }}
+      </button>
+
+      <button
+        v-if="job.phase.value === 'succeeded' || (job.result.value?.doneChunks ?? 0) > 0"
+        type="button"
+        data-testid="open-bilingual-btn"
+        class="w-full rounded-md border border-[var(--color-accent)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white transition"
+        @click="emit('open-bilingual', job.job.value?.id)"
+      >
+        {{ t('reader.readTranslation') }} (双语对照)
       </button>
 
       <!-- ★ 状态 + 真实进度（来自服务端 progress，不是假动画） -->

@@ -53,6 +53,15 @@ async function bootstrap(): Promise<void> {
   const platform = await createPlatform()
   installPlatform(app, platform)
 
+  // ★ 安全：在挂载前解析 API 传输方式（桌面端 = 本机 Go 中继）。
+  //   放在挂载之前，是为了让**第一个** API 请求就走严格 TLS 校验的通道，
+  //   而不是先漏一个直连请求。失败时返回 null（诚实降级为直连）。
+  try {
+    await platform.resolveApiTransport()
+  } catch (error) {
+    console.warn('[security] 解析 API 传输方式失败，API 将直连（证书校验退化）', error)
+  }
+
   await router.isReady()
   app.mount('#app')
 }

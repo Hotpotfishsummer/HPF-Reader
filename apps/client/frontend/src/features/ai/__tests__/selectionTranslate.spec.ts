@@ -19,9 +19,10 @@ vi.mock('../runtime', () => ({
 const { useSelectionTranslate } = await import('../composables/useSelectionTranslate')
 
 /** 构造一个 429 的 QuotaError（与 ai.ts 里 translateApiError 的产物一致）。 */
-function quotaError(dimension: 'calls' | 'tokens'): QuotaError {
+function quotaError(dimension: 'calls' | 'tokens', scope: 'user' | 'global' = 'user'): QuotaError {
   return new QuotaError({
     dimension,
+    scope,
     limit: 100,
     used: 100,
     resetAt: '2026-12-01T00:00:00Z',

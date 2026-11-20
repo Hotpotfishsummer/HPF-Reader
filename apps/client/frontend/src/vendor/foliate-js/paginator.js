@@ -339,19 +339,21 @@ class View {
         this.expand()
     }
     setImageSize() {
-        const { width, height, margin } = this.#layout
+        const { width, height, margin, columnWidth } = this.#layout
         const vertical = this.#vertical
         const doc = this.document
         for (const el of doc.body.querySelectorAll('img, svg, video')) {
             // preserve max size if they are already set
             const { maxHeight, maxWidth } = doc.defaultView.getComputedStyle(el)
+            const parsedMaxW = maxWidth !== 'none' && maxWidth !== '0px' ? parseFloat(maxWidth) : Infinity
+            const effectiveMaxW = vertical
+                ? `${width - margin * 2}px`
+                : `${Math.min(columnWidth || Infinity, parsedMaxW)}px`
             setStylesImportant(el, {
                 'max-height': vertical
                     ? (maxHeight !== 'none' && maxHeight !== '0px' ? maxHeight : '100%')
                     : `${height - margin * 2}px`,
-                'max-width': vertical
-                    ? `${width - margin * 2}px`
-                    : (maxWidth !== 'none' && maxWidth !== '0px' ? maxWidth : '100%'),
+                'max-width': effectiveMaxW,
                 'object-fit': 'contain',
                 'page-break-inside': 'avoid',
                 'break-inside': 'avoid',
@@ -684,7 +686,11 @@ export class Paginator extends HTMLElement {
         // this is needed because the iframe does not fill the whole element
         this.#background.style.background = background
 
-        const { width, height } = this.#container.getBoundingClientRect()
+        const rect = this.#container.getBoundingClientRect()
+        const clientW = this.#container.clientWidth
+        const clientH = this.#container.clientHeight
+        const width = clientW > 0 && Math.abs(rect.width - clientW) >= 1 ? clientW : rect.width
+        const height = clientH > 0 && Math.abs(rect.height - clientH) >= 1 ? clientH : rect.height
         const size = vertical ? height : width
 
         const style = getComputedStyle(this.#top)
@@ -773,10 +779,26 @@ export class Paginator extends HTMLElement {
             : scrolled ? 'height' : 'width'
     }
     get size() {
-        return this.#container.getBoundingClientRect()[this.sideProp]
+        const rect = this.#container.getBoundingClientRect()
+        if (this.#vertical) {
+            const clientH = this.#container.clientHeight
+            return clientH > 0 && Math.abs(rect.height - clientH) >= 1 ? clientH : rect.height
+        } else {
+            const clientW = this.#container.clientWidth
+            return clientW > 0 && Math.abs(rect.width - clientW) >= 1 ? clientW : rect.width
+        }
     }
     get viewSize() {
-        return this.#view.element.getBoundingClientRect()[this.sideProp]
+        const el = this.#view?.element
+        if (!el) return 0
+        const rect = el.getBoundingClientRect()
+        if (this.#vertical) {
+            const clientH = el.clientHeight
+            return clientH > 0 && Math.abs(rect.height - clientH) >= 1 ? clientH : rect.height
+        } else {
+            const clientW = el.clientWidth
+            return clientW > 0 && Math.abs(rect.width - clientW) >= 1 ? clientW : rect.width
+        }
     }
     get start() {
         return Math.abs(this.#container[this.scrollProp])

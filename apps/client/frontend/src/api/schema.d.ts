@@ -87,6 +87,18 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 /**
+                 * @description 注册已关闭（HPF_REGISTER_OPEN=false）。生产默认关闭：
+                 *     开放注册 + 无邮箱验证 = 任何人可消耗 AI 配额与磁盘。
+                 */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /**
                  * @description 两种冲突，用 message 区分：邮箱已注册 / deviceId 已绑定其它账号。
                  *     deviceId 冲突时整个注册事务回滚，不会留下没有设备的用户。
                  */
@@ -144,6 +156,13 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized"];
+                /**
+                 * @description 同一「邮箱 + 来源 IP」的失败次数超限，或触发全局认证限流。
+                 *     注意：**口令正确时不会被这条规则拦下** —— 失败计数只影响错误口令，
+                 *     因此任何人无法通过连续输错口令把别人的账号锁死。
+                 *     账号级 failed_logins / locked_until 仍然写库用于审计，但不再阻断正确口令。
+                 */
+                429: components["responses"]["TooManyRequests"];
             };
         };
         delete?: never;
@@ -185,6 +204,158 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["AuthTokens"];
                     };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 登出（吊销 refresh token）
+         * @description 允许空 body：此时只吊销 access token（客户端侧丢弃即可）。
+         *     传 `refreshToken` 吊销该条；传 `allDevices: true` 吊销该账号全部会话。
+         *
+         *     因为空 body 是合法请求，客户端漏传 `allDevices` 时会**静默只登出一台**。
+         *     需要「确定让所有设备下线」时请用 `POST /v1/auth/logout-all`。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["LogoutRequest"];
+                };
+            };
+            responses: {
+                /** @description 已登出 */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 修改口令并吊销全部会话
+         * @description 口令泄露后的**自救路径**。三个安全性质：
+         *
+         *     1. **必须提供当前口令**。只凭一个有效 access token 就允许改密，
+         *        等于把「15 分钟内被偷到的 access token」升级成「永久接管账号」。
+         *     2. **改密与吊销在同一个数据库事务里完成**。分成两步时会出现
+         *        「口令换了但攻击者会话仍有效」（用户以为已安全）或
+         *        「会话全掉了但旧口令仍有效」两种半成品，都不可接受。
+         *     3. **新旧口令必须不同**。允许改成一样会让用户产生「我已经改过了」
+         *        的假安全感，而旧口令实际依旧有效。
+         *
+         *     成功后该用户**全部** refresh token 被吊销（所有设备下线），
+         *     access token 因不落库而无法逐个吊销，靠 15 分钟短 TTL 自然过期。
+         *     客户端收到 204 后必须丢弃本地 token 并重新登录。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PasswordChangeRequest"];
+                };
+            };
+            responses: {
+                /**
+                 * @description 口令已更新，该用户全部 refresh token 已吊销。
+                 *     客户端必须丢弃本地 token 并重新登录。
+                 */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                /**
+                 * @description 未认证（缺 bearer / token 失效），或 `currentPassword` 校验失败
+                 *     （code=`invalid_credentials`）。后者与登录失败共用同一套
+                 *     「账号 + 来源 IP」失败计数，因此也可能返回 429。
+                 */
+                401: components["responses"]["Unauthorized"];
+                429: components["responses"]["TooManyRequests"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 吊销该账号全部 refresh token（所有设备下线）
+         * @description 无请求体。与 `POST /v1/auth/logout` + `allDevices: true` 效果相同，
+         *     但**不依赖客户端记得传参数**——一个不带 body 的 POST 就确定生效。
+         *
+         *     安全动作不应该建立在「客户端传对了字段」之上：登出接口允许空 body，
+         *     漏传 `allDevices` 时只会静默登出一台设备。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 全部会话已吊销 */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 401: components["responses"]["Unauthorized"];
             };
@@ -497,6 +668,12 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 409: components["responses"]["Conflict"];
+                413: components["responses"]["PayloadTooLarge"];
+                /**
+                 * @description 存储配额耗尽（users.quota_bytes）。秒传（deduplicated=true）同样受配额约束：
+                 *     配额按「书架逻辑大小」计算，否则换个小号就能无限存书。
+                 */
+                507: components["responses"]["QuotaExceeded"];
             };
         };
         post?: never;
@@ -672,6 +849,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/annotations/{annotationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                annotationId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 删除标注 */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    annotationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 已删除 */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** 更新标注 */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    annotationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AnnotationCreate"];
+                };
+            };
+            responses: {
+                /** @description 已更新 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Annotation"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        trace?: never;
+    };
     "/v1/ai/translate": {
         parameters: {
             query?: never;
@@ -714,7 +959,10 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
-                /** @description 本周期配额已耗尽。**不要重试**：这不是限流，等到 resetAt 或提高配额才能恢复。 */
+                /**
+                 * @description 本周期配额已耗尽。**不要重试**：这不是限流，等到 resetAt 或提高配额才能恢复。
+                 *     `details.scope=global` 表示全站月度预算耗尽（换账号也没用）。
+                 */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -747,7 +995,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** 列出 AI 后台任务 */
+        get: {
+            parameters: {
+                query?: {
+                    bookId?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AiJob"][];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
         put?: never;
         /**
          * 提交后台 AI 任务（人名归一化、整书翻译等）
@@ -780,7 +1052,11 @@ export interface paths {
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
                 404: components["responses"]["NotFound"];
-                /** @description 本周期配额已耗尽，任务未被创建 */
+                /**
+                 * @description 本周期配额已耗尽，任务未被创建。
+                 *     `details.scope=global` 表示全站月度预算耗尽：此时任务**不入队**
+                 *     （而不是入队后等 worker 才发现超额），避免用户空等一个永远不会跑的任务。
+                 */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -871,6 +1147,53 @@ export interface paths {
                         "application/json": components["schemas"]["AiJob"];
                     };
                 };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/jobs/{jobId}/chunks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        /** 获取整书翻译任务的分块结果 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            jobId: string;
+                            chunks: components["schemas"]["TranslationChunk"][];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
             };
         };
         put?: never;
@@ -1150,6 +1473,29 @@ export interface components {
             terms?: components["schemas"]["GlossaryTerm"][];
             /** @description 要删除的归一 key。与 terms 合并成一个请求，避免「先删后写」之间出现空窗。 */
             removeKeys?: string[];
+        };
+        /**
+         * @description 两个字段都可选，因此空 body 是合法请求。
+         *     - 只传 refreshToken：登出该设备；
+         *     - 传 allDevices: true：登出该账号全部会话（忽略 refreshToken）。
+         */
+        LogoutRequest: {
+            /** @description 要吊销的 refresh token 明文 */
+            refreshToken?: string;
+            /**
+             * @description 吊销该账号全部 refresh token
+             * @default false
+             */
+            allDevices: boolean;
+        };
+        PasswordChangeRequest: {
+            /** @description 当前口令。必须校验通过才允许改密（防「偷到 access token 即永久接管」）。 */
+            currentPassword: string;
+            /**
+             * @description 新口令。长度规则与注册完全一致（8~200），
+             *     且必须与 currentPassword 不同（否则是「改了个寂寞」）。
+             */
+            newPassword: string;
         };
         AuthTokens: {
             accessToken: string;
@@ -1446,6 +1792,19 @@ export interface components {
                 target: string;
             }[];
         };
+        /** @description 整书翻译任务的单个文本块与译文。 */
+        TranslationChunk: {
+            /** @description 块全局序号 */
+            chunkIndex: number;
+            /** @description 章节序号 */
+            chapterIndex: number;
+            /** @description 原文 */
+            sourceText: string;
+            /** @description 译文 */
+            outputText?: string | null;
+            /** @enum {string} */
+            status: "pending" | "running" | "done" | "failed";
+        };
         /** @description 一个配额维度的用量。 */
         QuotaDimension: {
             /**
@@ -1511,6 +1870,21 @@ export interface components {
                  * @enum {string}
                  */
                 dimension: "calls" | "tokens";
+                /**
+                 * @description 谁的上限被撞到了。
+                 *
+                 *     - `user`：你自己的月度额度用完。等 resetAt 或提高
+                 *       `users.quota_ai_calls` / `users.quota_ai_tokens`。
+                 *     - `global`：**全站**月度调用预算用完
+                 *       （`HPF_AI_GLOBAL_MONTHLY_CALLS`）。这与你的用量无关，
+                 *       **换账号也不会恢复**——不要引导用户去注册小号，
+                 *       那既没用又会让攻击面变大。只能等 resetAt。
+                 *
+                 *     缺省视为 `user`（老服务端不返回该字段）。
+                 * @default user
+                 * @enum {string}
+                 */
+                scope: "user" | "global";
                 /** Format: int64 */
                 limit: number;
                 /** Format: int64 */
@@ -1591,6 +1965,38 @@ export interface components {
         };
         /** @description 冲突（邮箱已注册 / deviceId 已绑定其它账号） */
         Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /**
+         * @description 限流或失败次数超限。**可以重试**，但必须等 details.retryAfter / Retry-After 头。
+         *     与 quota_exceeded 的区别：这里的限制会随时间自动解除。
+         */
+        TooManyRequests: {
+            headers: {
+                /** @description 建议等待的秒数 */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 存储配额耗尽（HTTP 507）。与 429 的区别：重试不会成功，必须先删书或提高 users.quota_bytes。 */
+        QuotaExceeded: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 单个请求体超过上限（HPF_MAX_UPLOAD_BYTES） */
+        PayloadTooLarge: {
             headers: {
                 [name: string]: unknown;
             };

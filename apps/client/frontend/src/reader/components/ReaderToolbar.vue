@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import WindowControls from '@/app/components/WindowControls.vue'
+import { usePlatform } from '@/platform'
+
+const platform = usePlatform()
 
 /**
  * 阅读器工具栏。
@@ -19,6 +23,16 @@ const props = defineProps<{
   columns: 1 | 2
   themeLabel: string
   title: string
+  bookmarked?: boolean
+  bookmarksOpen?: boolean
+  bookmarkCount?: number
+  searchOpen?: boolean
+  bilingualOpen?: boolean
+  ttsOpen?: boolean
+  typographyOpen?: boolean
+  aiOpen?: boolean
+  glossaryOpen?: boolean
+  isFullscreen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,9 +43,22 @@ const emit = defineEmits<{
   'cycle-theme': []
   'toggle-ai': []
   'toggle-glossary': []
+  'toggle-typography': []
+  'toggle-bilingual': []
+  'toggle-tts': []
+  'toggle-search': []
+  'toggle-bookmark': []
+  'toggle-bookmarks': []
+  'toggle-fullscreen': []
 }>()
 
 const { t } = useI18n()
+
+function handleHeaderDblClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement | null
+  if (target?.closest?.('button, a, input, select, textarea, [data-no-drag]')) return
+  void platform.window?.toggleMaximize()
+}
 
 /** 无障碍标签永远用完整文字，视觉上可以只放图标。 */
 const backLabel = computed(() => t('reader.back'))
@@ -46,6 +73,9 @@ const tocLabel = computed(() => t('reader.toc'))
     :data-compact="props.compact ? 'true' : 'false'"
     :data-columns="String(props.columns)"
     class="absolute inset-x-0 top-0 z-10 flex h-12 items-center gap-1.5 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)]/90 px-2 backdrop-blur sm:gap-2 sm:px-3"
+    :class="{ 'pl-20': platform.window?.isMacTrafficLights }"
+    style="--wails-draggable: drag; padding-top: env(safe-area-inset-top, 0px);"
+    @dblclick="handleHeaderDblClick"
   >
     <button
       type="button"
@@ -68,6 +98,51 @@ const tocLabel = computed(() => t('reader.toc'))
       @click="emit('toggle-toc')"
     >
       <span aria-hidden="true">☰</span><span v-if="!props.compact" class="ml-1">{{ tocLabel }}</span>
+    </button>
+
+    <!-- 书签按钮组：左侧点击标记/取消当前页，右侧点击查看书签面板 -->
+    <div
+      class="flex shrink-0 items-center rounded border border-[var(--color-border-subtle)] bg-[var(--color-surface)]"
+      :class="props.bookmarked ? 'border-amber-400/60' : ''"
+    >
+      <button
+        type="button"
+        data-testid="toggle-bookmark"
+        :aria-label="t('reader.bookmark')"
+        :title="`${t('reader.bookmark')} (Ctrl+B)`"
+        class="shrink-0 rounded-l px-2 py-1 text-sm transition"
+        :class="props.bookmarked ? 'text-amber-500 font-bold bg-amber-500/15' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)]'"
+        @click="emit('toggle-bookmark')"
+      >
+        <span aria-hidden="true">{{ props.bookmarked ? '★' : '☆' }}</span><span v-if="!props.compact" class="ml-1">{{ t('reader.bookmark') }}</span>
+      </button>
+
+      <button
+        type="button"
+        data-testid="open-bookmarks-panel"
+        :aria-label="t('reader.bookmarksView') || '查看书签'"
+        :title="`${t('reader.bookmarksView') || '查看书签'} (${props.bookmarkCount ?? 0})`"
+        class="shrink-0 border-l border-[var(--color-border-subtle)] px-1.5 py-1 text-xs transition"
+        :class="props.bookmarksOpen
+          ? 'bg-amber-500/25 text-amber-600 dark:text-amber-400 font-semibold'
+          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)]'"
+        @click="emit('toggle-bookmarks')"
+      >
+        <span v-if="(props.bookmarkCount ?? 0) > 0" class="tabular-nums font-semibold text-[11px] text-amber-600 dark:text-amber-400">{{ props.bookmarkCount }}</span>
+        <span v-else class="text-[9px] opacity-70">▼</span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      data-testid="toggle-search"
+      :aria-label="t('reader.search')"
+      :title="`${t('reader.search')} (Ctrl+F)`"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.searchOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)]'"
+      @click="emit('toggle-search')"
+    >
+      <span aria-hidden="true">🔍</span><span v-if="!props.compact" class="ml-1">{{ t('reader.search') }}</span>
     </button>
 
     <span class="min-w-0 flex-1 truncate text-center text-sm text-[var(--color-text-secondary)]">
@@ -96,7 +171,8 @@ const tocLabel = computed(() => t('reader.toc'))
       data-testid="toggle-ai"
       :aria-label="t('ai.bookEntry')"
       :title="t('ai.bookEntry')"
-      class="shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.aiOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
       @click="emit('toggle-ai')"
     >
       <span aria-hidden="true">文</span><span v-if="!props.compact" class="ml-1">A</span>
@@ -104,13 +180,50 @@ const tocLabel = computed(() => t('reader.toc'))
 
     <button
       type="button"
+      data-testid="toggle-bilingual"
+      aria-label="双语对照"
+      title="双语对照"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.bilingualOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
+      @click="emit('toggle-bilingual')"
+    >
+      <span aria-hidden="true">⇄</span><span v-if="!props.compact" class="ml-1">译</span>
+    </button>
+
+    <button
+      type="button"
       data-testid="toggle-glossary"
       :aria-label="t('ai.glossaryEntry')"
       :title="t('ai.glossaryEntry')"
-      class="shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.glossaryOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
       @click="emit('toggle-glossary')"
     >
       <span aria-hidden="true">≡</span>
+    </button>
+
+    <button
+      type="button"
+      data-testid="toggle-tts"
+      :aria-label="t('reader.tts')"
+      :title="t('reader.tts')"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.ttsOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
+      @click="emit('toggle-tts')"
+    >
+      <span aria-hidden="true">🔊</span>
+    </button>
+
+    <button
+      type="button"
+      data-testid="toggle-typography"
+      :aria-label="t('reader.typography')"
+      :title="t('reader.typography')"
+      class="shrink-0 rounded px-2 py-1 text-sm transition"
+      :class="props.typographyOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
+      @click="emit('toggle-typography')"
+    >
+      <span aria-hidden="true" class="font-serif font-bold">Aa</span>
     </button>
 
     <button
@@ -145,5 +258,23 @@ const tocLabel = computed(() => t('reader.toc'))
     >
       <span aria-hidden="true">›</span><span v-if="!props.compact" class="ml-1">{{ nextLabel }}</span>
     </button>
+
+    <button
+      type="button"
+      data-testid="toggle-fullscreen"
+      :aria-label="props.isFullscreen ? '退出全屏' : '全屏 (F11)'"
+      :title="props.isFullscreen ? '退出全屏 (F11)' : '全屏 (F11)'"
+      class="shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
+      @click="emit('toggle-fullscreen')"
+    >
+      <svg v-if="props.isFullscreen" class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5zm5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5zM0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zm10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4z"/>
+      </svg>
+      <svg v-else class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 14.5 16h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+    </button>
+
+    <WindowControls />
   </header>
 </template>

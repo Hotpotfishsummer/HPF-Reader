@@ -1,4 +1,4 @@
-import type { ApiClient } from './client'
+import type { ApiClient, BinaryTransferOptions } from './client'
 import { createAiApi } from './ai'
 import type {
   AnnotationCreate,
@@ -84,15 +84,25 @@ export function createBooksApi(client: ApiClient) {
     remove(bookId: string): Promise<void> {
       return client.requestVoid('/v1/books/' + bookId, { method: 'DELETE' })
     },
+    /**
+     * 下载书籍原始字节（GET /v1/books/{bookId}/file）。
+     *
+     * ★ 二进制端点：走 client.requestBinary（arrayBuffer + Authorization），
+     *   不能用 request()（会把响应体当 text 解码并损坏 EPUB/PDF）。
+     */
+    getFileBytes(bookId: string, options?: BinaryTransferOptions): Promise<Uint8Array> {
+      return client.requestBinaryWithProgress('/v1/books/' + encodeURIComponent(bookId) + '/file', options)
+    },
     /** 上传文件；contentHash 必须是客户端算出的 sha256（服务端会按字节复核）。 */
     uploadFile(
       bookId: string,
       contentHash: string,
       bytes: Uint8Array,
+      options?: BinaryTransferOptions,
     ): Promise<{ status: number; body: FileUploadResponse }> {
       const path =
         '/v1/books/' + bookId + '/file?contentHash=' + encodeURIComponent('sha256:' + contentHash)
-      return client.putBinary<FileUploadResponse>(path, bytes, 'application/epub+zip')
+      return client.putBinary<FileUploadResponse>(path, bytes, 'application/epub+zip', options)
     },
   }
 }
@@ -133,6 +143,19 @@ export function createAnnotationsApi(client: ApiClient) {
   }
 }
 
+export function createSourcesApi(client: ApiClient) {
+  return {
+    list(): Promise<{ sources: string[] }> {
+      return client.request<{ sources: string[] }>('/v1/sources')
+    },
+    search(query: string, source?: string): Promise<import('./contract').SourceItem[]> {
+      const q = new URLSearchParams({ q: query })
+      if (source) q.set('source', source)
+      return client.request<import('./contract').SourceItem[]>('/v1/sources/search?' + q.toString())
+    },
+  }
+}
+
 /** 组装资源域（服务端契约按 tag 分组）。 */
 export function createApi(client: ApiClient) {
   return {
@@ -141,6 +164,7 @@ export function createApi(client: ApiClient) {
     sync: createSyncApi(client),
     annotations: createAnnotationsApi(client),
     ai: createAiApi(client),
+    sources: createSourcesApi(client),
   }
 }
 

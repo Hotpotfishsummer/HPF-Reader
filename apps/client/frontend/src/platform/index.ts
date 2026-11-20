@@ -60,13 +60,22 @@ export async function createPlatform(): Promise<Platform> {
   return createServerPlatform({ baseUrl: import.meta.env.VITE_HPF_API_BASE ?? '' })
 }
 
+let currentPlatform: Platform | null = null
+
+/** 测试环境显式设置或重置平台实例。 */
+export function setPlatformForTest(platform: Platform | null): void {
+  currentPlatform = platform
+}
+
 /** 在 main.ts 里注入（而不是全局单例），这样 E2E 可以替换成 testPlatform。 */
 export function installPlatform(app: App, platform: Platform): void {
+  currentPlatform = platform
   app.provide(PlatformKey, platform)
 }
 
 /** 业务代码唯一的平台入口。 */
 export function usePlatform(): Platform {
+  if (currentPlatform) return currentPlatform
   const platform = inject(PlatformKey)
   if (!platform) {
     throw new Error('[platform] PlatformKey 未注入：请在 main.ts 里调用 installPlatform(app, platform)')

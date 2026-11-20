@@ -57,6 +57,17 @@ export interface FilesCapability {
   readBookBytes(bookId: string): Promise<Uint8Array>
 }
 
+/** 把内存中的字节写入本地书库（云端下载完成后调用）。 */
+export interface ImportBookBytesInput {
+  /** 原始文件名，用于推断标题/落盘扩展名。 */
+  name: string
+  /** 云端元数据（优先于文件名推断值）。 */
+  title?: string
+  author?: string
+  format?: string
+  bytes: Uint8Array
+}
+
 /** 书库能力。 */
 export interface LibraryCapability {
   listBooks(): Promise<BookRecord[]>
@@ -64,6 +75,13 @@ export interface LibraryCapability {
   deleteBook(bookId: string): Promise<void>
   saveProgress(bookId: string, locator: string): Promise<void>
   getProgress(bookId: string): Promise<string>
+  /**
+   * 把内存字节写入本地书库（下载云端书籍的落地动作）。
+   *
+   * 只有具备 `library.local` 能力的平台才真正实现：Web 目标必须**显式报错**，
+   * 不能静默假成功（见 platform/server.ts）。
+   */
+  importBookBytes(input: ImportBookBytesInput): Promise<BookRecord>
   /** 订阅书库变更；返回取消订阅函数。 */
   onChanged(listener: (bookId: string | null) => void): () => void
 }
@@ -78,16 +96,117 @@ export interface SyncCapability {
 export interface SystemCapability {
   info(): Promise<AppInfo>
   openExternal(url: string): Promise<void>
+  openDataDir?(): Promise<void>
+}
+
+/** 窗口控制能力（跨端统一契约）。 */
+export interface WindowCapability {
+  /** 当前平台是否需要自绘窗口控制按钮（Windows / Linux 桌面端为 true） */
+  readonly hasControls: boolean
+  /** 是否需要避让 macOS 原生交通灯（macOS 为 true，左侧需留出边距） */
+  readonly isMacTrafficLights: boolean
+  minimize(): Promise<void>
+  toggleMaximize(): Promise<void>
+  close(): Promise<void>
+  isMaximized(): Promise<boolean>
+  /** 订阅窗口最大化状态变更，返回取消订阅函数 */
+  onMaximizedChanged?(listener: (isMax: boolean) => void): () => void
+  /** 切换全屏模式 */
+  toggleFullscreen?(): Promise<void>
+  /** 查询当前是否处于全屏模式 */
+  isFullscreen?(): Promise<boolean>
+  /** 订阅全屏状态变更，返回取消订阅函数 */
+  onFullscreenChanged?(listener: (isFs: boolean) => void): () => void
+}
+
+/** 内部独立浏览器能力。 */
+export interface BrowserCapability {
+  openURL(url: string): Promise<void>
+  close?(): Promise<void>
+}
+
+/** 本机 API 中继的连接信息（桌面端由 Go 侧提供；web/移动端没有）。 */
+export interface ApiTransportInfo {
+  /** 形如 http://127.0.0.1:<随机端口>。 */
+  baseURL: string
+  /** 每次进程启动都不同的一次性 token（放进 X-HPF-Relay 头）。 */
+  token: string
+}
+
+/** 代理配置。 */
+export interface ProxyConfig {
+  enabled: boolean
+  type: string
+  host: string
+  port: number
+}
+
+/** 代理连通性测试结果。 */
+export interface ProxyTestResult {
+  success: boolean
+  latencyMs: number
+  message: string
+}
+
+/** 代理控制能力。 */
+export interface ProxyCapability {
+  getConfig(): Promise<ProxyConfig>
+  saveConfig(cfg: ProxyConfig): Promise<void>
+  testProxy(cfg: ProxyConfig): Promise<ProxyTestResult>
+  detectSystemProxy(): Promise<ProxyConfig>
+}
+
+/** 下载项。 */
+export interface DownloadItem {
+  id: string
+  url: string
+  filename: string
+  sizeBytes: number
+  status: string
+  downloadedAt: string
+  filePath: string
+}
+
+/** 下载与文件入库能力。 */
+export interface DownloadCapability {
+  listDownloads(): Promise<DownloadItem[]>
+  startDownload(url: string, filename?: string): Promise<DownloadItem>
+  importToLibrary(filename: string): Promise<BookRecord>
+  openDownloadsFolder(): Promise<void>
+  deleteDownload(filename: string): Promise<void>
 }
 
 /** 平台能力清单，用于 UI 做能力探测（而不是到处 if (isDesktop)）。 */
-export type CapabilityName = 'files.dialog' | 'library.local' | 'sync.outbox' | 'system.openExternal'
+export type CapabilityName =
+  | 'files.dialog'
+  | 'library.local'
+  | 'sync.outbox'
+  | 'system.openExternal'
+  | 'window.controls'
+  | 'browser.internal'
+  | 'proxy.manage'
+  | 'downloads.manage'
 
 export interface Platform {
   readonly kind: PlatformKind
   readonly capabilities: readonly CapabilityName[]
+  /**
+   * 解析 API 传输方式（安全关键）。
+   *
+   * 返回非 null 表示"API 请求必须经本机 Go 中继发出"——渲染层不碰 API 的 TLS，
+   * 证书由 Go 用系统根证书严格校验（见 apps/client/apirelay.go）。
+   * 返回 null 表示"直接用原生 fetch"（web / 移动端 / 中继未启动）。
+   *
+   * 桌面实现会顺带把结果注入 api/relay.ts 的进程级当前值，
+   * 因此 `main.ts` 在挂载前 await 一次即可让首个请求就走中继。
+   */
+  resolveApiTransport(): Promise<ApiTransportInfo | null>
   files: FilesCapability
   library: LibraryCapability
   sync: SyncCapability
   system: SystemCapability
+  window: WindowCapability
+  browser: BrowserCapability
+  proxy: ProxyCapability
+  downloads: DownloadCapability
 }

@@ -64,6 +64,19 @@ declare module 'foliate-js/view.js' {
     resolveNavigation(target: unknown): { index: number; anchor?: (doc: Document) => Node | null } | undefined
     addAnnotation(annotation: { value: string; [key: string]: unknown }): Promise<{ index: number; label: string }>
     deleteAnnotation(annotation: { value: string; [key: string]: unknown }): Promise<{ index: number; label: string }>
+    search(options: {
+      query: string
+      index?: number
+      matchCase?: boolean
+      draw?: unknown
+      drawOptions?: unknown
+    }): AsyncIterable<
+      | { progress: number }
+      | { label: string; subitems: Array<{ cfi: string; excerpt: { pre: string; match: string; post: string } }> }
+      | { cfi: string; excerpt: { pre: string; match: string; post: string } }
+      | 'done'
+    >
+    clearSearch(): void
     renderer: FoliateRenderer
     book: FoliateBook
     lastLocation?: FoliateLocation

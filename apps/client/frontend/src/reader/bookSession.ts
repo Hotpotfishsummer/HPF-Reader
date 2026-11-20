@@ -56,6 +56,14 @@ export function isLocalOnlyBook(bookId: string): boolean {
   return localOnly.has(bookId)
 }
 
+export async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const subtle = globalThis.crypto?.subtle
+  if (!subtle) throw new Error('WebCrypto required for SHA-256')
+  const copy = bytes.slice().buffer
+  const digest = await subtle.digest('SHA-256', copy)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 /**
  * ★ 与 Go 侧 `LibraryService.ImportBook` **完全一致**的书 id 规则：
  *   `sha256(文件字节)` 的十六进制表示取前 16 个字符。

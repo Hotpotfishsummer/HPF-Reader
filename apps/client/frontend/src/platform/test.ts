@@ -4,6 +4,7 @@ import type {
   ImportBookResult,
   OpenBookPayload,
   Platform,
+  ProxyConfig,
   SyncStatus,
 } from './types'
 
@@ -18,6 +19,21 @@ export interface TestPlatformOptions {
 export interface TestPlatform extends Platform {
   emitSyncStatus(next: Partial<SyncStatus>): void
   emitLibraryChanged(bookId: string | null): void
+}
+
+/** 测试平台的 sha256（有 WebCrypto 用真的，否则退化为确定性 FNV-1a，仅测试用）。 */
+async function sha256HexForTest(bytes: Uint8Array): Promise<string> {
+  const subtle = globalThis.crypto?.subtle
+  if (subtle) {
+    const digest = await subtle.digest('SHA-256', bytes.slice().buffer)
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  let hash = 0x811c9dc5
+  for (let i = 0; i < bytes.length; i += 1) {
+    hash ^= bytes[i] as number
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0').repeat(8)
 }
 
 /**
@@ -50,6 +66,10 @@ export function createTestPlatform(options: TestPlatformOptions = {}): TestPlatf
   return {
     kind: 'test',
     capabilities: ['library.local', 'sync.outbox'],
+    // 测试平台没有本机 Go 中继：直接用注入的 fetch（E2E 拦截网络即可）。
+    async resolveApiTransport() {
+      return null
+    },
     files: {
       async importBookFromDialog(): Promise<ImportBookResult | null> {
         return null
@@ -76,6 +96,31 @@ export function createTestPlatform(options: TestPlatformOptions = {}): TestPlatf
       },
       async getProgress(bookId: string): Promise<string> {
         return progress.get(bookId) ?? ''
+      },
+      async importBookBytes(input): Promise<BookRecord> {
+        const data = input.bytes ?? new Uint8Array()
+        if (data.byteLength === 0) throw new Error('book data is empty')
+        const name = (input.name ?? '').trim() || (input.title ?? '').trim()
+        if (name === '') throw new Error('book name is empty')
+        const hash = await sha256HexForTest(data)
+        const id = hash.slice(0, 16)
+        // 与 Go 侧一致：同一份内容重复导入返回已有条目。
+        const existing = books.get(id)
+        if (existing) return existing
+        const ext = (input.format || name.split('.').pop() || 'epub').toLowerCase().replace(/^\./, '')
+        const record: BookRecord = {
+          id,
+          title: (input.title ?? '').trim() || name.replace(/\.[^.]+$/, ''),
+          author: (input.author ?? '').trim(),
+          format: ext,
+          contentHash: hash,
+          sizeBytes: data.byteLength,
+          addedAt: new Date().toISOString(),
+        }
+        books.set(id, record)
+        bytes.set(id, data)
+        emitChange(id)
+        return record
       },
       onChanged(listener) {
         changeListeners.add(listener)
@@ -104,6 +149,68 @@ export function createTestPlatform(options: TestPlatformOptions = {}): TestPlatf
       async openExternal(): Promise<void> {
         /* no-op in tests */
       },
+    },
+    window: {
+      hasControls: false,
+      isMacTrafficLights: false,
+      async minimize() {},
+      async toggleMaximize() {},
+      async close() {},
+      async isMaximized() {
+        return false
+      },
+      async toggleFullscreen() {},
+      async isFullscreen() {
+        return false
+      },
+    },
+    browser: {
+      async openURL(): Promise<void> {},
+      async close(): Promise<void> {},
+    },
+    proxy: {
+      async getConfig() {
+        return { enabled: false, type: 'http', host: '127.0.0.1', port: 7890 }
+      },
+      async saveConfig() {},
+      async testProxy() {
+        return { success: true, latencyMs: 50, message: '测试成功' }
+      },
+      async detectSystemProxy(): Promise<ProxyConfig> {
+        return { enabled: true, type: 'http', host: '127.0.0.1', port: 7890 }
+      },
+    },
+    downloads: {
+      async listDownloads() {
+        return []
+      },
+      async startDownload(url: string, filename?: string) {
+        return {
+          id: 'test-dl-1',
+          url,
+          filename: filename || 'test.epub',
+          sizeBytes: 1024,
+          status: 'completed',
+          downloadedAt: new Date().toISOString(),
+          filePath: '/tmp/test.epub',
+        }
+      },
+      async importToLibrary(filename: string) {
+        const dummy: BookRecord = {
+          id: 'imported-1',
+          title: filename,
+          author: '',
+          format: 'epub',
+          contentHash: 'hash-imported',
+          sizeBytes: 1024,
+          addedAt: new Date().toISOString(),
+        }
+        books.set(dummy.id, dummy)
+        emitChange(dummy.id)
+        return dummy
+      },
+      async openDownloadsFolder() {},
+      async deleteDownload() {},
     },
     // ---- 测试专用钩子 ----
     emitSyncStatus(next: Partial<SyncStatus>): void {

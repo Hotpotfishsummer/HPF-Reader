@@ -9,6 +9,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/library/LibraryView.vue'),
   },
   {
+    path: '/discover',
+    name: 'discover',
+    component: () => import('@/features/discover/DiscoverView.vue'),
+  },
+  {
     path: '/reader/:bookId',
     name: 'reader',
     component: () => import('@/reader/ReaderView.vue'),

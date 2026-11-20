@@ -1,15 +1,19 @@
 import { createApiClient, type ApiClient } from '../../api/client'
 import { createAuthApi } from '../../api/endpoints'
+// ★ 必须 import 纯逻辑模块（stores/serverUrl），不能 import stores/server.ts ——
+//   后者会拖入 pinia，Node 集成测试会 ERR_MODULE_NOT_FOUND。
+import { readServerUrl, writeServerUrl, onServerUrlChanged } from '../../stores/serverUrl'
 import { AuthSession } from './session'
 import { createBrowserStorage, type SyncStorage } from './storage'
 import { createSyncEngine, SyncEngine } from './engine'
 import type { SyncEngineConfig, SyncEngineDeps } from './types'
 
-/** Web/server 目标的默认后端地址（与 platform/server.ts 用同一个环境变量）。 */
+/**
+ * 当前生效的服务端地址（设置页可改；见 stores/server.ts）。
+ * 保留函数名是因为联调脚本/单测已经按这个名字引用它。
+ */
 export function defaultApiBaseUrl(): string {
-  const configured = import.meta.env.VITE_HPF_API_BASE
-  if (typeof configured === 'string' && configured !== '') return configured
-  return 'http://127.0.0.1:8080'
+  return readServerUrl()
 }
 
 export interface SyncRuntimeOptions {
@@ -68,13 +72,33 @@ export function getSyncEngine(): SyncEngine {
   return singleton
 }
 
-/** 显式配置单例（例如登录后注入已知设备 ID / 自定义 baseUrl）。 */
+/**
+ * 显式配置单例（例如登录后注入已知设备 ID / 自定义 baseUrl）。
+ *
+ * ★ 重建语义：outbox、本地投影、设备 ID、会话令牌全部来自 storage，
+ *   所以重建**不会丢待推送变更**（这也是能安全支持"运行期改服务器地址"的前提）。
+ */
 export function configureSyncEngine(options: SyncRuntimeOptions = {}): SyncRuntime {
   singleton?.dispose()
+  singleton = null
+  singletonRuntime = null
   const runtime = createSyncRuntime(options)
   singletonRuntime = runtime
   singleton = runtime.engine
+  // ★ 不需要手工作废 api 单例：api/runtime 缓存的是「runtime 身份 → Api」，
+  //   这里换成新 runtime 后，下次 getApi() 自动重建（避免两文件循环 import）。
+  for (const listener of [...replacedListeners]) listener(runtime)
   return runtime
+}
+
+/** runtime 被重建（例如服务器地址变化）时的订阅点：UI 需要把订阅从旧引擎挪到新引擎。 */
+const replacedListeners = new Set<(runtime: SyncRuntime) => void>()
+
+export function onSyncRuntimeReplaced(listener: (runtime: SyncRuntime) => void): () => void {
+  replacedListeners.add(listener)
+  return () => {
+    replacedListeners.delete(listener)
+  }
 }
 
 export function getSyncRuntime(): SyncRuntime {
@@ -82,3 +106,20 @@ export function getSyncRuntime(): SyncRuntime {
   if (singletonRuntime === null) throw new Error('sync runtime not initialised')
   return singletonRuntime
 }
+
+/** 服务器地址变更后重建整条链路（同步引擎 + api client + 会话绑定）。 */
+export function rebuildSyncRuntime(baseUrl?: string): SyncRuntime {
+  return configureSyncEngine(baseUrl === undefined ? {} : { baseUrl })
+}
+
+/**
+ * 应用启动时安装一次：用户改地址后自动重建。
+ * 返回取消订阅函数（测试用）。
+ */
+export function installServerUrlWatcher(): () => void {
+  return onServerUrlChanged((url) => {
+    rebuildSyncRuntime(url)
+  })
+}
+
+export { writeServerUrl }

@@ -21,6 +21,7 @@ export interface RelocateDetail {
   cfi: string
   tocLabel: string
   pageItemLabel: string
+  excerpt?: string
 }
 
 export interface EngineHooks {
@@ -54,6 +55,22 @@ export interface EngineLayout {
   columnGapPercent: number
 }
 
+export interface SearchResultItem {
+  cfi: string
+  excerpt: { pre: string; match: string; post: string }
+}
+
+export interface SearchResultGroup {
+  label: string
+  subitems: SearchResultItem[]
+}
+
+export type SearchYield =
+  | { progress: number }
+  | SearchResultGroup
+  | SearchResultItem
+  | 'done'
+
 export interface FoliateEngine {
   ready: ShallowRef<boolean>
   open(source: File | Blob, options?: { lastLocation?: string }): Promise<void>
@@ -69,6 +86,10 @@ export interface FoliateEngine {
   /** 当前分页后的总页数；未就绪时返回 0。用于观测"重排是否真的发生"。 */
   getPageCount(): number
   getCFI(index: number, range: Range): string
+  addAnnotation(annotation: { value: string; [key: string]: unknown }): Promise<{ index: number; label: string }>
+  deleteAnnotation(annotation: { value: string; [key: string]: unknown }): Promise<{ index: number; label: string }>
+  search(query: string, options?: { matchCase?: boolean }): AsyncIterable<SearchYield>
+  clearSearch(): void
   close(): Promise<void>
 }
 
@@ -98,7 +119,19 @@ export function useFoliateEngine(
       cfi: string
       tocItem: { label?: string }
       pageItem: { label?: string }
+      range?: Range
     }>>).detail
+    let excerpt = ''
+    try {
+      if (detail?.range) {
+        const text = detail.range.toString()
+        if (text) {
+          excerpt = text.replace(/\s+/g, ' ').trim().slice(0, 150)
+        }
+      }
+    } catch {
+      // 容错处理，避免异常打断渲染
+    }
     // ★★ 只把值交给 Vue
     hooks.onRelocate({
       index: detail?.index ?? 0,
@@ -106,6 +139,7 @@ export function useFoliateEngine(
       cfi: detail?.cfi ?? '',
       tocLabel: detail?.tocItem?.label ?? '',
       pageItemLabel: detail?.pageItem?.label ?? '',
+      excerpt,
     })
   }
   const onLoad = (event: Event): void => {
@@ -245,6 +279,22 @@ export function useFoliateEngine(
       return typeof renderer?.pages === 'number' ? renderer.pages : 0
     },
     getCFI: (index: number, range: Range) => view?.getCFI(index, range) ?? '',
+    addAnnotation: (annotation: { value: string; [key: string]: unknown }) => {
+      return view?.addAnnotation?.(annotation) ?? Promise.resolve({ index: 0, label: '' })
+    },
+    deleteAnnotation: (annotation: { value: string; [key: string]: unknown }) => {
+      return view?.deleteAnnotation?.(annotation) ?? Promise.resolve({ index: 0, label: '' })
+    },
+    search: (query: string, options?: { matchCase?: boolean }) => {
+      if (!view?.search) {
+        async function* empty() {}
+        return empty()
+      }
+      return view.search({ query, matchCase: options?.matchCase })
+    },
+    clearSearch: () => {
+      view?.clearSearch?.()
+    },
     close,
   }
 }

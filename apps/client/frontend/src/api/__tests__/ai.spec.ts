@@ -140,3 +140,34 @@ describe('isAbortError', () => {
     expect(isAbortError(null)).toBe(false)
   })
 })
+
+describe('createAiApi helpers', () => {
+  it('listJobs 拼接 bookId 参数', async () => {
+    let requestedUrl = ''
+    const mockClient = {
+      request: async <T>(url: string): Promise<T> => {
+        requestedUrl = url
+        return [] as unknown as T
+      },
+    }
+    const { createAiApi } = await import('../ai')
+    const api = createAiApi(mockClient as any)
+    await api.listJobs({ bookId: '123e4567-e89b-12d3-a456-426614174000', limit: 10 })
+    expect(requestedUrl).toBe('/v1/ai/jobs?bookId=123e4567-e89b-12d3-a456-426614174000&limit=10')
+  })
+
+  it('getJobChunks 访问对应路径', async () => {
+    let requestedUrl = ''
+    const mockClient = {
+      request: async <T>(url: string): Promise<T> => {
+        requestedUrl = url
+        return { jobId: 'job-1', chunks: [] } as unknown as T
+      },
+    }
+    const { createAiApi } = await import('../ai')
+    const api = createAiApi(mockClient as any)
+    const res = await api.getJobChunks('job-1')
+    expect(requestedUrl).toBe('/v1/ai/jobs/job-1/chunks')
+    expect(res.jobId).toBe('job-1')
+  })
+})

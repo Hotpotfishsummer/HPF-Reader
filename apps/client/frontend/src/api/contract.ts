@@ -31,6 +31,7 @@ export type QuotaDimension = components['schemas']['QuotaDimension']
 export type QuotaExceededError = components['schemas']['QuotaExceededError']
 export type BookTranslateResult = components['schemas']['BookTranslateResult']
 export type ConsistencyScan = components['schemas']['ConsistencyScan']
+export type TranslationChunk = components['schemas']['TranslationChunk']
 export type SourceItem = components['schemas']['SourceItem']
 export type SourceList = components['schemas']['SourceList']
 

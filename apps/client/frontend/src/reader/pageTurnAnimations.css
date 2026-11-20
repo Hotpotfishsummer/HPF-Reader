@@ -1,0 +1,246 @@
+/*
+ * HPF-Reader Page Turn Animations
+ * Inspired by Kindle, Readest, Apple Books, and hardware E-ink displays.
+ * Hardware-accelerated with transforms, opacity, and filters.
+ */
+
+/* 1. None (instant jump, 0ms latency) */
+.hpf-anim-none {
+  transition: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* 2. Fade (Kindle classic paper dissolve) */
+.hpf-fade-exit {
+  animation: hpf-fade-out 70ms ease-in forwards;
+}
+
+@keyframes hpf-fade-out {
+  from {
+    opacity: 1;
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0.2;
+    filter: blur(0.5px);
+  }
+}
+
+.hpf-fade-enter {
+  animation: hpf-fade-in 130ms ease-out forwards;
+}
+
+@keyframes hpf-fade-in {
+  from {
+    opacity: 0.2;
+    filter: blur(0.5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+/* 3. Slide (Smooth horizontal push) */
+.hpf-slide-next-exit {
+  animation: hpf-slide-out-left 75ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes hpf-slide-out-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-40px);
+    opacity: 0.65;
+  }
+}
+
+.hpf-slide-next-enter {
+  animation: hpf-slide-in-right 140ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes hpf-slide-in-right {
+  from {
+    transform: translateX(40px);
+    opacity: 0.65;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.hpf-slide-prev-exit {
+  animation: hpf-slide-out-right 75ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes hpf-slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(40px);
+    opacity: 0.65;
+  }
+}
+
+.hpf-slide-prev-enter {
+  animation: hpf-slide-in-left 140ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes hpf-slide-in-left {
+  from {
+    transform: translateX(-40px);
+    opacity: 0.65;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 4. Curl (3D Page Curl & Spine Depth) */
+.hpf-curl-next-exit {
+  transform-origin: left center;
+  animation: hpf-curl-out-left 95ms ease-in forwards;
+}
+
+@keyframes hpf-curl-out-left {
+  from {
+    transform: rotateY(0deg) skewY(0deg) scale(1);
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  to {
+    transform: rotateY(-22deg) skewY(-1deg) scale(0.985);
+    filter: brightness(0.92);
+    box-shadow: -12px 0 24px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.hpf-curl-next-enter {
+  animation: hpf-curl-in-right 160ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes hpf-curl-in-right {
+  from {
+    transform-origin: right center;
+    transform: rotateY(18deg) skewY(1deg) scale(0.985);
+    filter: brightness(0.94);
+    box-shadow: 12px 0 24px rgba(0, 0, 0, 0.12);
+  }
+  to {
+    transform-origin: right center;
+    transform: rotateY(0deg) skewY(0deg) scale(1);
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+.hpf-curl-prev-exit {
+  transform-origin: right center;
+  animation: hpf-curl-out-right 95ms ease-in forwards;
+}
+
+@keyframes hpf-curl-out-right {
+  from {
+    transform: rotateY(0deg) skewY(0deg) scale(1);
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  to {
+    transform: rotateY(22deg) skewY(1deg) scale(0.985);
+    filter: brightness(0.92);
+    box-shadow: 12px 0 24px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.hpf-curl-prev-enter {
+  animation: hpf-curl-in-left 160ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes hpf-curl-in-left {
+  from {
+    transform-origin: left center;
+    transform: rotateY(-18deg) skewY(-1deg) scale(0.985);
+    filter: brightness(0.94);
+    box-shadow: -12px 0 24px rgba(0, 0, 0, 0.12);
+  }
+  to {
+    transform-origin: left center;
+    transform: rotateY(0deg) skewY(0deg) scale(1);
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+/* 5. E-ink (Kindle Hardware E-ink Flash Refresh) */
+.hpf-eink-exit {
+  animation: hpf-eink-flash-out 40ms steps(1, end) forwards;
+}
+
+@keyframes hpf-eink-flash-out {
+  from {
+    filter: contrast(1);
+  }
+  to {
+    filter: invert(0.85) contrast(1.6);
+  }
+}
+
+.hpf-eink-enter {
+  animation: hpf-eink-settle 90ms steps(2, end) forwards;
+}
+
+@keyframes hpf-eink-settle {
+  0% {
+    filter: contrast(1.4);
+  }
+  100% {
+    filter: contrast(1);
+  }
+}
+
+/* Overlay highlights/shadows for Curl and E-ink */
+.hpf-curl-shadow-next {
+  background: linear-gradient(to right, transparent 55%, rgba(0, 0, 0, 0.12) 85%, rgba(0, 0, 0, 0.25) 100%);
+  animation: hpf-fade-in-out 250ms ease forwards;
+}
+
+.hpf-curl-shadow-prev {
+  background: linear-gradient(to left, transparent 55%, rgba(0, 0, 0, 0.12) 85%, rgba(0, 0, 0, 0.25) 100%);
+  animation: hpf-fade-in-out 250ms ease forwards;
+}
+
+@keyframes hpf-fade-in-out {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hpf-eink-pulse {
+  background: rgba(0, 0, 0, 0.88);
+  animation: hpf-eink-flash 110ms steps(2, end) forwards;
+}
+
+@keyframes hpf-eink-flash {
+  0% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}

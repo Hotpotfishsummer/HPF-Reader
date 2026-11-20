@@ -21,9 +21,10 @@ import type { AiUsage } from '../../../api'
  *   - 必须**不**出现"重试/网络"这类误导性措辞（重试永远不会成功）
  */
 
-function quota(overrides: Partial<{ dimension: 'calls' | 'tokens'; limit: number; used: number; resetAt: string }> = {}): QuotaError {
+function quota(overrides: Partial<{ dimension: 'calls' | 'tokens'; scope: 'user' | 'global'; limit: number; used: number; resetAt: string }> = {}): QuotaError {
   return new QuotaError({
     dimension: overrides.dimension ?? 'calls',
+    scope: overrides.scope ?? 'user',
     limit: overrides.limit ?? 100,
     used: overrides.used ?? 100,
     resetAt: overrides.resetAt ?? '2026-12-01T00:00:00Z',
@@ -53,6 +54,49 @@ describe('QuotaError', () => {
   it('resetAt 无法解析时 msUntilReset 返回 0 而不是 NaN', () => {
     const err = quota({ resetAt: 'not-a-date' })
     expect(err.msUntilReset()).toBe(0)
+  })
+
+  it('缺省 scope 时按 user 处理（兼容旧服务端）', () => {
+    const err = new QuotaError({
+      dimension: 'calls',
+      limit: 10,
+      used: 10,
+      resetAt: '2026-12-01T00:00:00Z',
+    } as never)
+    expect(err.scope).toBe('user')
+  })
+})
+
+describe('全站配额（scope=global）文案', () => {
+  /**
+   * 这是**必须区分**的语义：全站额度用完时，用户换账号/注册小号都没用。
+   * 文案若说成「你本月次数已用完」，用户会去注册小号 —— 做了无效功还浪费感情。
+   */
+  it('global 的标题指向「服务方」而不是「你」', () => {
+    const parts = describeQuota(quota({ scope: 'global' }))
+    expect(parts.title).toContain('服务方')
+    expect(parts.title).not.toContain('本周期')
+  })
+
+  it('global 的说明明确告知换账号无效', () => {
+    const parts = describeQuota(quota({ scope: 'global' }))
+    expect(parts.detail).toContain('全站共享额度')
+    expect(parts.detail).toMatch(/换账号|注册/)
+  })
+
+  it('user 的文案不提「全站」也不提「换账号」（避免误导）', () => {
+    const parts = describeQuota(quota({ scope: 'user' }))
+    expect(parts.detail).not.toContain('全站共享额度')
+    expect(parts.detail).not.toMatch(/换账号|注册/)
+    expect(parts.title).toContain('本周期')
+  })
+
+  it('两种 scope 都必须给出恢复时间与用量', () => {
+    for (const scope of ['user', 'global'] as const) {
+      const parts = describeQuota(quota({ scope, limit: 1000, used: 1000 }))
+      expect(parts.detail).toContain('1000')
+      expect(parts.detail).toMatch(/恢复/)
+    }
   })
 })
 

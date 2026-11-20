@@ -69,23 +69,36 @@ function applyBookPayload(state: ApplyTarget, bookId: string, payload: Record<st
   }
 }
 
-function applyAnnotationPayload(state: ApplyTarget, annotationId: string, payload: Record<string, unknown>): void {
-  const bookId = asString(payload['bookId'])
-  const locator = asLocator(payload['locator']) ?? ({ href: '', type: '' } as Locator)
-  const kind = asString(payload['type'], 'highlight')
-  const existing = state.annotations[annotationId]
-  const annotation = {
+/**
+ * 标注载荷 → 规范化 AnnotationDto。
+ *
+ * ★ pull 与 snapshot **两条路径必须共用这一个函数**。
+ *   曾经的 bug：snapshot 路径直接 `state.annotations[annotation.id] = annotation`，
+ *   而服务端快照里的载荷只有 `{text,type,bookId,locator}`（id 在 op 的 entityId / 表主键上，
+ *   不在 payload 里），于是 `annotation.id` 是 undefined —— 新设备首同步会把所有标注
+ *   写成 `state.annotations['undefined']` 这一条幽灵记录：按 id 查不到、UI 列表里多一条坏数据。
+ *   集成测试 BF-08 复现了它（apps/server/internal/store/sync_store.go 也随之修好注入 id）。
+ */
+export function normalizeAnnotation(
+  annotationId: string,
+  payload: Record<string, unknown>,
+  fallback?: AnnotationDto,
+): AnnotationDto {
+  return {
     id: annotationId,
-    bookId,
-    locator,
-    type: kind as AnnotationDto['type'],
-    color: typeof payload['color'] === 'string' ? payload['color'] : null,
-    note: typeof payload['note'] === 'string' ? payload['note'] : null,
-    text: typeof payload['text'] === 'string' ? payload['text'] : null,
-    createdAt: asString(payload['createdAt'], existing?.createdAt ?? new Date(0).toISOString()),
-    updatedAt: asString(payload['updatedAt'], new Date().toISOString()),
+    bookId: asString(payload['bookId'], fallback?.bookId ?? ''),
+    locator: asLocator(payload['locator']) ?? fallback?.locator ?? ({ href: '', type: '' } as Locator),
+    type: asString(payload['type'], fallback?.type ?? 'highlight') as AnnotationDto['type'],
+    color: typeof payload['color'] === 'string' ? payload['color'] : (fallback?.color ?? null),
+    note: typeof payload['note'] === 'string' ? payload['note'] : (fallback?.note ?? null),
+    text: typeof payload['text'] === 'string' ? payload['text'] : (fallback?.text ?? null),
+    createdAt: asString(payload['createdAt'], fallback?.createdAt ?? new Date(0).toISOString()),
+    updatedAt: asString(payload['updatedAt'], fallback?.updatedAt ?? new Date().toISOString()),
   } as AnnotationDto
-  state.annotations[annotationId] = annotation
+}
+
+function applyAnnotationPayload(state: ApplyTarget, annotationId: string, payload: Record<string, unknown>): void {
+  state.annotations[annotationId] = normalizeAnnotation(annotationId, payload, state.annotations[annotationId])
 }
 
 /**
@@ -146,6 +159,7 @@ export function applySnapshot(state: ApplyTarget, snapshot: SyncSnapshotResponse
   state.books = {}
   state.progress = {}
   state.annotations = {}
+  let annotationsApplied = 0
   for (const book of snapshot.books) {
     const item: LocalBook = {
       id: book.id,
@@ -174,9 +188,18 @@ export function applySnapshot(state: ApplyTarget, snapshot: SyncSnapshotResponse
     }
     state.progress[item.bookId] = item
   }
-  for (const annotation of snapshot.annotations) {
-    state.annotations[annotation.id] = annotation
+  for (const raw of snapshot.annotations) {
+    const payload: Record<string, unknown> = isRecord(raw) ? raw : {}
+    const id = typeof payload['id'] === 'string' && payload['id'] !== '' ? payload['id'] : null
+    if (id === null) {
+      // 服务端快照必须带 id（sync_store.go 的 Snapshot 已注入 id/bookId/时间戳）。
+      // 宁可**跳过并计数**，也绝不写出 annotations['undefined'] —— 幽灵条目比少一条更糟：
+      // 它按 id 查不到、删不掉，还会在 UI 里多出一行。
+      continue
+    }
+    state.annotations[id] = normalizeAnnotation(id, payload)
+    annotationsApplied += 1
   }
   state.cursor = snapshot.cursor
-  return snapshot.books.length + snapshot.progress.length + snapshot.annotations.length
+  return snapshot.books.length + snapshot.progress.length + annotationsApplied
 }

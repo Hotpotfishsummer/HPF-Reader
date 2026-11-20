@@ -53,6 +53,8 @@ export interface ReaderStyleInput {
   ink: string
   /** 允许段落首行缩进（中文书籍常见），书籍自身 CSS 优先。 */
   textIndent: boolean
+  /** 墨水屏刷新优化：禁用所有过渡动画，增强图片对比度防残影 */
+  einkMode?: boolean
 }
 
 export function buildReaderStyles(input: ReaderStyleInput): [string, string] {
@@ -81,11 +83,12 @@ html { color-scheme: light; }
 p, li, div { orphans: 2; widows: 2; }
 p { margin-block: 0.6em; }
 a { color: inherit; text-decoration-color: currentColor; }
-/* 图片在竖屏窄栏里必须等比缩放，否则会撑破分栏 */
-img, svg, video, table { max-inline-size: 100% !important; block-size: auto !important; }
+/* 图片在分栏模式下必须严格受限于单栏宽度，否则撑破多栏网格导致排版错乱 */
+img, svg, video, table { max-inline-size: 100% !important; max-width: 100% !important; block-size: auto !important; height: auto !important; box-sizing: border-box !important; }
 table { border-collapse: collapse; }
 pre { white-space: pre-wrap; }
 ${input.textIndent ? 'p { text-indent: 2em; margin-block: 0.2em; }' : ''}
+${input.einkMode ? '* { transition: none !important; animation: none !important; } img { filter: grayscale(100%) contrast(140%) !important; }' : ''}
 `
 
   return [before, style]

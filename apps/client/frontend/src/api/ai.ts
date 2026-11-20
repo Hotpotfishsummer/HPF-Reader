@@ -1,6 +1,7 @@
 import type { ApiClient } from './client'
 import { ApiError } from './client'
-import type { AiJob, AiUsage, Glossary, GlossaryPutRequest, QuotaExceededError, TranslateRequest } from './contract'
+import { relayFetch } from './relay'
+import type { AiJob, AiUsage, Glossary, GlossaryPutRequest, QuotaExceededError, TranslateRequest, TranslationChunk } from './contract'
 
 /**
  * AI 相关接口的客户端封装（task-23）。
@@ -21,6 +22,13 @@ import type { AiJob, AiUsage, Glossary, GlossaryPutRequest, QuotaExceededError, 
 /** 配额耗尽（HTTP 429）。与网络错误/限流**刻意**分开，因为处置方式不同。 */
 export class QuotaError extends Error {
   readonly dimension: 'calls' | 'tokens'
+  /**
+   * 配额的作用域：
+   *   - `user`：只有你自己用完了，等下个周期重置或找管理员提额即可；
+   *   - `global`：全站总额度用完，**换账号/注册小号都没用**。
+   * 不区分这两种，文案就会建议用户去做一件完全无效的事。
+   */
+  readonly scope: 'user' | 'global'
   readonly limit: number
   readonly used: number
   readonly resetAt: string
@@ -29,6 +37,8 @@ export class QuotaError extends Error {
     super(message ?? 'quota exceeded')
     this.name = 'QuotaError'
     this.dimension = details.dimension
+    // 旧服务端不返回 scope 时按 user 处理（向后兼容）。
+    this.scope = details.scope ?? 'user'
     this.limit = details.limit
     this.used = details.used
     this.resetAt = details.resetAt
@@ -140,6 +150,10 @@ export interface AiApi {
   createBookTranslateJob(bookId: string, targetLang: string): Promise<AiJob>
   /** 查任务状态（轮询用）。 */
   getJob(jobId: string): Promise<AiJob>
+  /** 查询 AI 后台任务列表（支持按 bookId 过滤）。 */
+  listJobs(filter?: { bookId?: string; limit?: number }): Promise<AiJob[]>
+  /** 获取整书翻译任务的分块结果。 */
+  getJobChunks(jobId: string): Promise<{ jobId: string; chunks: TranslationChunk[] }>
   /** 读取一本书在某目标语言下的术语表。 */
   getGlossary(bookId: string, targetLang: string): Promise<Glossary>
   /**
@@ -174,7 +188,9 @@ export function createAiApi(client: ApiClient): AiApi {
 
       let res: Response
       try {
-        res = await fetch(base + '/v1/ai/translate', {
+        // ★ 走 relayFetch：桌面端这条 SSE 也经本机 Go 中继（API 不经过 Chromium TLS）。
+        //   web / 移动端 transport 为 null，等价于原生 fetch。
+        res = await relayFetch(base + '/v1/ai/translate', {
           method: 'POST',
           headers,
           body: JSON.stringify(body),
@@ -288,6 +304,20 @@ export function createAiApi(client: ApiClient): AiApi {
 
     async getJob(jobId) {
       return client.request<AiJob>('/v1/ai/jobs/' + encodeURIComponent(jobId))
+    },
+
+    async listJobs(filter = {}) {
+      const params = new URLSearchParams()
+      if (filter.bookId) params.set('bookId', filter.bookId)
+      if (filter.limit) params.set('limit', String(filter.limit))
+      const qs = params.toString() ? '?' + params.toString() : ''
+      return client.request<AiJob[]>('/v1/ai/jobs' + qs)
+    },
+
+    async getJobChunks(jobId) {
+      return client.request<{ jobId: string; chunks: TranslationChunk[] }>(
+        '/v1/ai/jobs/' + encodeURIComponent(jobId) + '/chunks',
+      )
     },
 
     async getGlossary(bookId, targetLang) {
