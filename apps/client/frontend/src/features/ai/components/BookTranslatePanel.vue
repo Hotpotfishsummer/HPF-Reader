@@ -146,12 +146,17 @@ function start(): void {
           </span>
         </div>
 
+        <!--
+          ★ 进度用 scaleX 表达，不用 width。
+          width 每变一次都要重排"进度条 → 轨道 → 面板"三层盒子；
+          scaleX 只改合成层，而且过渡期间不会被主线程的重排打断。
+        -->
         <div class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-sunken)]">
           <div
             data-testid="book-translate-bar"
-            class="h-full rounded-full transition-[width] duration-500"
+            class="hpf-meter h-full w-full rounded-full"
             :class="barClass"
-            :style="{ width: job.progressPercent.value + '%' }"
+            :style="{ transform: `scaleX(${Math.min(100, Math.max(0, job.progressPercent.value)) / 100})` }"
           />
         </div>
 

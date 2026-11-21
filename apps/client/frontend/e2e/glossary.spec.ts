@@ -1,6 +1,13 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pinReaderBar } from './reader-chrome'
+
+// 顶部状态栏默认收起：功能用例用 pin 把它按住（见 e2e/reader-chrome.ts）。
+// 显隐行为本身由 reader-chrome.spec.ts 专测。
+test.beforeEach(async ({ page }) => {
+  await pinReaderBar(page)
+})
 
 /**
  * task-24 术语表 E2E：**验证真的存到服务端**，不是 localStorage。

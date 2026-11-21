@@ -1,0 +1,39 @@
+{
+  "openMs": 991,
+  "pages": 278,
+  "engine": {
+    "makeBookMs": 22.7,
+    "openMs": 5.5,
+    "initMs": 289.4
+  },
+  "sanitize": {
+    "calls": 1,
+    "totalMs": 9.4,
+    "maxMs": 9.4
+  },
+  "parse": {
+    "calls": 5,
+    "totalMs": 51.4
+  },
+  "gcs": {
+    "calls": 5,
+    "totalMs": 0
+  },
+  "getAll": {
+    "calls": 6,
+    "totalMs": 0
+  },
+  "ro": {
+    "calls": 4,
+    "totalMs": 15.3,
+    "maxMs": 15.2,
+    "heavyCalls": 1,
+    "heavyTotalMs": 15.2,
+    "heavyMaxMs": 15.2
+  },
+  "longtasks": {
+    "samples": 3,
+    "maxMs": 321,
+    "totalMs": 595
+  }
+}

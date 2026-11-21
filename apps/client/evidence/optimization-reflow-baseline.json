@@ -1,0 +1,759 @@
+{
+  "note": "HPF-Reader 重排测量台：frankenstein.epub 第 11 个目录项，阅读面 1100px → 520px，120 步 × 2 帧",
+  "budget": {
+    "hz60": 16.67,
+    "hz120": 8.33,
+    "hz144": 6.94
+  },
+  "before": {
+    "pages": 10,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:688)"
+  },
+  "after": {
+    "pages": 18,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/4/1:665)"
+  },
+  "reflow": {
+    "steps": 120,
+    "roCalls": 240,
+    "roCallsPerStep": 2,
+    "roTotalMs": 902.8,
+    "roMeanMs": 7.523,
+    "roP50Ms": 7.3,
+    "roP95Ms": 10.6,
+    "roMaxMs": 12.2,
+    "wallMeanMs": 14.17,
+    "wallP95Ms": 16.4,
+    "wallMaxMs": 24.1
+  },
+  "frames": {
+    "samples": 249,
+    "p50Ms": 6.9,
+    "p95Ms": 7.1,
+    "maxMs": 14,
+    "over16ms": 0,
+    "over8ms": 5
+  },
+  "rows": [
+    {
+      "width": 1095,
+      "roMs": 7.7,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1090,
+      "roMs": 7.5,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1086,
+      "roMs": 9.2,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1081,
+      "roMs": 7.7,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1076,
+      "roMs": 9.8,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1071,
+      "roMs": 7.8,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 1066,
+      "roMs": 9.5,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1061,
+      "roMs": 9.6,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1057,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1052,
+      "roMs": 8.9,
+      "roCalls": 2,
+      "wallMs": 14.8
+    },
+    {
+      "width": 1047,
+      "roMs": 6.9,
+      "roCalls": 2,
+      "wallMs": 15
+    },
+    {
+      "width": 1042,
+      "roMs": 7.3,
+      "roCalls": 2,
+      "wallMs": 11.9
+    },
+    {
+      "width": 1037,
+      "roMs": 9.7,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1032,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 1028,
+      "roMs": 8.9,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 1023,
+      "roMs": 11.1,
+      "roCalls": 2,
+      "wallMs": 14.8
+    },
+    {
+      "width": 1018,
+      "roMs": 11.1,
+      "roCalls": 2,
+      "wallMs": 14.5
+    },
+    {
+      "width": 1013,
+      "roMs": 10.6,
+      "roCalls": 2,
+      "wallMs": 13.2
+    },
+    {
+      "width": 1008,
+      "roMs": 9.9,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 1003,
+      "roMs": 9.1,
+      "roCalls": 2,
+      "wallMs": 15.1
+    },
+    {
+      "width": 999,
+      "roMs": 7.6,
+      "roCalls": 2,
+      "wallMs": 16.4
+    },
+    {
+      "width": 994,
+      "roMs": 9.5,
+      "roCalls": 2,
+      "wallMs": 16.2
+    },
+    {
+      "width": 989,
+      "roMs": 8.3,
+      "roCalls": 2,
+      "wallMs": 13.6
+    },
+    {
+      "width": 984,
+      "roMs": 8,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 979,
+      "roMs": 8.9,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 974,
+      "roMs": 8.2,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 970,
+      "roMs": 6,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 965,
+      "roMs": 7.6,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 960,
+      "roMs": 6.8,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 955,
+      "roMs": 11,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 950,
+      "roMs": 12.2,
+      "roCalls": 2,
+      "wallMs": 21.3
+    },
+    {
+      "width": 945,
+      "roMs": 8,
+      "roCalls": 2,
+      "wallMs": 14.3
+    },
+    {
+      "width": 941,
+      "roMs": 10,
+      "roCalls": 2,
+      "wallMs": 24.1
+    },
+    {
+      "width": 936,
+      "roMs": 6.3,
+      "roCalls": 2,
+      "wallMs": 9.8
+    },
+    {
+      "width": 931,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 14.2
+    },
+    {
+      "width": 926,
+      "roMs": 6.2,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 921,
+      "roMs": 10.6,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 916,
+      "roMs": 8,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 912,
+      "roMs": 7.8,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 907,
+      "roMs": 9,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 902,
+      "roMs": 6.9,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 897,
+      "roMs": 7.5,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 892,
+      "roMs": 6.6,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 887,
+      "roMs": 7.4,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 883,
+      "roMs": 7.8,
+      "roCalls": 2,
+      "wallMs": 17.7
+    },
+    {
+      "width": 878,
+      "roMs": 10.4,
+      "roCalls": 2,
+      "wallMs": 17.1
+    },
+    {
+      "width": 873,
+      "roMs": 8.1,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 868,
+      "roMs": 7.8,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 863,
+      "roMs": 8.9,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 858,
+      "roMs": 6.7,
+      "roCalls": 2,
+      "wallMs": 14.5
+    },
+    {
+      "width": 854,
+      "roMs": 9.5,
+      "roCalls": 2,
+      "wallMs": 13.4
+    },
+    {
+      "width": 849,
+      "roMs": 10.5,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 844,
+      "roMs": 8.7,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 839,
+      "roMs": 8.5,
+      "roCalls": 2,
+      "wallMs": 14.2
+    },
+    {
+      "width": 834,
+      "roMs": 7.3,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 829,
+      "roMs": 7.5,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 825,
+      "roMs": 8.1,
+      "roCalls": 2,
+      "wallMs": 16
+    },
+    {
+      "width": 820,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 11.8
+    },
+    {
+      "width": 815,
+      "roMs": 7.3,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 810,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 13.6
+    },
+    {
+      "width": 805,
+      "roMs": 7.9,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 800,
+      "roMs": 7.7,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 796,
+      "roMs": 10.6,
+      "roCalls": 2,
+      "wallMs": 20.7
+    },
+    {
+      "width": 791,
+      "roMs": 10.3,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 786,
+      "roMs": 9,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 781,
+      "roMs": 8.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 776,
+      "roMs": 8.3,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 771,
+      "roMs": 6.3,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 767,
+      "roMs": 4.6,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 762,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 757,
+      "roMs": 7.8,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 752,
+      "roMs": 7.1,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 747,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 742,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 738,
+      "roMs": 7.4,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 733,
+      "roMs": 8.6,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 728,
+      "roMs": 5.5,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 723,
+      "roMs": 6,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 718,
+      "roMs": 5,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 713,
+      "roMs": 5.1,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 709,
+      "roMs": 5.4,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 704,
+      "roMs": 5.9,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 699,
+      "roMs": 5.9,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 694,
+      "roMs": 5.9,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 689,
+      "roMs": 6.3,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 684,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 680,
+      "roMs": 6.6,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 675,
+      "roMs": 5.7,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 670,
+      "roMs": 6.7,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 665,
+      "roMs": 5.6,
+      "roCalls": 2,
+      "wallMs": 14.1
+    },
+    {
+      "width": 660,
+      "roMs": 5.7,
+      "roCalls": 2,
+      "wallMs": 13.7
+    },
+    {
+      "width": 655,
+      "roMs": 5.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 651,
+      "roMs": 7.5,
+      "roCalls": 2,
+      "wallMs": 14.4
+    },
+    {
+      "width": 646,
+      "roMs": 7.6,
+      "roCalls": 2,
+      "wallMs": 13
+    },
+    {
+      "width": 641,
+      "roMs": 5.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 636,
+      "roMs": 5.7,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 631,
+      "roMs": 5.6,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 626,
+      "roMs": 6.2,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 622,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 617,
+      "roMs": 6.7,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 612,
+      "roMs": 8.5,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 607,
+      "roMs": 5.8,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 602,
+      "roMs": 7.1,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 597,
+      "roMs": 5.6,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 593,
+      "roMs": 6.6,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 588,
+      "roMs": 5.2,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 583,
+      "roMs": 5.2,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 578,
+      "roMs": 5.4,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 573,
+      "roMs": 6,
+      "roCalls": 2,
+      "wallMs": 13.9
+    },
+    {
+      "width": 568,
+      "roMs": 7,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 564,
+      "roMs": 7.1,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 559,
+      "roMs": 6.1,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 554,
+      "roMs": 9,
+      "roCalls": 2,
+      "wallMs": 13.6
+    },
+    {
+      "width": 549,
+      "roMs": 6.7,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 544,
+      "roMs": 6.4,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 539,
+      "roMs": 6.2,
+      "roCalls": 2,
+      "wallMs": 14
+    },
+    {
+      "width": 535,
+      "roMs": 6.1,
+      "roCalls": 2,
+      "wallMs": 14.6
+    },
+    {
+      "width": 530,
+      "roMs": 7.1,
+      "roCalls": 2,
+      "wallMs": 12.9
+    },
+    {
+      "width": 525,
+      "roMs": 9.7,
+      "roCalls": 2,
+      "wallMs": 13.8
+    },
+    {
+      "width": 520,
+      "roMs": 5.8,
+      "roCalls": 2,
+      "wallMs": 14.1
+    }
+  ]
+}

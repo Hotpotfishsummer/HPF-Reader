@@ -1,0 +1,28 @@
+{
+  "note": "真实窗口缩放 1280→704（24 步）：验证 data-frozen 状态机与\"只重排一次\"",
+  "before": {
+    "pages": 10,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:688)"
+  },
+  "after": {
+    "pages": 14,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/4/1:1004)"
+  },
+  "columns": "1",
+  "enteredFreeze": true,
+  "frozenFlags": [
+    "true",
+    "true"
+  ],
+  "frozenAfter": "false",
+  "roSplit": {
+    "heavyCalls": 4,
+    "lightCalls": 47,
+    "heavyTotalMs": 21.1,
+    "heavyMaxMs": 6.9
+  },
+  "longtasks": {
+    "samples": 0,
+    "maxMs": 0
+  }
+}

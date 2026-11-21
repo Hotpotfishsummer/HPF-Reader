@@ -1,0 +1,29 @@
+{
+  "openMs": 1046,
+  "pages": 278,
+  "parse": {
+    "calls": 5,
+    "totalMs": 48.9
+  },
+  "gcs": {
+    "calls": 5,
+    "totalMs": 0.1
+  },
+  "getAll": {
+    "calls": 6,
+    "totalMs": 0.1
+  },
+  "ro": {
+    "calls": 4,
+    "totalMs": 15.5,
+    "maxMs": 15.3,
+    "heavyCalls": 1,
+    "heavyTotalMs": 15.3,
+    "heavyMaxMs": 15.3
+  },
+  "longtasks": {
+    "samples": 3,
+    "maxMs": 333,
+    "totalMs": 664
+  }
+}

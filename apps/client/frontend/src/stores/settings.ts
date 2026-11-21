@@ -22,6 +22,8 @@ export const useSettingsStore = defineStore(
     const lineHeight = ref(1.65)
     const marginInline = ref(48)
     const locale = ref<AppLocale>('zh-CN')
+    /** 顶部状态栏是否常驻（pin）。默认 false = 自动收起（见 ReaderView 的栏显隐逻辑）。 */
+    const statusBarPinned = ref(false)
 
     const readerCssVars = computed<Record<string, string>>(() => ({
       '--reader-font-size': `${fontSize.value}px`,
@@ -38,6 +40,10 @@ export const useSettingsStore = defineStore(
     function setLocale(next: AppLocale): void {
       locale.value = next
       applyLocale(next)
+    }
+    /** 顶部状态栏"常驻 ↔ 自动隐藏"的唯一开关（ReaderView 的 pin 按钮调用）。 */
+    function setStatusBarPinned(next: boolean): void {
+      statusBarPinned.value = next
     }
 
     /**
@@ -71,16 +77,18 @@ export const useSettingsStore = defineStore(
       lineHeight,
       marginInline,
       locale,
+      statusBarPinned,
       readerCssVars,
       setTheme,
       setReaderTheme,
       setLocale,
+      setStatusBarPinned,
     }
   },
   {
     persist: {
       key: 'hpf.settings.v1',
-      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'locale'],
+      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'locale', 'statusBarPinned'],
     },
   },
 )

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './motion.css';
 
 /*
  * 设计约定（docs/research/50-vue3-reader-stack.md §4.2）：

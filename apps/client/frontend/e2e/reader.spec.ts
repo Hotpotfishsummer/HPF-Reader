@@ -2,6 +2,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { pinReaderBar } from './reader-chrome'
+
+// 顶部状态栏现在**默认收起**：功能用例用 pin 把它按住（等价于用户点了 pin，
+// 见 e2e/reader-chrome.ts）。"默认收起 / 靠近展开 / 双击切换 / pin 持久化"
+// 这类显隐行为由 reader-chrome.spec.ts 专测，不在这些用例里重复。
+test.beforeEach(async ({ page }) => {
+  await pinReaderBar(page)
+})
 
 /**
  * 阅读闭环 E2E（task-12）。
@@ -88,8 +96,9 @@ async function waitForEngine(page: Page): Promise<Probe> {
 /**
  * 确保目录是**展开**状态。
  *
- * ⚠️ 宽屏（Playwright 默认 1280x720）下目录是侧栏且**默认展开** ——
- * 直接点 toggle 会把它关掉，于是测到 0 个条目（踩过两次）。
+ * ⚠️ 目录现在**默认收起**（改造要求：不要一调窗口就自己弹出来），所以要显式点 ☰。
+ * 这里先探测两种形态（宽屏侧栏 / 窄屏浮层）在不在，在就说明已经开着，
+ * 不能再点一次 —— 否则会把它关掉，于是测到 0 个条目（踩过两次）。
  */
 async function openToc(page: Page): Promise<void> {
   const sidebar = page.getByTestId('toc-sidebar')
@@ -300,11 +309,15 @@ test.describe('阅读闭环（本地优先）', () => {
     const toolbar = page.getByTestId('reader-toolbar')
     await expect(toolbar).toHaveAttribute('data-columns', '2')
     await expect(toolbar).toHaveAttribute('data-compact', 'false')
+    // ★ 目录**默认收起**（改造要求：不要一调整窗口就自己弹出来）。
+    //   宽屏横屏只表示"允许做成侧栏"，不等于"要自动展开" —— 先把默认态钉住，
+    //   再显式点 ☰ 打开（openToc 自己处理"已经开着就别再点"）。
+    await expect(page.getByTestId('toc-sidebar')).toHaveCount(0)
+    await openToc(page)
     await expect(page.getByTestId('toc-sidebar')).toBeVisible()
 
     // 挑一个**长**章节再测页数：短章节（如 frankenstein 的开篇书信）
     // 在两种方向下都可能只有 1 页，用它测"重排"会得到假阴性。
-    await openToc(page)
     const tocItems = page.locator('[data-testid="toc-sidebar"] li')
     const chapterCount = await tocItems.count()
     expect(chapterCount).toBeGreaterThanOrEqual(20)
@@ -324,7 +337,8 @@ test.describe('阅读闭环（本地优先）', () => {
     await expect(page.getByTestId('toc-sidebar')).toHaveCount(0)
     await expect(page.getByTestId('toc-overlay')).toHaveCount(0)
 
-    // 重排是防抖的（150ms）：等到引擎真的重新分页。
+    // 旋转后阅读面尺寸变化 → 重排调度器在静置 130ms 后落定一次（见 useReaderReflow）。
+    // 等到引擎真的重新分页。
     // ★ 竖屏单栏 = 每屏字数变少 → 同一章节的**页数必须变多**；
     //   这是"引擎按新宽度重排了"最直接的证据（比比对像素稳，且不依赖 Chrome 对
     //   getComputedStyle(columnWidth) 的实现细节）。
@@ -345,8 +359,9 @@ test.describe('阅读闭环（本地优先）', () => {
     //   但我们已按方向设了 max-column-count 属性，而 spread 默认就是
     //   var(--_max-column-count) —— 因此"@container 生效"与"不生效"最终 spread
     //   **值相同**。下面断言竖屏下我们设的列数确实是 1（= portrait 期望值）。
-    // 注意：setLayout 走 150ms 防抖（工具栏的 data-columns 是即时的，
-    // 引擎属性要等重排落定），所以这里必须 poll 而不是立刻断言。
+    // 注意：setLayout 走重排调度器的静置落定（130ms，见 useReaderReflow），
+    // 工具栏的 data-columns 是即时的，
+    // 引擎属性要等重排落定，所以这里必须 poll 而不是立刻断言。
     await expect
       .poll(
         () =>
@@ -389,6 +404,73 @@ test.describe('阅读闭环（本地优先）', () => {
       ),
       'utf8',
     )
+  })
+
+  test('操作动线：正文点击热区 / Esc 分层关闭 / 点正文收浮层', async ({ page }) => {
+    test.skip(!existsSync(REAL_BOOK), `缺少真实测试书 ${REAL_BOOK}`)
+
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await openLocalBook(page, REAL_BOOK)
+    const toolbar = page.getByTestId('reader-toolbar')
+    await expect(toolbar).toHaveAttribute('data-columns', '2')
+    await openToc(page)
+    // 长章节（短章节只有 1 页，翻页后 cfi 不变，会得到假阴性）
+    const tocItems = page.locator('[data-testid="toc-sidebar"] li')
+    await tocItems.nth(Math.min(10, (await tocItems.count()) - 1)).locator('button').click()
+    await page.waitForTimeout(600)
+    const host = page.getByTestId('reader-host')
+
+    /** 等 cfi 真正变化（翻页是异步的）。 */
+    const waitCfiChange = async (from: string, label: string): Promise<Probe> => {
+      await expect.poll(async () => (await probe(page)).cfi, { timeout: 10_000, message: label }).not.toBe(from)
+      return probe(page)
+    }
+
+    const hostBox = await host.boundingBox()
+    expect(hostBox, '阅读面应该有尺寸').not.toBeNull()
+
+    // —— ① 先点阅读面**右侧**：前进一页 ——
+    // ★ 点的是"阅读面上的右 1%"。分栏排版下 iframe 的视口宽度是**整章展开宽**
+    //   （实测 9523px，而阅读面只有 1024px）—— 拿 iframe 宽度当分母，这个点会被
+    //   算成"最左侧"，翻页方向整个反过来。这条断言就是那个错位的回归锁。
+    // 先前进再回退：TOC 跳转落点在一章的开头，直接点左侧是空操作，测不出方向。
+    const wideFirst = await probe(page)
+    await host.click({ position: { x: (hostBox?.width ?? 0) - 12, y: 400 } })
+    const afterRightTap = await waitCfiChange(wideFirst.cfi, '点右侧应前进一页')
+    expect(afterRightTap.fraction, '点右侧应前进一页').toBeGreaterThan(wideFirst.fraction)
+    // foliate-js 用 `#locked` 串行化翻页（paginator.js:1060-1071），一次翻页后约 100ms 内
+    // 的下一次翻页会被直接丢弃。等它解锁再点左侧，否则第二次点击是空操作（测出假阴性）。
+    await page.waitForTimeout(300)
+
+    // —— ② 再点阅读面**左侧**：回到上一页 ——
+    await host.click({ position: { x: 12, y: 400 } })
+    const afterLeftTap = await waitCfiChange(afterRightTap.cfi, '点左侧应回到上一页')
+    expect(afterLeftTap.fraction, '点左侧应回到上一页').toBeLessThan(afterRightTap.fraction)
+
+    // —— ③ Esc 分层：有浮层时先关浮层，不会一把退出阅读器 ——
+    // ★ 宽屏下目录是**侧栏**（点 toggle 只是开关侧栏，不是浮层），
+    //   要测"覆盖层先关"必须切到窄屏走 overlay 分支。
+    await page.setViewportSize({ width: 480, height: 900 })
+    await expect(page.getByTestId('toc-sidebar')).toHaveCount(0)
+    await page.getByTestId('toggle-toc').click()
+    await expect(page.getByTestId('toc-overlay')).toBeVisible()
+    await page.keyboard.press('Escape')
+    // 覆盖层先被关掉，且仍然留在阅读界面
+    await expect(page.getByTestId('toc-overlay')).toHaveCount(0, { timeout: 5_000 })
+    expect(page.url(), '第一下 Esc 只应该关覆盖层').toContain('/reader/')
+    await page.keyboard.press('Escape')
+    await expect(page, '第二下 Esc 才退出阅读器').toHaveURL(/#\/$/, { timeout: 5_000 })
+
+    // —— ④ 点正文先收浮层，再翻页：中间区域不翻页，只收面板 ——
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/#/reader/sample')
+    await waitForEngine(page)
+    const sampleBox = await host.boundingBox()
+    await page.getByTestId('toggle-ai').click()
+    await expect(page.getByTestId('book-translate-panel')).toBeVisible()
+    await host.click({ position: { x: (sampleBox?.width ?? 600) * 0.5, y: 400 } })
+    await expect(page.getByTestId('book-translate-panel')).toHaveCount(0, { timeout: 5_000 })
+    expect(page.url(), '点中间收浮层，不该翻页或退出').toContain('/reader/')
   })
 
   test('夜间模式：正文主题切换真的写进章节文档', async ({ page }) => {

@@ -1,0 +1,52 @@
+{
+  "note": "完整动线排版测量台：1919×1199 开书→光标靠近→离开→再靠近→缩放，逐段墙钟与重排次数",
+  "viewport": {
+    "width": 1919,
+    "height": 1199
+  },
+  "openMs": 178,
+  "initialLayout": {
+    "roCalls": 4,
+    "heavyCalls": 0
+  },
+  "segments": [
+    {
+      "name": "bar-show",
+      "wallMs": 2342,
+      "roCalls": 2,
+      "heavyCalls": 1,
+      "roMaxMs": 1.7,
+      "longtasks": 0
+    },
+    {
+      "name": "bar-hide",
+      "wallMs": 2281,
+      "roCalls": 2,
+      "heavyCalls": 1,
+      "roMaxMs": 1.7,
+      "longtasks": 0
+    },
+    {
+      "name": "bar-show-2",
+      "wallMs": 2059,
+      "roCalls": 2,
+      "heavyCalls": 1,
+      "roMaxMs": 1.7,
+      "longtasks": 0
+    },
+    {
+      "name": "window-resize",
+      "wallMs": 2071,
+      "roCalls": 4,
+      "heavyCalls": 1,
+      "roMaxMs": 1.7,
+      "longtasks": 0
+    }
+  ],
+  "totals": {
+    "roCalls": 14,
+    "heavyCalls": 4,
+    "longtasks": 0,
+    "longtaskMaxMs": 0
+  }
+}

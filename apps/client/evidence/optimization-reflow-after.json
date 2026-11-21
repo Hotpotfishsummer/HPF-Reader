@@ -1,0 +1,768 @@
+{
+  "note": "HPF-Reader 重排测量台：frankenstein.epub 第 11 个目录项，阅读面 1100px → 520px，120 步 × 2 帧",
+  "budget": {
+    "hz60": 16.67,
+    "hz120": 8.33,
+    "hz144": 6.94
+  },
+  "before": {
+    "pages": 10,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:688)"
+  },
+  "after": {
+    "pages": 11,
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:422)"
+  },
+  "reflow": {
+    "steps": 120,
+    "roCalls": 122,
+    "roCallsPerStep": 1.017,
+    "roTotalMs": 18.7,
+    "roMeanMs": 0.156,
+    "roP50Ms": 0.1,
+    "roP95Ms": 0.2,
+    "roMaxMs": 10,
+    "wallMeanMs": 13.88,
+    "wallP95Ms": 14,
+    "wallMaxMs": 14.5
+  },
+  "roSplit": {
+    "note": "≥1ms 视为\"真重排（paginator columnize）\"，<1ms 视为\"写 transform 的轻量回调\"",
+    "heavyCalls": 2,
+    "lightCalls": 123,
+    "heavyTotalMs": 16.7,
+    "heavyMaxMs": 9.2,
+    "lightTotalMs": 10.4,
+    "lightMaxMs": 0.9
+  },
+  "frames": {
+    "samples": 250,
+    "p50Ms": 6.9,
+    "p95Ms": 7.1,
+    "maxMs": 7.6,
+    "over16ms": 0,
+    "over8ms": 0
+  },
+  "rows": [
+    {
+      "width": 1095,
+      "roMs": 10,
+      "roCalls": 3,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1090,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14.1
+    },
+    {
+      "width": 1086,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1081,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1076,
+      "roMs": 0.4,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1071,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1066,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 1061,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1057,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1052,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1047,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1042,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1037,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1032,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1028,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1023,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 1018,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 1013,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 1008,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 1003,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 999,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 994,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 989,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 984,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 979,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 974,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 970,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 965,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 960,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 955,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 950,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 945,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 941,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 936,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 931,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 926,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 921,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14.1
+    },
+    {
+      "width": 916,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.6
+    },
+    {
+      "width": 912,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 907,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 14.1
+    },
+    {
+      "width": 902,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.6
+    },
+    {
+      "width": 897,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 892,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 887,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 883,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 878,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 873,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 868,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 863,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 858,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 854,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 849,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 844,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 839,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 834,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 829,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 825,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 820,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 815,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 810,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 805,
+      "roMs": 0.3,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 800,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 796,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 791,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 786,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 781,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 776,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 771,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 767,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 762,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 757,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 752,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 747,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 742,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 738,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 733,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 728,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 723,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 718,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 713,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 709,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 704,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 699,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 694,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 689,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 684,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 680,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 675,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 670,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 665,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 660,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 655,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 651,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 646,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 641,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 636,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 631,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14.5
+    },
+    {
+      "width": 626,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.2
+    },
+    {
+      "width": 622,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 617,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 612,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 607,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 602,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 597,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 593,
+      "roMs": 0.2,
+      "roCalls": 1,
+      "wallMs": 14.1
+    },
+    {
+      "width": 588,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 583,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 578,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 573,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 568,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 564,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 559,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.9
+    },
+    {
+      "width": 554,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 549,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 544,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 539,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 13.7
+    },
+    {
+      "width": 535,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 14
+    },
+    {
+      "width": 530,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 525,
+      "roMs": 0.1,
+      "roCalls": 1,
+      "wallMs": 13.8
+    },
+    {
+      "width": 520,
+      "roMs": 0,
+      "roCalls": 1,
+      "wallMs": 14
+    }
+  ]
+}

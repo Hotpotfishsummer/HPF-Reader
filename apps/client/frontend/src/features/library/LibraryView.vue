@@ -155,8 +155,8 @@ const notice = computed(() => library.error ?? localError.value)
     <div
       v-if="library.isEmpty"
       data-testid="library-empty"
-      class="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] px-5 py-12 text-center sm:py-16"
-      :class="dragActive ? 'ring-2 ring-[var(--color-accent)]' : ''"
+      class="hpf-rise-in flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] px-5 py-12 text-center sm:py-16"
+      :class="dragActive ? 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]' : ''"
     >
       <p class="text-base font-medium">{{ t('library.empty') }}</p>
       <p class="mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">
@@ -182,9 +182,17 @@ const notice = computed(() => library.error ?? localError.value)
 
     <!-- 书库网格：窄屏 2 列，宽屏最多 5 列 -->
     <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <!--
+        ★ 入场错峰：每张卡按索引给一个 `--stagger`，用 CSS 变量算 animation-delay。
+          用 CSS 变量而不是给每张卡写死 delay —— 列表长度是动态的，
+          写死的话新导入的书会"没有动画"或者"延迟好几秒才出现"。
+          错峰上限 12 档：再多就不是错峰，是一片糊。
+      -->
       <BookCard
-        v-for="book in library.books"
+        v-for="(book, index) in library.books"
         :key="book.id"
+        class="hpf-rise-in"
+        :style="{ '--stagger': String(Math.min(index, 12)) }"
         :book="book"
         :progress="readingProgress(book)"
         @remove="library.removeBook(book.id)"

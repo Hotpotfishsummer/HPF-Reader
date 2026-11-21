@@ -28,6 +28,8 @@ export default {
     prev: 'Previous',
     next: 'Next',
     toc: 'Contents',
+    pinBar: 'Pin top bar',
+    unpinBar: 'Unpin top bar',
     empty: 'No content found for this book.',
     title: 'Reader',
     failed: 'Could not open this book',

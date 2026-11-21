@@ -1,0 +1,183 @@
+{
+  "note": "单章大书初排 CPU profile：按函数名聚合 self time，定位长任务代码位置",
+  "openMs": 1103,
+  "totalSampleMs": 2847299,
+  "sampleCount": 5505,
+  "hot": [
+    {
+      "name": "(idle)",
+      "selfMs": 1704971,
+      "count": 3290,
+      "url": "",
+      "line": -1
+    },
+    {
+      "name": "(program)",
+      "selfMs": 520150,
+      "count": 998,
+      "url": "",
+      "line": -1
+    },
+    {
+      "name": "expand",
+      "selfMs": 144156,
+      "count": 282,
+      "url": "http://127.0.0.1:4173/assets/paginator-BQ3RgK5E.js",
+      "line": 0
+    },
+    {
+      "name": "getBoundingClientRect",
+      "selfMs": 101729,
+      "count": 200,
+      "url": "",
+      "line": -1
+    },
+    {
+      "name": "visitNode",
+      "selfMs": 69867,
+      "count": 136,
+      "url": "",
+      "line": 280
+    },
+    {
+      "name": "loadReplaced",
+      "selfMs": 32911,
+      "count": 65,
+      "url": "http://127.0.0.1:4173/assets/epub-Bx7_OQ2j.js",
+      "line": 0
+    },
+    {
+      "name": "ne",
+      "selfMs": 28898,
+      "count": 55,
+      "url": "http://127.0.0.1:4173/assets/paginator-BQ3RgK5E.js",
+      "line": 0
+    },
+    {
+      "name": "Wn",
+      "selfMs": 27498,
+      "count": 53,
+      "url": "http://127.0.0.1:4173/assets/ReaderView-BUEbOxGn.js",
+      "line": 8
+    },
+    {
+      "name": "(anonymous)",
+      "selfMs": 18591,
+      "count": 39,
+      "url": "",
+      "line": 78
+    },
+    {
+      "name": "setImageSize",
+      "selfMs": 18264,
+      "count": 36,
+      "url": "http://127.0.0.1:4173/assets/paginator-BQ3RgK5E.js",
+      "line": 0
+    },
+    {
+      "name": "(garbage collector)",
+      "selfMs": 12765,
+      "count": 26,
+      "url": "",
+      "line": -1
+    },
+    {
+      "name": "acceptNode",
+      "selfMs": 10394,
+      "count": 21,
+      "url": "http://127.0.0.1:4173/assets/paginator-BQ3RgK5E.js",
+      "line": 0
+    },
+    {
+      "name": "x",
+      "selfMs": 9156,
+      "count": 17,
+      "url": "http://127.0.0.1:4173/assets/epub-Bx7_OQ2j.js",
+      "line": 0
+    },
+    {
+      "name": "y",
+      "selfMs": 8754,
+      "count": 17,
+      "url": "http://127.0.0.1:4173/assets/epub-Bx7_OQ2j.js",
+      "line": 0
+    },
+    {
+      "name": "ie",
+      "selfMs": 8496,
+      "count": 17,
+      "url": "http://127.0.0.1:4173/assets/platform-ip5IYsrG.js",
+      "line": 1
+    },
+    {
+      "name": "r",
+      "selfMs": 7376,
+      "count": 5,
+      "url": "http://127.0.0.1:4173/assets/platform-ip5IYsrG.js",
+      "line": 1
+    },
+    {
+      "name": "visitChild",
+      "selfMs": 4851,
+      "count": 11,
+      "url": "",
+      "line": 335
+    },
+    {
+      "name": "Hn",
+      "selfMs": 4669,
+      "count": 12,
+      "url": "http://127.0.0.1:4173/assets/ReaderView-BUEbOxGn.js",
+      "line": 8
+    },
+    {
+      "name": "Gn",
+      "selfMs": 4520,
+      "count": 8,
+      "url": "http://127.0.0.1:4173/assets/ReaderView-BUEbOxGn.js",
+      "line": 8
+    },
+    {
+      "name": "a",
+      "selfMs": 3519,
+      "count": 6,
+      "url": "http://127.0.0.1:4173/assets/vue-router-CcIUkja4.js",
+      "line": 0
+    },
+    {
+      "name": "createURL",
+      "selfMs": 3440,
+      "count": 7,
+      "url": "http://127.0.0.1:4173/assets/epub-Bx7_OQ2j.js",
+      "line": 0
+    },
+    {
+      "name": "b",
+      "selfMs": 3378,
+      "count": 6,
+      "url": "http://127.0.0.1:4173/assets/epubcfi-BzOeE4Vd.js",
+      "line": 0
+    },
+    {
+      "name": "append",
+      "selfMs": 3034,
+      "count": 6,
+      "url": "",
+      "line": -1
+    },
+    {
+      "name": "expectValue",
+      "selfMs": 2654,
+      "count": 6,
+      "url": "",
+      "line": 305
+    },
+    {
+      "name": "Rn",
+      "selfMs": 2292,
+      "count": 5,
+      "url": "http://127.0.0.1:4173/assets/ReaderView-BUEbOxGn.js",
+      "line": 8
+    }
+  ]
+}

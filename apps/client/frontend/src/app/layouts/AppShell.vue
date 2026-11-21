@@ -14,14 +14,14 @@ const { t } = useI18n()
       <nav class="flex gap-4 text-sm">
         <RouterLink
           to="/"
-          class="rounded px-2 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+          class="hpf-press hpf-focus rounded px-2 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
           active-class="!text-[var(--color-text-primary)] font-medium"
         >
           {{ t('app.library') }}
         </RouterLink>
         <RouterLink
           to="/settings"
-          class="rounded px-2 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+          class="hpf-press hpf-focus rounded px-2 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
           active-class="!text-[var(--color-text-primary)] font-medium"
         >
           {{ t('app.settings') }}
@@ -30,6 +30,11 @@ const { t } = useI18n()
     </header>
 
     <main class="min-h-0 flex-1 overflow-auto">
+      <!--
+        ★ 这里刻意**不做**路由过渡。两个静态流内的页面同时存在时会上下叠一格
+        （旧页还在离场、新页已经入场），看起来是"整页跳一下"，
+        比直接切换更难看。页面入场交给各自的 `.hpf-rise-in`（错峰淡入）。
+      -->
       <RouterView />
     </main>
   </div>
