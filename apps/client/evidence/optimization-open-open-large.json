@@ -1,0 +1,27 @@
+{
+  "note": "初排测量台：1919×1199 打开 frankenstein.epub，量打开到第一个 CFI 的墙钟与重排次数",
+  "viewport": {
+    "width": 1919,
+    "height": 1199
+  },
+  "openMs": 288,
+  "pages": 9,
+  "cfi": "epubcfi(/6/2!/4,/2,/40/1:84)",
+  "ro": {
+    "calls": 4,
+    "totalMs": 1.7,
+    "maxMs": 1.6
+  },
+  "roSplit": {
+    "note": "≥1ms 视为\"真重排（paginator columnize）\"，<1ms 视为轻量回调",
+    "heavyCalls": 1,
+    "lightCalls": 3,
+    "heavyTotalMs": 1.6,
+    "heavyMaxMs": 1.6
+  },
+  "longtasks": {
+    "samples": 1,
+    "maxMs": 53,
+    "totalMs": 53
+  }
+}

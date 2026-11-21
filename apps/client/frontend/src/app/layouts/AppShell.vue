@@ -92,21 +92,21 @@ function handleHeaderDblClick(event: MouseEvent): void {
         <nav class="flex gap-2 text-sm" style="--wails-draggable: no-drag">
           <RouterLink
             to="/"
-            class="rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            class="hpf-press hpf-focus rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             active-class="!text-[var(--color-text-primary)] font-medium bg-[var(--color-surface-sunken)]"
           >
             {{ t('app.library') }}
           </RouterLink>
           <RouterLink
             to="/discover"
-            class="rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            class="hpf-press hpf-focus rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             active-class="!text-[var(--color-text-primary)] font-medium bg-[var(--color-surface-sunken)]"
           >
             {{ t('app.discover') }}
           </RouterLink>
           <RouterLink
             to="/settings"
-            class="rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            class="hpf-press hpf-focus rounded px-2.5 py-1 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             active-class="!text-[var(--color-text-primary)] font-medium bg-[var(--color-surface-sunken)]"
           >
             {{ t('app.settings') }}
@@ -145,6 +145,7 @@ function handleHeaderDblClick(event: MouseEvent): void {
           class="rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition"
           @click="authModal.open()"
         >
+        >
           {{ t('auth.login') }}
         </button>
         <div
@@ -161,6 +162,11 @@ function handleHeaderDblClick(event: MouseEvent): void {
     </header>
 
     <main class="min-h-0 flex-1 overflow-auto">
+      <!--
+        ★ 这里刻意**不做**路由过渡。两个静态流内的页面同时存在时会上下叠一格
+        （旧页还在离场、新页已经入场），看起来是"整页跳一下"，
+        比直接切换更难看。页面入场交给各自的 `.hpf-rise-in`（错峰淡入）。
+      -->
       <RouterView />
     </main>
 

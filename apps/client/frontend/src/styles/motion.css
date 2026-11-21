@@ -1,0 +1,236 @@
+/* ============================================================================
+ * 动效基座（motion tokens + 只能动合成属性的过渡预设）
+ *
+ * 为什么单独一层，而不是到处写 `transition duration-150`：
+ *
+ * 1. **时长必须集中**。散落的 `duration-150/200/300` 会让"同一件事"在不同组件里
+ *    快慢不一，读起来就是"有的地方跟手、有的地方发黏"。这里只有 5 档。
+ *
+ * 2. **只能动合成属性（transform / opacity / filter）**。
+ *    动 `width/height/top/left/margin/box-shadow` 每一帧都要重排或重绘：
+ *    60Hz 下勉强，120Hz（8.3ms/帧）和 144Hz（6.9ms/帧）会直接掉帧。
+ *    本文件把这条约束写成注释 + 预设，组件里不再各自决定。
+ *
+ * 3. **高刷适配的真实含义**。CSS 过渡本来就是跟着显示器刷新走的，不存在
+ *    "60Hz 专用动画"；真正让高刷看起来不流畅的是两件事：
+ *      (a) 每帧主线程被重排/重绘占满（→ 见 reader/useReaderReflow.ts）；
+ *      (b) 缓动曲线起手太慢，前 2~3 帧几乎看不到位移。120Hz 下 3 帧只有 25ms，
+ *          用户会觉得"点了没反应"。所以这里的曲线统一用**起手极快**的减速曲线
+ *          （cubic-bezier 的第二个控制点接近 1），保证第 1 帧就有可见位移。
+ *
+ * 4. **弱动效**：`prefers-reduced-motion` 在 theme.css 里已有全局兜底
+ *    （把 duration 压到 0.001ms），这里不重复；JS 驱动的动画要自己判断
+ *    （见 src/app/motion.ts）。
+ * ========================================================================== */
+
+:root {
+  /* ---- 时长阶梯（全部 < 300ms：超过就会被读成"卡"） ---- */
+  --dur-1: 90ms; /* 按压 / 悬停这类"贴身"反馈 */
+  --dur-2: 140ms; /* 小元素进出、图标态切换 */
+  --dur-3: 200ms; /* 面板、浮层 */
+  --dur-4: 280ms; /* 抽屉、大面积位移 */
+  --dur-5: 420ms; /* 进度这类"连续量"变化 */
+
+  /* ---- 缓动 ----
+   * ease-out    起手最快，用于"进入"（用户刚触发，必须立刻看到）
+   * ease-in-out 对称，用于"状态切换"
+   * ease-exit   起手慢收尾快，用于"离开"（离开不需要被看见，快一点更利落）
+   * ease-spring 轻微回弹，仅用于"确认类"反馈（按钮按下去弹回来） */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.5, 1);
+}
+
+/* ==========================================================================
+ * 基础交互反馈
+ * ========================================================================== */
+
+/*
+ * 按钮/链接的统一"可点"反馈。
+ * ★ 用 opacity + transform，不碰 background-color：
+ *   背景色过渡是绘制操作（paint），在 4K/高刷下容易丢帧。
+ */
+.hpf-press {
+  transition:
+    transform var(--dur-1) var(--ease-spring),
+    opacity var(--dur-1) linear,
+    color var(--dur-1) linear,
+    background-color var(--dur-1) linear;
+}
+
+.hpf-press:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hpf-press:active {
+    transform: none;
+  }
+}
+
+/* 键盘可达性：只在键盘聚焦时画环，鼠标点击不画（避免"到处是蓝框"）。 */
+.hpf-focus:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+ * Vue <Transition> 预设
+ *
+ * 用法：<Transition name="t-pop"> … </Transition>
+ *      <Transition name="t-slide-left"> … </Transition>
+ *
+ * ★ 只写 enter/leave 的 active/from/to 四类，交给 Vue 自己切类名。
+ * ========================================================================== */
+
+/* 纯淡入淡出：用于提示条、遮罩、加载层。 */
+.t-fade-enter-active {
+  transition: opacity var(--dur-3) linear;
+}
+.t-fade-leave-active {
+  transition: opacity var(--dur-2) linear;
+}
+.t-fade-enter-from,
+.t-fade-leave-to {
+  opacity: 0;
+}
+
+/* 浮层弹出：从锚点方向略微放大 + 位移。用于 AI 面板 / 术语表 / 翻译气泡。 */
+.t-pop-enter-active {
+  transition:
+    opacity var(--dur-2) linear,
+    transform var(--dur-3) var(--ease-out);
+  transform-origin: top right;
+}
+.t-pop-leave-active {
+  transition:
+    opacity var(--dur-1) linear,
+    transform var(--dur-2) var(--ease-exit);
+  transform-origin: top right;
+}
+.t-pop-enter-from,
+.t-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+}
+
+/* 从下方升起：用于划词操作条、续读提示这类"贴着内容"的小浮层。 */
+.t-rise-enter-active {
+  transition:
+    opacity var(--dur-2) linear,
+    transform var(--dur-3) var(--ease-out);
+}
+.t-rise-leave-active {
+  transition:
+    opacity var(--dur-1) linear,
+    transform var(--dur-2) var(--ease-exit);
+}
+.t-rise-enter-from,
+.t-rise-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+
+/* 左侧抽屉：目录覆盖层。 */
+.t-slide-left-enter-active {
+  transition:
+    opacity var(--dur-3) linear,
+    transform var(--dur-4) var(--ease-out);
+}
+.t-slide-left-leave-active {
+  transition:
+    opacity var(--dur-2) linear,
+    transform var(--dur-3) var(--ease-exit);
+}
+.t-slide-left-enter-from,
+.t-slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+/*
+ * 顶部状态栏：默认收起，光标靠近阅读面顶部时滑入。
+ *
+ * ★ 只动 transform + opacity（合成属性）。状态栏收起时阅读面要收回它占的 48px，
+ *   那个高度变化由 useReaderReflow 做**一次**离散重排（见 ReaderView 的 barShown），
+ *   动画本身绝不碰高度 —— 否则每帧都要重排，正好回到我们要消灭的阻滞感。
+ * ★ 离场用 ease-exit：状态栏"消失"不需要被看清，快一点更利落。
+ */
+.t-bar-enter-active {
+  transition:
+    opacity var(--dur-2) linear,
+    transform var(--dur-3) var(--ease-out);
+}
+.t-bar-leave-active {
+  transition:
+    opacity var(--dur-2) linear,
+    transform var(--dur-2) var(--ease-exit);
+}
+.t-bar-enter-from,
+.t-bar-leave-to {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+/* ==========================================================================
+ * 进度轨道
+ *
+ * ★ 用 `transform: scaleX()` 表达进度，不用 `width: n%`。
+ *   width 每变一次都要重新布局（进度条 → 它的父盒 → 兄弟节点），
+ *   scaleX 只改合成层。翻页时进度从 12% 跳到 18%，
+ *   用 width 会连带把工具栏重排一遍 —— 这正是"翻页时整条工具栏抖一下"的来源。
+ * ========================================================================== */
+
+.hpf-progress-rail {
+  transform-origin: left center;
+  transition: transform var(--dur-5) var(--ease-out);
+  will-change: transform;
+}
+
+/* 通用"量条"（书籍进度、整书翻译进度）：同样只用 scaleX。 */
+.hpf-meter {
+  transform-origin: left center;
+  transition: transform var(--dur-5) var(--ease-out);
+}
+
+/* ==========================================================================
+ * 列表入场（书库网格）
+ *
+ * ★ 用 animation 而不是 transition：入场是一次性的，animation 有明确的结束点，
+ *   不会和后续的悬停过渡互相干扰。
+ * ★ `animation-fill-mode: backwards` + `--stagger` 做错峰，避免"整屏同时闪一下"。
+ * ========================================================================== */
+
+@keyframes hpf-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hpf-rise-in {
+  animation: hpf-rise-in var(--dur-4) var(--ease-out) backwards;
+  animation-delay: calc(var(--stagger, 0) * 26ms);
+}
+
+/* ==========================================================================
+ * 阅读面（foliate-view 宿主）
+ *
+ * ★ overflow: hidden 是排版冻结的**前提**：拖拽期间内容按旧尺寸渲染、
+ *   再用 transform 缩放贴合新尺寸，会短暂溢出宿主盒子。见 useReaderReflow.ts。
+ * ★ contain: paint 让阅读面的重绘范围不外溢（正文是最大的重绘源）。
+ * ========================================================================== */
+
+.hpf-reader-surface {
+  overflow: hidden;
+  contain: paint;
+}
+
+.hpf-reader-surface > foliate-view {
+  transform-origin: 0 0;
+}

@@ -27,6 +27,8 @@ export const useSettingsStore = defineStore(
     const einkMode = ref(false)
     const pageTurnAnimation = ref<PageTurnAnimation>('slide')
     const locale = ref<AppLocale>('zh-CN')
+    /** 顶部状态栏是否常驻（pin）。默认 false = 自动收起（见 ReaderView 的栏显隐逻辑）。 */
+    const statusBarPinned = ref(false)
 
     const readerCssVars = computed<Record<string, string>>(() => ({
       '--reader-font-size': `${fontSize.value}px`,
@@ -46,6 +48,10 @@ export const useSettingsStore = defineStore(
     function setLocale(next: AppLocale): void {
       locale.value = next
       applyLocale(next)
+    }
+    /** 顶部状态栏"常驻 ↔ 自动隐藏"的唯一开关（ReaderView 的 pin 按钮调用）。 */
+    function setStatusBarPinned(next: boolean): void {
+      statusBarPinned.value = next
     }
 
     /**
@@ -79,17 +85,19 @@ export const useSettingsStore = defineStore(
       einkMode,
       pageTurnAnimation,
       locale,
+      statusBarPinned,
       readerCssVars,
       setTheme,
       setReaderTheme,
       setPageTurnAnimation,
       setLocale,
+      setStatusBarPinned,
     }
   },
   {
     persist: {
       key: 'hpf.settings.v1',
-      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'fontFamily', 'textIndent', 'einkMode', 'pageTurnAnimation', 'locale'],
+      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'fontFamily', 'textIndent', 'einkMode', 'pageTurnAnimation', 'locale', 'statusBarPinned'],
     },
   },
 )

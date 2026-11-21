@@ -1,8 +1,9 @@
 # apps/client 交付状态
 
 > 覆盖 **task-9**（客户端骨架）、**task-12**（本地优先阅读闭环 + 横竖屏自适应）、
-> **task-14**（老旧 WebView 兼容性）、**task-17**（`@layer` CSS 兼容性）。
-> 最后核对时间：2026-11-03。
+> **task-14**（老旧 WebView 兼容性）、**task-17**（`@layer` CSS 兼容性），
+> 以及本轮的**动效 / 高刷适配 / 操作动线优化**（§11）。
+> 最后核对时间：2026-11-21。
 > 所有命令均在 Windows + PowerShell 下实测通过，原始输出见 `apps/client/evidence/`。
 
 **状态：**
@@ -11,6 +12,9 @@
 - task-14 老旧 WebView 兼容性：**已完成**（审计 + polyfill + 构建目标 + 单测 + E2E 模拟验证）。
 - task-17 `@layer` 扁平化：**已完成**（§10，产物 CSS 中 `@layer` 由 5 → **0**）。
 - task-12 的"真实 exe 截图"：**已完成**（4 张真实窗口截图，见 §8.3）。
+- **动效 / 高刷适配 / 操作动线优化：已完成**（§11）。120 步拖动的重排耗时
+  **902.8ms → 21.2ms**（真重排 240 次 → **2 次**），主线程长任务 **0** 次；
+  单测 154 个、E2E 29 个全绿。
 
 **Android（WebView 91 / Android 12）的三个硬阻塞点，全部已解**：
 
@@ -121,19 +125,29 @@ E2E 在真实 Chromium 里断言的是**引擎的稳定输出**（不是截图�
 
 ---
 
-## 3. 怎么在本地跑（Windows / PowerShell）
+## 3. 开发、测试与编译调试管线（Windows / PowerShell）
 
-> 环境前提：Go 1.22+（会自动切到 go1.26 工具链）、Node 20+、`corepack` 可用、Wails v3 CLI。
-> **本项目一律用 `corepack pnpm`，不要用 npm**（会与 pnpm 的 node_modules 布局冲突）。
+> 本节是**唯一权威的本地开发管线说明**。§11–§13 的优化与修复都依赖这里的命令；
+> 换机器或换工具链后，先回来对齐这节再动手。
+
+### 3.0 环境前提
+
+| 项 | 要求 | 说明 |
+|---|---|---|
+| Go | 1.26（`apps/client/go.mod` 声明 `go 1.26.0`） | 便携工具链在 `C:\Users\HOTPOTFISH\go-portable\go\bin`；`GOTOOLCHAIN=auto` 会自动拉取匹配版本 |
+| Node | 20+ | 仓库一律用 `corepack pnpm`，**不要直接用 `npm`**（会破坏 pnpm 的 `node_modules` 布局） |
+| Wails v3 CLI | 可选 | 只在改了 Go 侧、需要重新生成绑定或完整打包时用；纯前端改动可跳过 |
+| Chrome | 本机已装 | Playwright E2E 用 `channel:'chrome'`，不下载自带浏览器 |
+
+每个新终端先设好 Go 环境（前端开发不需要，但编译 exe / 跑 Go 测试需要）：
 
 ```powershell
-# 0. 每个新终端都先设好环境（Go 工具链 / 代理）
 $env:PATH = 'C:\Users\HOTPOTFISH\go-portable\go\bin;' + $env:PATH
 $env:GOTOOLCHAIN = 'auto'
 $env:GOPROXY = 'https://goproxy.cn,direct'
 ```
 
-### 3.1 只跑前端（最快，浏览器里直接看效果）
+### 3.1 前端开发（热重载，最快）
 
 ```powershell
 cd apps\client\frontend
@@ -141,53 +155,100 @@ corepack pnpm install
 corepack pnpm run dev          # → http://127.0.0.1:9245/#/reader/sample
 ```
 
-打开`http://127.0.0.1:9245/#/reader/sample` 即可看到内置示例书；
-`/#/` 是书库、`/#/settings` 是设置。这条路径**不需要** Go 侧，走 `server` 平台实现。
+- `/#/reader/sample`：内置示例书；`/#/`：书库；`/#/settings`：设置。
+- 这条路径**不需要 Go 侧**，走前端的 `server` 平台实现（本地文件直开）。
 
-### 3.2 测试与构建
+### 3.2 测试管线
+
+三层，从快到慢，提交前都应过：
 
 ```powershell
 cd apps\client\frontend
-corepack pnpm run test         # vitest：27 个用例
-corepack pnpm run build        # vue-tsc 类型检查 + vite 生产构建
 
-# E2E：需要一个真实 Chrome（Playwright 用 channel:'chrome'，不下载自带浏览器）
-corepack pnpm run test:e2e     # 会自动起 vite preview（127.0.0.1:4173）
+# ① 类型检查（vue-tsc）
+corepack pnpm exec vue-tsc --noEmit
+
+# ② 单元测试（vitest，154 用例 / 9 文件）
+corepack pnpm run test
+
+# ③ E2E（Playwright + 真实 Chrome，自动起 vite preview :4173）
+corepack pnpm run test:e2e
 ```
 
-### 3.3 桌面应用（Wails / Go 外壳）
+**性能门控**：E2E 里有一组 `e2e/perf-*.spec.ts` 测量台，**默认跳过**，只在
+`HPF_PERF=1` 时跑（避免常规 E2E 被性能测量拖慢）。常用环境变量：
+
+| 变量 | 作用 |
+|---|---|
+| `HPF_PERF=1` | 开启性能测量台（`perf-open` / `perf-flow` / `perf-breakdown` / `perf-profile` / `perf-reflow`） |
+| `HPF_PERF_TAG=<tag>` | 证据文件名后缀，方便区分多次测量 |
+| `HPF_BOOK=<相对路径>` | 覆盖 `perf-open.spec.ts` 打开的书（默认 `testdata/books/frankenstein.epub`） |
 
 ```powershell
-cd apps\client\frontend; corepack pnpm run build; cd ..\..
-cd apps\client
-
-# 方式 A（推荐，实测通过）：显式两步，不依赖 go-task
-wails3 generate bindings -ts -i -clean=true
-go build -o bin\hpfreader.exe .
-
-# 方式 B：完整打包（需要 Git 的 usr\bin 提供 uname/tail，且需要一个 pnpm shim）
-$shim = Join-Path $env:TEMP 'hpf-pnpm-shim'
-New-Item -ItemType Directory -Force -Path $shim | Out-Null
-Set-Content -Path (Join-Path $shim 'pnpm.cmd') -Value '@corepack pnpm %*' -Encoding ascii
-$env:PATH = "$shim;C:\Program Files\Git\usr\bin;" + $env:PATH
-wails3 build PACKAGE_MANAGER=pnpm
-
-.\bin\hpfreader.exe          # 启动桌面应用
+$env:HPF_PERF='1'; $env:HPF_PERF_TAG='my-run'
+# 可选：$env:HPF_BOOK='testdata/books/single-chapter-large.epub'
+corepack pnpm exec playwright test e2e/perf-open.spec.ts
 ```
 
-> `PACKAGE_MANAGER=pnpm` 不能省：Taskfile 默认 `npm`，而 `npm install` 会破坏 pnpm 的
-> `node_modules` 布局（模板里 `pnpm` 是官方支持的取值，见 `build/Taskfile.yml:46`）。
+证据 JSON 落在 `apps/client/evidence/`。自造测试书用
+`scripts/make-large-epub.mjs` / `scripts/make-single-chapter-epub.mjs` 生成
+（产出 `testdata/books/large-book.epub`、`single-chapter-large.epub`）。
+
+### 3.3 构建管线
+
+**两条产物，顺序不能错：**
+
+**① 前端产物**（`frontend/dist/`）：
+
+```powershell
+cd apps\client\frontend
+corepack pnpm run build        # vue-tsc 类型检查 + vite 生产构建
+```
+
+**② 桌面 exe**（`apps/client/bin/hpfreader.exe`）：
+
+```powershell
+cd apps\client
+go build -o bin\hpfreader.exe .
+```
+
+> ★ **关键事实**：`apps/client/main.go:19` 用 `//go:embed all:frontend/dist` 把前端
+> **在编译期嵌入二进制**（`main.go:39` 用 `application.AssetFileServerFS(assets)` 从嵌入的
+> FS 提供资源）。所以：
+> - **只重建 `dist/` 不重编 exe，对桌面应用零影响**——exe 里嵌的还是旧前端。
+> - **重编 exe 前必须先 `corepack pnpm run build`**，否则嵌进去的是旧 `dist`。
+> - 验证嵌入内容：在 exe 二进制里搜前端标记字符串（如 `reader-resumed`、`data-bar`、
+>   `statusBarPinned`），命中即说明嵌的是最新产物。
+
+**关于 `wails3`**：只有改了 Go 侧（新增/修改方法）才需要
+`wails3 generate bindings -ts -i -clean=true` 重新生成 TypeScript 绑定。
+**纯前端改动直接 `go build` 即可**，不需要 `wails3`。若确实要用完整打包：
+`wails3 build PACKAGE_MANAGER=pnpm`——`PACKAGE_MANAGER=pnpm` 不能省（Taskfile 默认
+`npm`，`npm install` 会破坏 pnpm 的 `node_modules` 布局，见 `build/Taskfile.yml:46`）；
+完整打包还需要 Git 的 `usr\bin` 提供 `uname`/`tail`，且需要一个 pnpm shim。
+
+启动：`.\bin\hpfreader.exe`。
 
 ### 3.4 联调后端（可选）
 
 ```powershell
 # 终端 1：后端
-cd apps\server; go run .            # 见 apps/server 自己的说明
+cd apps\server; go run .            # 见 apps/server/STATUS.md
 # 终端 2：前端，指向后端
 cd apps\client\frontend
 $env:VITE_HPF_API_BASE = 'http://127.0.0.1:8080'
 corepack pnpm run dev
 ```
+
+### 3.5 常见排障
+
+| 现象 | 原因 / 处理 |
+|---|---|
+| 桌面应用改了前端不生效 | exe 嵌的是编译时的 `dist`，见 §3.3——先 `pnpm run build` 再 `go build` |
+| `go: module requires go 1.26` | `GOTOOLCHAIN=auto` 会自动拉取；确认 `go` 在 PATH 上 |
+| E2E 报找不到 Chrome | Playwright 用 `channel:'chrome'`，需本机装 Chrome；不下载自带浏览器 |
+| 性能台没跑 | 需要 `HPF_PERF=1`，否则 `e2e/perf-*.spec.ts` 被跳过 |
+| `npm install` 后构建异常 | 用 `corepack pnpm`，不要用 npm |
 
 ---
 
@@ -722,3 +783,349 @@ paginator 的 shadow 样式里有 `&.vertical` 等嵌套写法（CSS 嵌套需 C
 关键教训：**前两个都能靠"运行时探测 + JS 兜底"解决，第三个不能** ——
 CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计必须**同时扫源码和产物**，
 并且要覆盖 **JS 能力、CSS 语法、Web API 格式**三类（我们前两次各漏了一类）。
+
+---
+
+## 11. 动效 / 高刷适配 / 操作动线（本轮优化）
+
+> 背景：基础功能已经完整，剩下的都是"显示与手感"层面的问题。本轮只做三件事：
+> **高刷适配**（让动画和重排不再吃满一帧）、**动画流畅度**（把"没有动画 / 写死时间"
+> 换成一套统一、可降级的动效）、**操作动线**（点一下就该有反应，别让人去点边角）。
+> 全部结论都有实测数据，原始输出落在 `apps/client/evidence/`。
+
+### 11.1 问题清单与根因
+
+| 现象 | 根因 | 证据 |
+|---|---|---|
+| 拖动窗口 / 缩放时正文"一跳一跳"、明显掉帧 | 逐帧**全量重新分栏**：foliate-js 的 paginator 自带 `ResizeObserver`，宿主尺寸一变就 `render()` → `columnize()` → 强制布局（`getBoundingClientRect`） | 基线测量：120 步缩放，**每步阻塞主线程 7.5ms**（≈120Hz 的一整帧预算），`roTotalMs 902.8` |
+| 页面缩放时正文变动有阻滞感（实际并没有计算负担） | 与上一条同源：视觉上的"跳"来自逐帧重排，不是计算量问题 | 同上；优化后同样操作只剩 2 次重排，阻滞感消失 |
+| 动画"写死时间"、没有高刷适配 | 组件几乎没有动画；仅有的两处动画的是**非合成属性**（翻译面板 `width`、卡片 `box-shadow`），每帧触发重排/重绘 | 代码走查：`transition-[width] duration-500`、`transition-shadow` |
+| 点正文边缘翻页有时没反应 | 分栏容器被加了左右 `gap/2` 的内边距（`paginator.js:322`），阅读面最左/最右约 36px 落在 iframe **之外**，点击不冒泡进章节文档 | 探针实测：点阅读面 x=12 时 `event.target` 是 `FOLIATE-VIEW`，章节文档收不到 |
+| 目录开着时按 Esc 会连书一起退出 | `Escape` 没有分层，直接 `goBack()` | 代码走查 |
+
+### 11.2 高刷适配：**冻结 + 合成层跟随**，而不是"把重排做便宜"
+
+7.5ms/步的重排**不可能**便宜到适配 120/144Hz，所以思路是让重排**根本不发生在拖动过程中**
+（见 `src/reader/useReaderReflow.ts`）：
+
+1. 连续尺寸变化（第 2 帧起）进入**排版冻结**：把 `foliate-view` 用 `position:absolute` +
+   **像素**宽高钉死。这样 paginator 内部容器的 border-box 不变 → 它自己的
+   `ResizeObserver` 不触发 → **完全不重排**；
+2. 冻结期间只写**合成层属性** `transform: scale(...)` 跟手（零布局、零重绘）；
+3. 停止拖动 130ms 后**只重排一次**（重新分栏 + 重写样式），再解除冻结、拉回阅读位置。
+
+离散改动（侧栏开合、页边距、主题）不受影响：走"2 帧后落定"的分支，一次改一次重排。
+
+**实测（`e2e/perf-reflow.spec.ts`，`HPF_PERF=1` 才跑；下表为最终一轮 `HPF_PERF_TAG=final`
+的原始输出，原始 JSON 见 `apps/client/evidence/optimization-reflow-final.json`）**：
+
+| 指标 | 优化前 | 优化后 |
+|---|---|---|
+| 120 步拖动的 `ResizeObserver` 回调数 | 240（每步 2 次） | **122**（其中只有 **2 次是真重排**） |
+| 重排总耗时 | **902.8ms** | **21.2ms** |
+| 单次重排 `p50 / p95 / max` | 7.3 / 10.6 / 12.2ms | **0.1 / 0.2 / 12.6ms** |
+| 帧间隔 `p50 / p95 / max` | 6.9 / 7.1 / 14ms，`over8ms` 5 次 | 6.9 / 7.1 / 13.9ms，`over8ms` 2 次，`over16ms` **0** |
+| 主线程长任务（≥50ms） | — | **0 次** |
+| 真实窗口缩放：进入冻结 / 落定后冻结 | — | `true` / `false`（机制断言通过） |
+
+> 122 次回调里剩下的 ~120 次是调度器自己写 `transform` 的轻量回调（<1ms，实测
+> `lightTotalMs 10.6`），**不触发布局**。把回调按 ≥1ms 拆成"真重排 / 轻量写"两类，
+> 正是为了证明"重排次数"和"回调次数"是两件事。
+>
+> 注意：这些数字是**真机上的实测值**，同一份代码连跑两轮会有波动（例如重排总耗时
+> 16~21ms、`over8ms` 0~2 次）—— 量级和机制结论稳定，逐位数字不要当常量读。
+
+### 11.3 动画体系：统一令牌 + 只动合成属性
+
+新增 `src/styles/motion.css`（在 `theme.css` 里 `@import`），全部基于
+**transform / opacity**，没有任何动画属性会触发布局：
+
+- **时长令牌**：`--dur-1 90ms` / `--dur-2 140ms` / `--dur-3 200ms` / `--dur-4 280ms` /
+  `--dur-5 420ms`；**缓动令牌**：`--ease-out` / `--ease-in-out` / `--ease-exit` / `--ease-spring`。
+  全站动画只引用令牌，改"手感"改一处。
+- **过渡预设**：`.t-fade` / `.t-pop` / `.t-rise` / `.t-slide-left`，供 `<Transition>` 直接用。
+- **入场动画**：`.hpf-rise-in`（带 `--stagger` 错峰），用在书库卡片、设置页、目录条目。
+- **按压反馈**：`.hpf-press`（`:active { transform: scale(.96) }`）+ `.hpf-focus`（`focus-visible`
+  描边），全部按钮/链接统一。
+- **`prefers-reduced-motion`**：`theme.css` 里已有全局降级（时长压到 0.001ms `!important`），
+  动效层自动跟随，无需额外处理。
+
+**把非合成属性的动画换掉**（这是"写死时间 + 不流畅"的直接来源）：
+
+| 位置 | 原来 | 现在 |
+|---|---|---|
+| AI 翻译面板进度条 | `transition-[width] duration-500` + `width:%` | `.hpf-meter` + `transform: scaleX()` |
+| 书库卡片进度条 | `width:%` | `.hpf-meter` + `scaleX()` |
+| 书库卡片悬停 | `transition-shadow hover:shadow-md` | 合成层 `hover:-translate-y-0.5` + 一层只改 `opacity` 的阴影层 |
+| 阅读器顶部进度条 | 无 | 新增：`.hpf-progress-rail` + `scaleX()`（`transform-origin:left center`） |
+
+翻页提示用 WAAPI 在 `src/app/motion.ts` 里做（`pageTurnCue`）：只动 `opacity` +
+`translate3d`，200ms / `cubic-bezier(0.16,1,0.3,1)`，并在同一元素上复用（`WeakMap` 记录
+正在跑的动画并取消），避免两套 transform 叠加。
+
+> 刻意**没有**给 `AppShell` 的 `<RouterView>` 加过渡：两个静态流页面同时存在于 DOM 时
+> 会叠成一行（旧页面 leave + 新页面 enter），看起来像"整页跳了一下"，比直接切换更糟。
+> 页面进入的动效交给各视图自己的 `.hpf-rise-in`。
+
+### 11.4 操作动线
+
+- **点正文 = 先收浮层，再翻页**（`ReaderView.vue` 的 `handleTap`）：原来点正文既不能翻页
+  也不能关面板，想收起 AI 面板必须精准点右上角的 ✕。现在点一下正文先收掉挡在上面的东西，
+  没有东西可收时再按横向位置翻页（左 28% 上一页 / 右 72% 下一页）。
+- **翻页热区按"阅读面"算，不按 iframe**（`src/reader/bridge.ts` 的 `toHostRatio`）：
+  实测分栏排版下 iframe 的视口宽度是**整章展开宽**（9523px，阅读面只有 1024px），
+  拿它当分母会让整个屏幕的点击都被算成"最左侧"，翻页方向整个反过来。
+  正确换算是 `(iframe.left + clientX - 阅读面.left) / 阅读面.width`，冻结缩放期间还要
+  用 rect 宽与布局宽的比反推缩放系数。
+- **边缘点击兜底**（`ReaderView.vue` 的 `onSurfaceClick`）：阅读面最左/最右约 36px 落在
+  iframe 之外，`bridge` 收不到；在阅读面宿主上补一个 `click` 监听（点在 iframe 内时事件
+  不会冒泡到宿主，所以不会重复触发）。
+- **Esc 分层关闭**（`dismissTopLayer`）：气泡 → AI 面板 → 术语表 → 目录覆盖层，
+  一层一层收，收无可收才 `goBack()`。改造前目录开着时按 Esc 会连书一起关掉。
+- **工具栏去掉 `backdrop-blur`**：工具栏下面本来就有 `pt-12` 的留白，那层模糊是纯粹的
+  GPU 开销，去掉后视觉不变。
+- **wheel 冷却**：一次翻页后 220ms 内的滚动一律忽略（`bridge.ts` 的 `wheelCooldownMs`），
+  避免一次甩动连翻好几页。
+
+### 11.5 验证
+
+- **单元测试**：`corepack pnpm run test` 全绿（154 个用例 / 9 个文件）。
+- **构建**：清空 `dist` 后 `corepack pnpm run build`（`vue-tsc --noEmit` + `vite build
+  --mode production`）通过。产物核验：`dist/assets/index-*.css` 里动效令牌与预设
+  （`--dur-1` / `--ease-out` / `t-pop-enter` / `hpf-rise-in` / `hpf-press` / `hpf-meter` /
+  `hpf-progress-rail` 等）全部在位，新模块（`hpf-reader-surface`、`allowFreeze`）已进入
+  打包后的 JS。
+- **E2E**：`corepack pnpm run test:e2e` 全绿（**29 通过 / 2 跳过**，跳过的是性能测量台，
+  按设计由 `HPF_PERF` 门控）；跑的就是上面重建出来的 `dist`。新增
+  `操作动线：正文点击热区 / Esc 分层关闭 / 点正文收浮层`（`e2e/reader.spec.ts`）
+  作为热区与分层的回归锁。
+  > 上面这组数字是**第一轮**的。第二轮把状态栏改成默认收起、并补了显隐专项用例，
+  > 现在是 **33 通过 / 2 跳过**，见 §11.6。
+- **性能测量台**：`e2e/perf-reflow.spec.ts`（`HPF_PERF=1` 才跑，平时自动跳过），
+  两个用例分别测"拖阅读面宽度"和"真实窗口缩放"，落盘
+  `apps/client/evidence/optimization-reflow-*.json` / `optimization-window-resize.json`。
+- **改动文件**：`src/styles/motion.css`（新增）、`src/app/motion.ts`（新增）、
+  `src/reader/useReaderReflow.ts`（重排调度）、`src/reader/useReaderLayout.ts`（排版决策，
+  拆成"UI 状态"与"几何参数"）、`src/reader/ReaderView.vue`、`src/reader/bridge.ts`、
+  `src/reader/components/ReaderToolbar.vue`、`src/features/library/components/BookCard.vue`、
+  `src/features/library/LibraryView.vue`、`src/features/ai/components/BookTranslatePanel.vue`、
+  `src/app/layouts/AppShell.vue`、`src/features/settings/SettingsView.vue`、
+  `src/styles/theme.css`（引入动效层）。
+
+> 兼容性红线不变：仍以 **Chromium 91** 为基线。动效层只用 `transform` / `opacity` /
+> WAAPI 这些老能力，**没有**用 `@starting-style`、CSS 嵌套或 `transition-behavior`。
+> 产物 CSS 里的现代语法**三项门槛全部为 0**：`@layer` **0**（task-17 的门槛没有回退）、
+> `@starting-style` **0**、`@container` **0**。
+>
+> ⚠️ 踩坑提醒：产物 CSS 里字面量 `@container` 有 1 处，但它**不是 at-rule**，
+> 是 Tailwind 的转义类名 `.\@container`（`container-type: inline-size` 工具类）。
+> 用 `Select-String '@container'` 这类朴素正则统计会把它误当成"用了 `@container` 语法"，
+> 必须**先看前一个字符是不是 `\`**（转义类名）才能区分。
+
+> 桌面 exe：本轮改动**只在前端**。原先本会话 PATH 上没有 `go` / `wails3`（`task` 也没装），
+> 按 §3.3 的方式 A 需要 `wails3 generate bindings -ts -i -clean=true` + `go build -o bin\hpfreader.exe .`。
+> **已重编完成**：用 §3.0 记录的便携 Go 工具链（`C:\Users\HOTPOTFISH\go-portable\go\bin`，
+> `GOTOOLCHAIN=auto` 自动拉取 go1.26.0）直接 `go build -o bin\hpfreader.exe .`，跳过
+> `wails3 generate bindings`（本次没有改 Go 侧，绑定无需重生成）。`//go:embed all:frontend/dist`
+> 在编译期嵌入**当时**的 `dist`，所以重编前必须先 `cd apps\client\frontend; corepack pnpm run build`
+> （否则嵌进去的还是旧 `dist`）。已核对 exe 二进制内含 `reader-resumed` / `statusBarPinned` /
+> `data-bar` 等新前端标记，确认嵌入的是最新产物。
+
+## 12. 第二轮打磨：状态栏 / 目录默认收起，续读提示自动消失
+
+用户的原始反馈（三条）：
+
+1. 续读提示**一直显示不会自己消失**，小屏上会遮挡正文；
+2. **目录和顶部状态栏应该是默认关闭的**，避免一调整窗口就又弹出来；顶部状态栏可以做成
+   "光标靠近自动展开、远离自动折叠"；
+3. 移动端用**双击正文**切换状态栏（同时**去掉**原来"单击正文显示顶部状态栏"），
+   状态栏上再加一个 **pin 图标**切换"自动隐藏 / 常驻"。
+
+### 12.1 根因（都不是"样式没调好"，是缺机制）
+
+- 续读提示 `reader-resumed` 就是一个 `v-if` 的常驻 `<p>`，**没有任何计时器**；
+  更糟的是它带着 `hpf-press`（手型光标 / 可点感）且 `pointer-events` 是默认值 ——
+  它压在正文左下角的翻页热区上，**真的会吃掉点击**，不只是视觉遮挡。
+- 状态栏一直常驻：`ReaderView` 里工具栏**无条件渲染**，阅读列**无条件** `pt-12`。
+- 目录有一条"窗口变宽 → overlay 自动变 sidebar 并展开"的 watch，
+  正是"一调整窗口就又弹出来"的来源。
+
+### 12.2 状态栏：三态收敛成两态
+
+`barVisible`（自动显隐）+ `barPinned`（常驻，持久化在 `hpf.settings.v1` 的
+`statusBarPinned`），对外只用 `barShown = pinned || visible`。
+
+- **靠近判定**：`pageY - viewTop <= NEAR_TOP_PX(64)`。
+- ★ **iframe 是 DOM 里的洞**：指针落在正文上时，宿主的 `pointermove` 一律收不到
+  （事件不冒泡出 iframe）。所以"光标靠近顶部"这个信号必须由 bridge 从**章节文档里**
+  报回来（`bridge.ts` 的 `onHover` + `pointerPageY`），宿主区域（工具栏条 / 侧栏 /
+  内边距）才由根盒自己的 `pointermove` 兜。
+- ★ `viewTop` 用 `ResizeObserver` **缓存**，不在每次 `pointermove` 里
+  `getBoundingClientRect()` —— 那等于每帧一次强制布局。
+- 折叠延迟 `HIDE_DELAY_MS = 420`（短了会闪）；`chromeLocked`（浮层目录 / AI 面板 /
+  术语表打开）时**不许**自动收，否则面板会丢掉控制它的入口。
+- 收起不是"变透明了"：外层 `pt-12` / `pt-0` 随 `barShown` 切换，那 48px **真的还给正文**；
+  高度变化统一走 `useReaderReflow`，合并成**一次离散重排**（不逐帧重排）。
+  pin 住时几何与改造前**逐像素一致**，所以第一轮的性能基线仍然可比。
+
+### 12.3 目录：删掉自动展开
+
+`ReaderView.vue` 里 TOC 的 watcher 改成**单向**：只在 `overlay → sidebar`（窗口变窄）
+时强制收起，**不再**在 `sidebar → overlay`（窗口变宽）时自动打开。`tocOpen` 默认 `false`。
+
+### 12.4 移动端双击：延后的是**整个单击动作**，不只是翻页
+
+`bridge` 认 `onDoubleTap(pointerType)`，只对 touch / pen 生效（桌面端双击没有语义）。
+为了给第二次点击留机会，触屏单击整体延后 `DOUBLE_TAP_MS = 220`。
+
+> ★ 这里的坑：一开始只延后了"翻页"，没收"收浮层"。于是
+> **状态栏开着 → 双击想收起** 时，第一次点击先把状态栏收了，第二次（`detail > 1`）
+> 又把它切回来 —— 看起来像完全没反应。所以"收浮层"必须和"翻页"一起延后：
+> `handleTap` 里把两件事合成一个 `act()`，触屏时整体 `setTimeout`，
+> 双击时 `toggleBar()` 会 `clearPendingTap()` 把它取消掉。
+> 鼠标不延后（桌面端没有这条路），单击保持即时响应 —— 已有桌面用例全不受影响。
+
+### 12.5 续读提示：4 秒自动消失，且不再吃点击
+
+`RESUME_HINT_MS = 4000`；改成 `pointer-events-none`（顺手去掉 `hpf-press`）。
+★ 计时**从 loading 结束才开始**：`watch([resumedFrom, loading])`，加载没结束不启动。
+否则冷启动慢一点，提示还没被人看见就到期了 —— E2E 里"重开必须看到续读提示"那句
+断言会因此变成假阴性（这个坑在改动前就先绕开了）。
+
+### 12.6 E2E 适配（本轮最大的工作量）
+
+状态栏默认**不在 DOM 里**，所有 `page.getByTestId('next-page').click()` 这类断言都会
+直接失败（Playwright 的 actionability 检查：`opacity:0` 算可见，但 `pointer-events:none`
+和"被 transform 挪出视口"都会被判为不可点；而 `v-if` 干脆是 0 个元素）。
+
+- 新增 **`e2e/reader-chrome.ts`**：
+  - `pinReaderBar(page)`：`addInitScript` **合并**写入 `statusBarPinned: true`
+    （合并而不是整体覆盖 —— 覆盖会把主题 / 字号一起抹掉，主题类用例跨 reload 就会
+    莫名回到默认值）；初始化脚本在**每次导航前**都会跑，所以 `reload()` 之后仍生效。
+  - `revealReaderBar(page)` / `clickReaderChrome(page, testId)`：真的把光标挪到顶部
+    （用 `mouse.move` 而不是 `hover()` —— `hover()` 会先做 actionability 检查，
+    而此刻元素还不在 DOM 里）。
+- 功能型 spec（`reader` / `ai` / `glossary` / `glossary-evidence` / `portrait-evidence` /
+  `perf-reflow`）统一在文件级 `beforeEach` 里 `pinReaderBar`：它们验的不是显隐，
+  用 pin 把变量按住，版面几何与原基线一致。
+- 新增 **`e2e/reader-chrome.spec.ts`**（**故意不 pin**，4 个用例）：
+  1. 默认收起（`data-bar="hidden"` + 工具栏 0 个元素）且阅读面顶边**等于**根盒顶边
+     → 靠近顶部展开（让出 ≥40px）→ 光标移到正文下方后自己折叠回原样；
+  2. pin 后光标离开也**不收**，且 `reload()` 之后仍是常驻（验持久化）；
+  3. 续读提示可见 → `pointer-events: none` → 到点自动消失；
+  4. 移动端（`test.use({ hasTouch: true, viewport: 480x900 })`）双击展开 / 再双击收起 /
+     单击右边缘仍然翻页且**不再**弹出状态栏。
+- `reader.spec.ts` 里原来那句"横屏目录自动展开"的断言，按新行为改成
+  "默认收起（`toHaveCount(0)`）→ 显式点 ☰ 才出现"。
+
+### 12.7 验证（本轮实测）
+
+| 项目 | 命令 | 结果 |
+|---|---|---|
+| 类型 | `corepack pnpm exec vue-tsc --noEmit` | 无输出（exit 0） |
+| 构建 | `corepack pnpm run build` | `✓ built`，exit 0 |
+| 单元 | `corepack pnpm run test` | **154 / 154**（9 文件） |
+| E2E | `corepack pnpm exec playwright test` | **33 通过 / 2 跳过**（跳过的是 `HPF_PERF` 门控的性能台） |
+| 性能 | `HPF_PERF=1` + `e2e/perf-reflow.spec.ts` | 全绿：`roCallsPerStep 1.017`、`heavyCalls 2`、`over16ms 0`、longtasks 0 —— 与第一轮持平 |
+
+改动文件：`src/reader/ReaderView.vue`、`src/reader/bridge.ts`、
+`src/reader/components/ReaderToolbar.vue`、`src/stores/settings.ts`、
+`src/i18n/locales/zh-CN.ts`、`src/i18n/locales/en.ts`、`src/styles/motion.css`、
+`e2e/reader-chrome.ts`（新增）、`e2e/reader-chrome.spec.ts`（新增），
+以及 6 个既有 spec 的 `beforeEach`。
+
+> 桌面 exe 已重编（见 §11 末尾说明），嵌入的即最新前端产物。
+> 在有 Go 工具链的机器上按 §3.3 方式 A 跑一遍即可。
+
+## 13. 第三轮：排版（初排）耗时排查与修复
+
+用户反馈：**排版会花很长时间，十几甚至数十秒**，附 1919×1199 大窗截图（双栏 + 侧栏）。
+
+### 13.1 排查路径（逐层排除，全部用测量，不猜）
+
+**先证明"初排本身不慢"**：写了 `e2e/perf-open.spec.ts`（初排测量台），在 1919×1199 下
+打开 frankenstein.epub，量"打开书到拿到第一个 CFI"的墙钟与重排次数。
+
+| 书 | 章节/段落/图 | openMs | RO 次数 | 重排(heavy) | 长任务 |
+|---|---|---|---|---|---|
+| frankenstein | 小 | **251ms** | 4 | 0 | 0 |
+| large-book（自造） | 20 章/2400 段/120 图 | **288ms** | 4 | 1 | 1（53ms） |
+| single-chapter-large（自造） | **1 章/4000 段/400 图** | **1583ms** | 4 | 1 | **5（最大 529ms）** |
+
+→ **初排耗时与"单章元素数"强相关，与章节数无关**（foliate-js 是惰性加载，每次只加载
+当前章节）。小书 251ms，单章大书 1583ms，且出现 529ms 长任务。用户书若单章元素数更大，
+按线性放大到十几秒完全合理。
+
+**再写完整动线测量台** `e2e/perf-flow.spec.ts`（开书→光标靠近→离开→再靠近→缩放），
+证明状态栏切换（`pt-12`↔`pt-0`）和窗口缩放都只产生 1–2 次重排、1.7ms，**不是瓶颈**。
+
+**细粒度分解** `e2e/perf-breakdown.spec.ts` + **CPU profile** `e2e/perf-profile.spec.ts`
+（CDP `Profiler`，按函数名聚合 self time）定位热点：
+
+| 热点 | 优化前 | 说明 |
+|---|---|---|
+| `(program)` 浏览器内部 | 893ms | iframe 文档的解析 + 布局 |
+| **`expand` + `getBoundingClientRect`** | **400ms** | foliate-js 布局循环，expand 被调 210 次 |
+| `visitNode` / `loadReplaced` / `acceptNode` | 155ms | epub.js DOM 遍历 + URL 重写 |
+| `setImageSize` | 28ms | 逐图 `getComputedStyle` |
+| `Wn`(ReaderView) | 55ms | 应用层 |
+| `(garbage collector)` | 30ms | |
+
+**sanitize 只有 17ms——净化器不是瓶颈。**
+
+### 13.2 根因
+
+foliate-js 的 **Paginator 用 `ResizeObserver` 观察 iframe 内的 `doc.body`**（paginator.js:273），
+回调直接调 `expand()`。`expand()` 调 `getBoundingClientRect()` **强制同步布局**。
+
+单章大文档里图片多，**图片加载过程中 `doc.body` 内容高度不断变化** → 每次变化触发
+Paginator 的 RO → `expand()` → 强制布局 → 改 iframe 尺寸 → 又可能触发下一轮 RO →
+**布局反馈循环**。400 张图产生 210 次 expand、207 次 `getBoundingClientRect`，累计 400ms+。
+（主窗口的 RO instrument 只覆盖宿主侧，**不覆盖 iframe 内的 RO**，所以 `ro.calls` 只有 4
+但 expand 有 210 次——这个矛盾本身就是线索。）
+
+### 13.3 修复：图片占位（`ReaderView.vue` 的 `stabilizeImages`）
+
+在 `onLoad`（每次章节文档加载后）里给章节文档的图片：
+
+1. **设 `aspect-ratio` 宽高比占位**——已加载的图直接读 `naturalWidth/naturalHeight`；
+   未加载的用 `img.decode()` 异步补设。这样图片在加载前后占据一致的空间，
+   加载完成不再引起 `doc.body` 高度跳动，**直接减少 RO→expand 的触发次数**。
+2. **设 `decoding="async"`**——图片解码不阻塞主线程，减少长任务。
+
+不改图片最终显示尺寸（仍由 foliate-js `setImageSize` 的 `max-height/max-width` 约束），
+只减少加载过程中的布局抖动。
+
+### 13.4 验证（优化前后对比）
+
+| 指标 | 优化前 | 优化后 | 变化 |
+|---|---|---|---|
+| `openMs`（单章大书初排） | 1627ms | **991–1046ms** | **↓ 36–39%** |
+| `longtasks` 总时长 | 1154ms | **595–664ms** | **↓ 42–48%** |
+| `longtasks` 最大 | 541ms | **321–333ms** | **↓ 38%** |
+| `expand` + `getBoundingClientRect` | 400ms | **246ms** | **↓ 39%** |
+| `(program)` 浏览器内部 | 893ms | **520ms** | **↓ 42%** |
+| `loadReplaced` | 60ms | **33ms** | **↓ 46%** |
+| GC | 30ms | **13ms** | **↓ 57%** |
+
+所有主要热点下降 34–60%，初排耗时下降约 39%。对用户的真实大书（单章元素数更大），
+因布局变化次数随图片数线性增长，收益会更显著。
+
+### 13.5 验证（回归）
+
+| 项目 | 命令 | 结果 |
+|---|---|---|
+| 类型 | `corepack pnpm exec vue-tsc --noEmit` | 无输出（exit 0） |
+| 构建 | `corepack pnpm run build` | `✓ built`，exit 0 |
+| 单元 | `corepack pnpm run test` | **154 / 154**（9 文件） |
+| E2E | `corepack pnpm exec playwright test` | **33 通过 / 6 跳过**（跳过的是 `HPF_PERF` 门控的性能台） |
+
+改动文件：`src/reader/ReaderView.vue`（新增 `stabilizeImages` + `onLoad` 调用）。
+
+新增测量台（`HPF_PERF=1` 门控，不进常规 E2E）：`e2e/perf-open.spec.ts`、
+`e2e/perf-flow.spec.ts`、`e2e/perf-breakdown.spec.ts`、`e2e/perf-profile.spec.ts`。
+自造测试书：`scripts/make-large-epub.mjs`、`scripts/make-single-chapter-epub.mjs`
+（产出 `testdata/books/large-book.epub`、`single-chapter-large.epub`）。
+
+> 桌面 exe 已重编（见 §11 末尾说明），嵌入的即最新前端产物。
+> 注：`perf-open.spec.ts` 支持 `HPF_BOOK` 环境变量覆盖书路径，方便测不同规模的书。

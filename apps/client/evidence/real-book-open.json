@@ -10,7 +10,7 @@
     "pages": 3,
     "textLength": 27,
     "textStart": "\n    \n      \n      \n    \n  ",
-    "columnWidthPx": 404.49,
+    "columnWidthPx": 505,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   },
@@ -21,7 +21,7 @@
     "pages": 8,
     "textLength": 7375,
     "textStart": "\n\nLetter 2\n\n\nTo Mrs. Saville, England.\n\n\n\nArchangel, 28th Ma",
-    "columnWidthPx": 404.49,
+    "columnWidthPx": 404,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   },
@@ -32,7 +32,7 @@
     "pages": 8,
     "textLength": 7375,
     "textStart": "\n\nLetter 2\n\n\nTo Mrs. Saville, England.\n\n\n\nArchangel, 28th Ma",
-    "columnWidthPx": 404.49,
+    "columnWidthPx": 404,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   }

@@ -151,7 +151,7 @@ async function handleOpenDataDir() {
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl px-6 py-8">
+  <section class="hpf-rise-in mx-auto max-w-3xl px-6 py-8">
     <h1 class="mb-6 text-xl font-semibold">{{ t('settings.title') }}</h1>
 
     <div class="space-y-8">

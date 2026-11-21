@@ -9,29 +9,29 @@
     "pages": 11,
     "textLength": 14459,
     "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
-    "columnWidthPx": 404.49,
+    "columnWidthPx": 404,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   },
   "narrow": {
-    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/4/1:734)",
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/4/1:814)",
     "index": -1,
-    "fraction": 0.17577421298705675,
-    "pages": 18,
+    "fraction": 0.17590827014123145,
+    "pages": 17,
     "textLength": 14459,
     "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
-    "columnWidthPx": 412.806,
+    "columnWidthPx": 412,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   },
   "back": {
-    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:267)",
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:1300)",
     "index": -1,
-    "fraction": 0.17733821311909473,
-    "pages": 11,
+    "fraction": 0.17912564184142382,
+    "pages": 8,
     "textLength": 14459,
     "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
-    "columnWidthPx": 665.792,
+    "columnWidthPx": 568,
     "bodyBackground": "rgb(251, 248, 242)",
     "bodyColor": "rgb(35, 32, 28)"
   }

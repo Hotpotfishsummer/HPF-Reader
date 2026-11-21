@@ -128,6 +128,8 @@ export default {
     prev: '上一页',
     next: '下一页',
     toc: '目录',
+    pinBar: '固定顶部栏',
+    unpinBar: '取消固定顶部栏',
     empty: '没有找到这本书的内容。',
     title: '阅读',
     failed: '这本书打不开',

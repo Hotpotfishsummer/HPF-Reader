@@ -1,0 +1,34 @@
+{
+  "openMs": 1627,
+  "pages": 278,
+  "sanitize": {
+    "calls": 1,
+    "totalMs": 17.5,
+    "maxMs": 17.5
+  },
+  "parse": {
+    "calls": 5,
+    "totalMs": 95.5
+  },
+  "gcs": {
+    "calls": 5,
+    "totalMs": 0
+  },
+  "getAll": {
+    "calls": 6,
+    "totalMs": 0.1
+  },
+  "ro": {
+    "calls": 4,
+    "totalMs": 26.4,
+    "maxMs": 26.2,
+    "heavyCalls": 1,
+    "heavyTotalMs": 26.2,
+    "heavyMaxMs": 26.2
+  },
+  "longtasks": {
+    "samples": 5,
+    "maxMs": 541,
+    "totalMs": 1154
+  }
+}
