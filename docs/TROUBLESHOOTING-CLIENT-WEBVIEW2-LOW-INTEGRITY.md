@@ -38,7 +38,7 @@ WebView2 的 `CreateCoreWebView2Controller` 需要 **Medium 完整性**才能工
 
 - 这个标签不是代码引入的，是**沙箱/容器类工具**在仓库根目录上设置的（`CodexSandboxUsers`
   等 ACL 条目是同一个来源）。
-- `go build`、`go test`、`npm run build` 全部正常——普通文件读写不需要 Medium 完整性。
+- `go build`、`go test`、`corepack pnpm run build` 全部正常——普通文件读写不需要 Medium 完整性。
 - 只有 WebView2 controller 这种需要跨进程共享内核对象的操作才会被 MIC 挡住。
 
 ### 诊断要点（避免下次再绕路）

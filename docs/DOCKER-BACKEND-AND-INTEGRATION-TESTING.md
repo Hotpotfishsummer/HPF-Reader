@@ -3,7 +3,7 @@
 > **执行人**：HPF 全栈集成测试组  
 > **执行时间**：2026-11-04  
 > **测试环境**：Windows 11 + Docker Desktop (Compose v2.39.2) + Node v24.20.0 + Go 1.26.0  
-> **最终判定**：**全部通过** —— Docker 容器内部 95 项端到端冒烟 **95/95 PASS**，Server-Client 跨端集成测试 **53/53 PASS**。
+> **最终判定**：**全部通过** —— Docker 容器内部 95 项端到端冒烟 **95/95 PASS**，Server-Client 跨端集成测试 **72/72 PASS**。
 
 ---
 

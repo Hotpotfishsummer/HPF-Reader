@@ -22,8 +22,9 @@ corepack pnpm run build                # 生产构建 → dist/
 ```
 
 > 性能测量台（`e2e/perf-*.spec.ts`）默认跳过，需 `HPF_PERF=1` 才跑。
-> 前端产物会被 `main.go` 的 `//go:embed all:frontend/dist` 嵌入桌面 exe，
-> 改前端后要让桌面应用生效必须重编 exe——见 STATUS.md §3.3。
+> 前端产物会被 `main.go` 的 `//go:embed all:frontend/dist` 嵌入桌面 exe。
+> **改前端后必须重建 exe 才生效**：运行 `scripts/build-client.ps1`（或全栈 `scripts/build-all.ps1`），
+> 它会重建 dist 并校验 exe 嵌入了最新前端——见 STATUS.md §3.3。
 
 ## Recommended IDE Setup
 

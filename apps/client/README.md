@@ -19,16 +19,21 @@ corepack pnpm exec vue-tsc --noEmit
 corepack pnpm run test
 corepack pnpm run test:e2e
 
-# 构建桌面 exe（顺序不能错：先 build 前端，再 go build）
-cd ..
-corepack pnpm --dir frontend run build
-go build -o bin\hpfreader.exe .
+# 构建全部产物（前端 dist + 桌面 exe；改了服务端则跑全栈构建）
+# ① 只改前端/客户端：一键客户端构建（重建 dist 并验证 exe 嵌入最新前端）
+powershell -ExecutionPolicy Bypass -File ../scripts/build-client.ps1
+
+# ② 全栈（前端 + 服务端 + 客户端）：交付前推荐入口
+powershell -ExecutionPolicy Bypass -File ../scripts/build-all.ps1
+
 .\bin\hpfreader.exe
 ```
 
 > ★ **关键事实**：前端通过 `main.go` 的 `//go:embed all:frontend/dist` **在编译期嵌入**
 > exe（`application.AssetFileServerFS` 从嵌入的 FS 提供资源）。**只改前端不重编 exe，
-> 桌面应用不会生效**——必须先 `pnpm run build` 再 `go build`。细节见 STATUS.md §3.3。
+> 桌面应用不会生效**——必须先 `pnpm run build` 再 `go build`。细节见 STATUS.md §3.3；
+> `build-client.ps1` 还会用 `dist/index.html` 的主入口产物路径校验 exe 确实嵌入了最新前端，
+> 并保证 `client.exe` 与 `bin/hpfreader.exe` 的 SHA-256 一致。
 
 ## 目录
 

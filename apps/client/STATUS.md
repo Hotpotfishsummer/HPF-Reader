@@ -14,7 +14,7 @@
 - task-12 的"真实 exe 截图"：**已完成**（4 张真实窗口截图，见 §8.3）。
 - **动效 / 高刷适配 / 操作动线优化：已完成**（§11）。120 步拖动的重排耗时
   **902.8ms → 21.2ms**（真重排 240 次 → **2 次**），主线程长任务 **0** 次；
-  单测 154 个、E2E 29 个全绿。
+  单测 325 个、E2E 全绿。
 
 **Android（WebView 91 / Android 12）的三个硬阻塞点，全部已解**：
 
@@ -89,6 +89,9 @@
 - [x] `scripts/make-sample-epub.mjs`：零依赖生成示例 EPUB（`corepack pnpm run make:sample`）。
 
 ### 1.6 验证结果（实测）
+
+> 下表是 **task-9 / task-12 首次交付当时**的快照，用于记录当时的实测事实，故数值保持原样。
+> **当前最新基线**（每次全栈构建后由 `scripts/build-all.ps1` 重测）见文首摘要与文末「最新一轮验收」。
 
 | 验证项 | 命令 | 结果 |
 |---|---|---|
@@ -168,7 +171,7 @@ cd apps\client\frontend
 # ① 类型检查（vue-tsc）
 corepack pnpm exec vue-tsc --noEmit
 
-# ② 单元测试（vitest，154 用例 / 9 文件）
+# ② 单元测试（vitest，325 用例 / 27 文件）
 corepack pnpm run test
 
 # ③ E2E（Playwright + 真实 Chrome，自动起 vite preview :4173）
@@ -194,22 +197,49 @@ corepack pnpm exec playwright test e2e/perf-open.spec.ts
 `scripts/make-large-epub.mjs` / `scripts/make-single-chapter-epub.mjs` 生成
 （产出 `testdata/books/large-book.epub`、`single-chapter-large.epub`）。
 
-### 3.3 构建管线
+### 3.3 构建管线（交付前强制）
 
-**两条产物，顺序不能错：**
+**任何前端 / 客户端 Go / 服务端 Go 的改动，交付前都必须重建全部产物，不能只改源码不打包。**
 
-**① 前端产物**（`frontend/dist/`）：
+**① 一键全栈构建（推荐，唯一权威入口）：**
 
 ```powershell
-cd apps\client\frontend
-corepack pnpm run build        # vue-tsc 类型检查 + vite 生产构建
+powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1
 ```
 
-**② 桌面 exe**（`apps/client/bin/hpfreader.exe`）：
+脚本按「前端 dist → 服务端 exe → 客户端 exe」顺序重建，每步都校验原生命令退出码与产物，
+任一步失败立即抛错终止（杜绝「假成功」）。产物：
+
+| 层 | 产物 | 说明 |
+|---|---|---|
+| 前端 | `apps/client/frontend/dist/` | Vite 生产构建，被 `//go:embed` 打进客户端 |
+| 服务端 | `apps/server/bin/api.exe`、`migrate.exe` | Go 服务端与迁移工具 |
+| 客户端 | `apps/client/bin/hpfreader.exe`、`client.exe` | 桌面 exe，二者 SHA-256 必须一致 |
+
+**② 只改前端/客户端时，可只跑客户端构建：**
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-client.ps1
+```
+
+该脚本先清空并重建 `frontend/dist`，再重编 exe，并**从 exe 二进制里验证最新前端产物确实被嵌入**。
+
+**③ 分步构建（顺序不能错）：**
+
+```powershell
+# 前端产物（frontend/dist/）
+cd apps\client\frontend
+corepack pnpm run build        # vue-tsc 类型检查 + vite 生产构建
+
+# 服务端 exe
+cd apps\server
+go build -trimpath -o bin/api.exe ./cmd/api
+go build -trimpath -o bin/migrate.exe ./cmd/migrate
+
+# 桌面 exe（apps/client/bin/hpfreader.exe）
 cd apps\client
-go build -o bin\hpfreader.exe .
+go build -trimpath -tags production -ldflags="-w -s -H windowsgui" -o bin/hpfreader.exe .
+Copy-Item bin\hpfreader.exe client.exe -Force
 ```
 
 > ★ **关键事实**：`apps/client/main.go:19` 用 `//go:embed all:frontend/dist` 把前端
@@ -218,7 +248,8 @@ go build -o bin\hpfreader.exe .
 > - **只重建 `dist/` 不重编 exe，对桌面应用零影响**——exe 里嵌的还是旧前端。
 > - **重编 exe 前必须先 `corepack pnpm run build`**，否则嵌进去的是旧 `dist`。
 > - 验证嵌入内容：在 exe 二进制里搜前端标记字符串（如 `reader-resumed`、`data-bar`、
->   `statusBarPinned`），命中即说明嵌的是最新产物。
+>   `statusBarPinned`），命中即说明嵌的是最新产物；`build-client.ps1` 会用
+>   `dist/index.html` 里主入口 JS 的产物路径做更严格的嵌入校验。
 
 **关于 `wails3`**：只有改了 Go 侧（新增/修改方法）才需要
 `wails3 generate bindings -ts -i -clean=true` 重新生成 TypeScript 绑定。
@@ -889,7 +920,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 
 ### 11.5 验证
 
-- **单元测试**：`corepack pnpm run test` 全绿（154 个用例 / 9 个文件）。
+- **单元测试**：`corepack pnpm run test` 全绿（325 个用例 / 27 个文件）。
 - **构建**：清空 `dist` 后 `corepack pnpm run build`（`vue-tsc --noEmit` + `vite build
   --mode production`）通过。产物核验：`dist/assets/index-*.css` 里动效令牌与预设
   （`--dur-1` / `--ease-out` / `t-pop-enter` / `hpf-rise-in` / `hpf-press` / `hpf-meter` /
@@ -1024,7 +1055,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 |---|---|---|
 | 类型 | `corepack pnpm exec vue-tsc --noEmit` | 无输出（exit 0） |
 | 构建 | `corepack pnpm run build` | `✓ built`，exit 0 |
-| 单元 | `corepack pnpm run test` | **154 / 154**（9 文件） |
+| 单元 | `corepack pnpm run test` | **325 / 325**（27 文件） |
 | E2E | `corepack pnpm exec playwright test` | **33 通过 / 2 跳过**（跳过的是 `HPF_PERF` 门控的性能台） |
 | 性能 | `HPF_PERF=1` + `e2e/perf-reflow.spec.ts` | 全绿：`roCallsPerStep 1.017`、`heavyCalls 2`、`over16ms 0`、longtasks 0 —— 与第一轮持平 |
 
@@ -1117,7 +1148,7 @@ Paginator 的 RO → `expand()` → 强制布局 → 改 iframe 尺寸 → 又�
 |---|---|---|
 | 类型 | `corepack pnpm exec vue-tsc --noEmit` | 无输出（exit 0） |
 | 构建 | `corepack pnpm run build` | `✓ built`，exit 0 |
-| 单元 | `corepack pnpm run test` | **154 / 154**（9 文件） |
+| 单元 | `corepack pnpm run test` | **325 / 325**（27 文件） |
 | E2E | `corepack pnpm exec playwright test` | **33 通过 / 6 跳过**（跳过的是 `HPF_PERF` 门控的性能台） |
 
 改动文件：`src/reader/ReaderView.vue`（新增 `stabilizeImages` + `onLoad` 调用）。
