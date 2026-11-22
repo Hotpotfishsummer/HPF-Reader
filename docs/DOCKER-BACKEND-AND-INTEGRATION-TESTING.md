@@ -84,14 +84,14 @@ flowchart TD
 
 我们建立了**两层全覆盖测试防线**：
 
-1. **第一层：Docker 容器内部网络冒烟测试** (`deploy/smoke-test.sh`，在 `hpf-reader_edge` 容器网络中执行)
+1. **第一层：Docker 容器内部网络冒烟测试** (`tests/smoke/smoke-test.sh`，在 `hpf-reader_edge` 容器网络中执行)
 2. **第二层：Server <-> Client 跨端全链路集成测试** (`tests/integration/run-all.mjs`，驱动客户端 API/引擎直打 Docker 后端)
 
 ### 3.1 第一层：Docker 内部端到端冒烟测试（95 项全绿）
 
 ```bash
 docker run --rm --network hpf-reader_edge \
-  -v "C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/deploy/smoke-test.sh:/smoke.sh:ro" alpine:3.20 \
+  -v "C:/Users/HOTPOTFISH/Desktop/AllCode/HPF-Reader/tests/smoke/smoke-test.sh:/smoke.sh:ro" alpine:3.20 \
   sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"
 ```
 

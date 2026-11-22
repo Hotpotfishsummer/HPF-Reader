@@ -25,12 +25,24 @@ HPF-Reader/
 ├─ apps/
 │  ├─ server/             # Go 服务端（chi + pgx + sqlc + goose + JWT）
 │  └─ client/             # Wails v3 外壳 + Vue 3 前端 + foliate-js 渲染内核
+├─ assets/icons/          # 设计源素材（图标源图，由 scripts/switch-icon.py 派生各平台图标）
 ├─ deploy/                # docker-compose / Caddyfile / .env.example
-├─ scripts/               # 构建管线与本机环境脚本
+├─ scripts/               # 产品构建管线与本机环境脚本
 ├─ docs/                  # 设计、方案、ADR 与调研报告
-├─ tests/integration/     # 跨端全链路集成测试
-└─ spikes/                # 一次性验证工程（隔离 PoC 等）
+├─ tests/                 # 所有测试与测试资产（与被测代码分离，详见 tests/README.md）
+│  ├─ e2e/                #   Playwright 端到端用例
+│  ├─ smoke/              #   Docker 冒烟脚本 + 黑盒验证脚本
+│  ├─ integration/        #   跨端全链路集成测试
+│  ├─ fixtures/books/     #   测试用真实公版书 + 自造压力书
+│  ├─ evidence/           #   测试产出的截图 / JSON / 原始输出
+│  └─ tools/              #   测试专用工具（造夹具、抓证据）
+└─ spikes/                # 一次性验证工程（隔离 / Android / 同步 PoC，可丢弃）
 ```
+
+> **目录纪律（强制）**：生产代码、测试、构建脚本、文档、设计素材**各自住在专门的目录**，
+> 新增文件前先按 [AGENTS.md](AGENTS.md) 的「目录地图」判定落位。
+> 单元测试与源码同目录（Go 的 `*_test.go` 必须与 package 同目录；前端 `src/**/*.spec.ts` 就近放置），
+> 端到端 / 冒烟 / 集成等**跨进程测试**与测试资产统一放仓库根 `tests/`。
 
 ## 技术选型
 

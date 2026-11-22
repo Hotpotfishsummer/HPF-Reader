@@ -1,0 +1,39 @@
+{
+  "file": "tests\\fixtures\\books\\frankenstein.epub",
+  "bytes": 294175,
+  "sha256": "bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662",
+  "tocCount": 32,
+  "opened": {
+    "cfi": "epubcfi(/6/2!/4/2,,/2)",
+    "index": -1,
+    "fraction": 0.0009081121170811464,
+    "pages": 3,
+    "textLength": 27,
+    "textStart": "\n    \n      \n      \n    \n  ",
+    "columnWidthPx": 505,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  },
+  "jumped": {
+    "cfi": "epubcfi(/6/10!/4/2[pgepubid00004],/2,/10/1:1046)",
+    "index": -1,
+    "fraction": 0.03398783424741525,
+    "pages": 7,
+    "textLength": 7375,
+    "textStart": "\n\nLetter 2\n\n\nTo Mrs. Saville, England.\n\n\n\nArchangel, 28th Ma",
+    "columnWidthPx": 404,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  },
+  "turned": {
+    "cfi": "epubcfi(/6/10!/4/2[pgepubid00004],/10/1:1046,/14/1:268)",
+    "index": -1,
+    "fraction": 0.037455937599423526,
+    "pages": 7,
+    "textLength": 7375,
+    "textStart": "\n\nLetter 2\n\n\nTo Mrs. Saville, England.\n\n\n\nArchangel, 28th Ma",
+    "columnWidthPx": 404,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  }
+}

@@ -49,7 +49,7 @@ func liveTranslator(t *testing.T) ai.Translator {
 func TestLiveBookCost(t *testing.T) {
 	book := os.Getenv("HPF_LIVE_BOOK")
 	if book == "" {
-		book = filepath.Join("..", "..", "..", "..", "testdata", "books", "frankenstein.epub")
+		book = filepath.Join("..", "..", "..", "..", "tests", "fixtures", "books", "frankenstein.epub")
 	}
 	maxChapters := 2
 	if v := os.Getenv("HPF_LIVE_MAX_CHAPTERS"); v != "" {

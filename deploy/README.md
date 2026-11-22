@@ -33,9 +33,10 @@ docker compose run --rm migrate -status    # 只查看已应用记录
 ## 冒烟验证
 
 ```bash
-# 69 项断言的端到端冒烟（推荐先跑这个，任何一条不符即非 0 退出）
+# 95 项断言的端到端冒烟（推荐先跑这个，任何一条不符即非 0 退出）
+# 脚本位于仓库根的 tests/smoke/，此处假设当前目录为 deploy/
 docker run --rm --network hpf-reader_edge \
-  -v "$PWD/smoke-test.sh:/smoke.sh:ro" alpine:3.20 \
+  -v "$PWD/../tests/smoke/smoke-test.sh:/smoke.sh:ro" alpine:3.20 \
   sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"
 ```
 

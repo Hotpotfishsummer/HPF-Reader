@@ -34,6 +34,6 @@
 | task-21 | M5-5 OPDS 书源（标准协议 + open-access 判据 + SSRF加固） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §8 |
 | task-22 | M5-3 术语表服务端化（双写权威表+同步日志） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §9 |
 | task-23 | M5-4 人名归一化一期（确定性聚类+事件日志重放） | ✅ 已完成 | `6587526` / `apps/server/STATUS.md` §9 |
-| task-24 | M5-7 翻译 UI（划词流式/整书进度/配额429/双语对照） | ✅ 已完成 | `50af761` / `apps/client/evidence/task-23-*` |
-| task-25 | M5-8 术语表客户端（串行 commit 队列/归一化 UI/离线保护） | ✅ 已完成 | `3dd36ab` / `apps/client/evidence/task-24-*` |
+| task-24 | M5-7 翻译 UI（划词流式/整书进度/配额429/双语对照） | ✅ 已完成 | `50af761` / `tests/evidence/client/task-23-*` |
+| task-25 | M5-8 术语表客户端（串行 commit 队列/归一化 UI/离线保护） | ✅ 已完成 | `3dd36ab` / `tests/evidence/client/task-24-*` |
 | task-26 | 真模型端到端实测验证（`liveai` 标签实测） | ✅ 已完成 | `888a7c8`, `b42b89e`, `2916e60` / `STATUS.md` §10 |

@@ -4,7 +4,7 @@
 > **task-14**（老旧 WebView 兼容性）、**task-17**（`@layer` CSS 兼容性），
 > 以及本轮的**动效 / 高刷适配 / 操作动线优化**（§11）。
 > 最后核对时间：2026-11-21。
-> 所有命令均在 Windows + PowerShell 下实测通过，原始输出见 `apps/client/evidence/`。
+> 所有命令均在 Windows + PowerShell 下实测通过，原始输出见 `tests/evidence/client/`。
 
 **状态：**
 - task-9 骨架：已完成。
@@ -178,24 +178,27 @@ corepack pnpm run test
 corepack pnpm run test:e2e
 ```
 
-**性能门控**：E2E 里有一组 `e2e/perf-*.spec.ts` 测量台，**默认跳过**，只在
+**性能门控**：E2E 里有一组 `tests/e2e/perf-*.spec.ts` 测量台，**默认跳过**，只在
 `HPF_PERF=1` 时跑（避免常规 E2E 被性能测量拖慢）。常用环境变量：
 
 | 变量 | 作用 |
 |---|---|
 | `HPF_PERF=1` | 开启性能测量台（`perf-open` / `perf-flow` / `perf-breakdown` / `perf-profile` / `perf-reflow`） |
 | `HPF_PERF_TAG=<tag>` | 证据文件名后缀，方便区分多次测量 |
-| `HPF_BOOK=<相对路径>` | 覆盖 `perf-open.spec.ts` 打开的书（默认 `testdata/books/frankenstein.epub`） |
+| `HPF_BOOK=<相对路径>` | 覆盖 `perf-open.spec.ts` 打开的书（默认 `tests/fixtures/books/frankenstein.epub`） |
 
 ```powershell
 $env:HPF_PERF='1'; $env:HPF_PERF_TAG='my-run'
-# 可选：$env:HPF_BOOK='testdata/books/single-chapter-large.epub'
-corepack pnpm exec playwright test e2e/perf-open.spec.ts
+# 可选：$env:HPF_BOOK='tests/fixtures/books/single-chapter-large.epub'
+corepack pnpm exec playwright test perf-open.spec.ts
 ```
 
-证据 JSON 落在 `apps/client/evidence/`。自造测试书用
-`scripts/make-large-epub.mjs` / `scripts/make-single-chapter-epub.mjs` 生成
-（产出 `testdata/books/large-book.epub`、`single-chapter-large.epub`）。
+（`testDir` 已由 `playwright.config.ts` 指到仓库根 `tests/e2e/`，所以这里写**文件名过滤**即可，
+不要写成 `tests/e2e/perf-open.spec.ts`。）
+
+证据 JSON 落在 `tests/evidence/client/`。自造测试书用（在仓库根执行）
+`tests/tools/make-large-epub.mjs` / `tests/tools/make-single-chapter-epub.mjs` 生成
+（产出 `tests/fixtures/books/large-book.epub`、`single-chapter-large.epub`）。
 
 ### 3.3 构建管线（交付前强制）
 
@@ -278,7 +281,7 @@ corepack pnpm run dev
 | 桌面应用改了前端不生效 | exe 嵌的是编译时的 `dist`，见 §3.3——先 `pnpm run build` 再 `go build` |
 | `go: module requires go 1.26` | `GOTOOLCHAIN=auto` 会自动拉取；确认 `go` 在 PATH 上 |
 | E2E 报找不到 Chrome | Playwright 用 `channel:'chrome'`，需本机装 Chrome；不下载自带浏览器 |
-| 性能台没跑 | 需要 `HPF_PERF=1`，否则 `e2e/perf-*.spec.ts` 被跳过 |
+| 性能台没跑 | 需要 `HPF_PERF=1`，否则 `tests/e2e/perf-*.spec.ts` 被跳过 |
 | `npm install` 后构建异常 | 用 `corepack pnpm`，不要用 npm |
 
 ---
@@ -358,10 +361,22 @@ apps/client/
     │   ├── stores/             # Pinia（仅本地 UI 偏好）
     │   ├── sync/               # 同步引擎骨架
     │   └── vendor/foliate-js/  # ★ 固定 commit，见 VENDOR.md
-    ├── e2e/                    # Playwright（真实 Chrome）
-    ├── tests/                  # 架构门禁
-    └── scripts/                # gen-api-types / make-sample-epub
+    ├── tests/                  # 架构门禁（architecture.spec.ts）
+    ├── scripts/                # 构建/代码生成/构建门禁：gen-api-types / audit-builtins / make-sample-epub
+    ├── playwright.config.ts    # E2E 配置（必须留在本包内，见下）
+    └── vitest.config.ts        # 单测配置（同上）
+
+<仓库根>/tests/                 # ★ 所有测试与测试资产（不放在 apps/ 内）
+├── e2e/                        #   Playwright 用例（testDir 由 playwright.config.ts 指过来）
+├── integration/                #   跨端全链路集成测试
+├── smoke/                      #   Docker 冒烟 + 黑盒验证脚本
+├── fixtures/books/             #   测试用真实公版书 + 自造压力书
+├── evidence/{client,server}/   #   测试产出的截图 / JSON / 原始输出
+└── tools/                      #   造夹具与抓证据的脚本
 ```
+
+> 目录归属判定以仓库根 [AGENTS.md](../../AGENTS.md) 的「目录地图」为唯一权威，
+> 测试目录细节见 [tests/README.md](../../tests/README.md)。
 
 ---
 
@@ -375,10 +390,10 @@ apps/client/
       `library-empty` 空态 + "打开本地文件"按钮，**不白屏、不报错**。
       `import-book` 仅在 `files.dialog` 与 `library.local` 两个能力同时具备时才出现。
 - [x] **拖放导入**：书库区支持 `dragover/dragleave/drop`，拖入 EPUB 直接进阅读器。
-- [x] **真实公版书验证**：用 `testdata/books/frankenstein.epub`（294 175 B，
+- [x] **真实公版书验证**：用 `tests/fixtures/books/frankenstein.epub`（294 175 B，
       sha256 `bf04d57cf243314ab770df6fcea6a9cfb1e5a281426453e23c128c5a9c3eb662`）
       实测：目录 32 项、正文 7 375 字符/章、多页分页、翻页 CFI 变化。测量值落盘在
-      `evidence/real-book-open.json`。
+      `tests/evidence/client/real-book-open.json`。
 - [x] **横竖屏自适应**：
       | 视口 | 方向 | 栏数 | 目录 | 工具栏 |
       |---|---|---|---|---|
@@ -386,7 +401,7 @@ apps/client/
       | <1024px 或竖屏 | 竖屏/窄 | **1 栏** | 覆盖层 | 紧凑（仅图标） |
       旋转后**自动重排且不丢位置**：同一 CFI 在 1280×800 → 480×900 → 1440×900 三次测量中，
       章节不变（`textStart` 一致）、页数 11 → 18 → 11。数据见
-      `evidence/reader-layout-measurements.json`。
+      `tests/evidence/client/reader-layout-measurements.json`。
 - [x] **无硬编码像素**：断点集中在 `src/app/useViewport.ts`（`COMPACT_MAX_WIDTH = 760`）与
       `src/reader/useReaderLayout.ts`（`TWO_COLUMN_MIN_WIDTH = 1024`、
       `SIDEBAR_MIN_WIDTH = 1080`、`MAX_INLINE_SIZE = 720`）两个文件；
@@ -420,10 +435,10 @@ apps/client/
 
 | 截图 | 内容 | 大小 |
 |---|---|---|
-| `evidence/exe-01-library-empty.png` | 书库空态（无后端也不白屏） | 26 663 B |
-| `evidence/exe-02-reader-opened.png` | 打开示例书后的正文（第一章，36%） | 68 007 B |
-| `evidence/exe-03-after-page-turn.png` | 翻页后（第三章，100%，"已从上次位置继续"） | 53 705 B |
-| `evidence/exe-04-night-mode.png` | 夜间模式（正文深色，主题按钮显示"夜间"） | 54 180 B |
+| `tests/evidence/client/exe-01-library-empty.png` | 书库空态（无后端也不白屏） | 26 663 B |
+| `tests/evidence/client/exe-02-reader-opened.png` | 打开示例书后的正文（第一章，36%） | 68 007 B |
+| `tests/evidence/client/exe-03-after-page-turn.png` | 翻页后（第三章，100%，"已从上次位置继续"） | 53 705 B |
+| `tests/evidence/client/exe-04-night-mode.png` | 夜间模式（正文深色，主题按钮显示"夜间"） | 54 180 B |
 
 复现方法（`frontend/scripts/_capture-exe.ps1`）：
 
@@ -441,14 +456,14 @@ apps/client/
 > 所以真实书是用 Playwright 走同一份 `dist/` 验证的（见 §9.7 的 `e2e-legacy-deflate-raw.png`）。
 
 - 另有 Playwright 证据（同样证明真实渲染，且可复现、可复核）：
-  - `evidence/task-17-layer-raw-output.txt`（**@layer 修复前后原始输出**：5 → 0、审计门禁、反向验证）
-- `evidence/e2e-legacy-css-layer.png`（**模拟 WebView 91 不支持 @layer** 下的真实 EPUB：双栏、31 章目录、Letter 2 正文）
-- `evidence/e2e-landscape-wide.png`（1280×800，横屏双栏 + 侧栏目录）
-  - `evidence/e2e-portrait-narrow.png`（480×900，竖屏单栏 + 紧凑工具栏）
-  - `evidence/e2e-night-mode.png`（夜间模式，正文深色 `rgb(20, 22, 26)`）
-  - `evidence/e2e-sample-reader.png`（示例书正文）
-  - `evidence/e2e-legacy-webview-sim.png`（删掉 ES2022+ 内置对象后仍能阅读）
-  - `evidence/real-book-open.json`（真实公版书打开/跳章/翻页的引擎测量值）
+  - `tests/evidence/client/task-17-layer-raw-output.txt`（**@layer 修复前后原始输出**：5 → 0、审计门禁、反向验证）
+- `tests/evidence/client/e2e-legacy-css-layer.png`（**模拟 WebView 91 不支持 @layer** 下的真实 EPUB：双栏、31 章目录、Letter 2 正文）
+- `tests/evidence/client/e2e-landscape-wide.png`（1280×800，横屏双栏 + 侧栏目录）
+  - `tests/evidence/client/e2e-portrait-narrow.png`（480×900，竖屏单栏 + 紧凑工具栏）
+  - `tests/evidence/client/e2e-night-mode.png`（夜间模式，正文深色 `rgb(20, 22, 26)`）
+  - `tests/evidence/client/e2e-sample-reader.png`（示例书正文）
+  - `tests/evidence/client/e2e-legacy-webview-sim.png`（删掉 ES2022+ 内置对象后仍能阅读）
+  - `tests/evidence/client/real-book-open.json`（真实公版书打开/跳章/翻页的引擎测量值）
   - 这些截图由 **真实 Chrome**（`channel: 'chrome'`，非无头模拟）渲染
     `vite preview` 的**生产构建产物**，与 exe 内嵌的是同一份 `dist/`。
 - 需要真机截图时，请在有人值守的桌面会话里执行 `apps/client/bin/hpfreader.exe` 后手动截屏。
@@ -570,7 +585,7 @@ const COMPAT_TARGET = 'chrome91'
     Symbol 键、不可枚举属性、`RangeError`；
   - `toBase64/fromBase64` 往返（含全 256 字节、200 000 字节不爆栈）、base64url、非法长度。
 - **单元测试** `src/compat/__tests__/deflateRaw.spec.ts`：**12 个用例**（§9.7 详述）。
-- **E2E** `e2e/reader.spec.ts` 新增两条，都用 `page.addInitScript` 在**任何应用脚本执行之前**把
+- **E2E** `tests/e2e/reader.spec.ts` 新增两条，都用 `page.addInitScript` 在**任何应用脚本执行之前**把
   真实 WebView 91 的能力差异**复刻**出来：
   1. 把 16 个 ES2022+ 内置对象全部 `delete`，断言应用仍能打开书、完成分页、翻页，
      且 `pageerror` 为空。没有 polyfill 时这条会以
@@ -582,7 +597,7 @@ const COMPAT_TARGET = 'chrome91'
 
 ### 9.6 原始输出
 
-`evidence/task-14-compat-raw-output.txt` 收录了 5 条命令的**完整原始输出与退出码**：
+`tests/evidence/client/task-14-compat-raw-output.txt` 收录了 5 条命令的**完整原始输出与退出码**：
 
 | 命令 | 退出码 |
 |---|---|
@@ -606,9 +621,9 @@ const COMPAT_TARGET = 'chrome91'
 | 文件 | 大小 | ZIP 压缩方法分布 |
 |---|---|---|
 | `dist/sample/sample.epub` | 5 509 B | `{0: 8}` ← 全部 STORE，不触发解压 |
-| `testdata/books/frankenstein.epub` | 294 175 B | `{0: 2, 8: 36}` |
-| `testdata/books/alice-in-wonderland.epub` | 136 756 B | `{0: 2, 8: 19}` |
-| `testdata/books/pride-and-prejudice.epub` | 609 138 B | `{0: 2, 8: 22}` |
+| `tests/fixtures/books/frankenstein.epub` | 294 175 B | `{0: 2, 8: 36}` |
+| `tests/fixtures/books/alice-in-wonderland.epub` | 136 756 B | `{0: 2, 8: 19}` |
+| `tests/fixtures/books/pride-and-prejudice.epub` | 609 138 B | `{0: 2, 8: 22}` |
 
 ZIP 的压缩方法 8 里存的是**裸 deflate 流**（没有 zlib 头），所以 zip.js 必须用
 `'deflate-raw'` 构造 `DecompressionStream`。而该格式是 **Chrome 103+** 才有：
@@ -644,7 +659,7 @@ zip.js 在**模块初始化时**就把 `DecompressionStream` 抓进 config，
 |---|---|---|
 | 单元 | `src/compat/__tests__/deflateRaw.spec.ts`，用 `node:zlib` 的 `deflateRawSync` **生成真实裸 deflate 数据**（不是手搓假数据）：解压往返、空输入、70 000 字节、压缩级别 0/1/9、分块喂入 `pipeThrough`、原生支持时不接管、gzip/deflate 委托 | **12/12** |
 | 审计 | `scripts/audit-builtins.mjs` 新增 "Web API 能力" 段：`DecompressionStream('deflate-raw')` 最低 Chrome 103、需兜底、处理方式 | exit 0 |
-| E2E | `模拟 Chromium 91 缺 deflate-raw`：用 `addInitScript` 把 `DecompressionStream` 换成"gzip/deflate 可用、deflate-raw 抛错"的 Chrome 91 复刻版，然后打开 **frankenstein.epub** —— 断言目录 ≥20 项、点击跳章后正文 >2 000 字符、翻页 CFI 变化、`pageerror` 为空 | **通过**，截图 `evidence/e2e-legacy-deflate-raw.png` |
+| E2E | `模拟 Chromium 91 缺 deflate-raw`：用 `addInitScript` 把 `DecompressionStream` 换成"gzip/deflate 可用、deflate-raw 抛错"的 Chrome 91 复刻版，然后打开 **frankenstein.epub** —— 断言目录 ≥20 项、点击跳章后正文 >2 000 字符、翻页 CFI 变化、`pageerror` 为空 | **通过**，截图 `tests/evidence/client/e2e-legacy-deflate-raw.png` |
 
 #### 启动能力探测（用户可读提示）
 
@@ -669,7 +684,7 @@ Android 端（task-15）此前的两个阻塞都已解除：
 
 **注意**：polyfill 修的是"运行时能力缺失"。Android 侧若还有别的故障
 （`src/platform/mobile.ts` 的桥接、WebView 文件选择器、权限申请），不在本任务范围内。
-真实书验收请用 `testdata/books/frankenstein.epub`（31 章、含 36 个 deflate 条目），
+真实书验收请用 `tests/fixtures/books/frankenstein.epub`（31 章、含 36 个 deflate 条目），
 **不要**用 `sample.epub` —— 它是 STORE 压缩，测不出解压路径。
 
 ## 10. task-17：`@layer` 兼容性 —— Tailwind v4 样式表在老 WebView 上整份失效
@@ -742,7 +757,7 @@ export default defineConfig({
 
 ### 10.3 验证（三道，都有原始输出）
 
-原始输出全文见 `apps/client/evidence/task-17-layer-raw-output.txt`。
+原始输出全文见 `tests/evidence/client/task-17-layer-raw-output.txt`。
 
 **① 产物断言（硬门禁）**：
 
@@ -822,7 +837,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 > 背景：基础功能已经完整，剩下的都是"显示与手感"层面的问题。本轮只做三件事：
 > **高刷适配**（让动画和重排不再吃满一帧）、**动画流畅度**（把"没有动画 / 写死时间"
 > 换成一套统一、可降级的动效）、**操作动线**（点一下就该有反应，别让人去点边角）。
-> 全部结论都有实测数据，原始输出落在 `apps/client/evidence/`。
+> 全部结论都有实测数据，原始输出落在 `tests/evidence/client/`。
 
 ### 11.1 问题清单与根因
 
@@ -847,8 +862,8 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 
 离散改动（侧栏开合、页边距、主题）不受影响：走"2 帧后落定"的分支，一次改一次重排。
 
-**实测（`e2e/perf-reflow.spec.ts`，`HPF_PERF=1` 才跑；下表为最终一轮 `HPF_PERF_TAG=final`
-的原始输出，原始 JSON 见 `apps/client/evidence/optimization-reflow-final.json`）**：
+**实测（`tests/e2e/perf-reflow.spec.ts`，`HPF_PERF=1` 才跑；下表为最终一轮 `HPF_PERF_TAG=final`
+的原始输出，原始 JSON 见 `tests/evidence/client/optimization-reflow-final.json`）**：
 
 | 指标 | 优化前 | 优化后 |
 |---|---|---|
@@ -928,13 +943,13 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
   打包后的 JS。
 - **E2E**：`corepack pnpm run test:e2e` 全绿（**29 通过 / 2 跳过**，跳过的是性能测量台，
   按设计由 `HPF_PERF` 门控）；跑的就是上面重建出来的 `dist`。新增
-  `操作动线：正文点击热区 / Esc 分层关闭 / 点正文收浮层`（`e2e/reader.spec.ts`）
+  `操作动线：正文点击热区 / Esc 分层关闭 / 点正文收浮层`（`tests/e2e/reader.spec.ts`）
   作为热区与分层的回归锁。
   > 上面这组数字是**第一轮**的。第二轮把状态栏改成默认收起、并补了显隐专项用例，
   > 现在是 **33 通过 / 2 跳过**，见 §11.6。
-- **性能测量台**：`e2e/perf-reflow.spec.ts`（`HPF_PERF=1` 才跑，平时自动跳过），
+- **性能测量台**：`tests/e2e/perf-reflow.spec.ts`（`HPF_PERF=1` 才跑，平时自动跳过），
   两个用例分别测"拖阅读面宽度"和"真实窗口缩放"，落盘
-  `apps/client/evidence/optimization-reflow-*.json` / `optimization-window-resize.json`。
+  `tests/evidence/client/optimization-reflow-*.json` / `optimization-window-resize.json`。
 - **改动文件**：`src/styles/motion.css`（新增）、`src/app/motion.ts`（新增）、
   `src/reader/useReaderReflow.ts`（重排调度）、`src/reader/useReaderLayout.ts`（排版决策，
   拆成"UI 状态"与"几何参数"）、`src/reader/ReaderView.vue`、`src/reader/bridge.ts`、
@@ -1029,7 +1044,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 直接失败（Playwright 的 actionability 检查：`opacity:0` 算可见，但 `pointer-events:none`
 和"被 transform 挪出视口"都会被判为不可点；而 `v-if` 干脆是 0 个元素）。
 
-- 新增 **`e2e/reader-chrome.ts`**：
+- 新增 **`tests/e2e/reader-chrome.ts`**：
   - `pinReaderBar(page)`：`addInitScript` **合并**写入 `statusBarPinned: true`
     （合并而不是整体覆盖 —— 覆盖会把主题 / 字号一起抹掉，主题类用例跨 reload 就会
     莫名回到默认值）；初始化脚本在**每次导航前**都会跑，所以 `reload()` 之后仍生效。
@@ -1039,7 +1054,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 - 功能型 spec（`reader` / `ai` / `glossary` / `glossary-evidence` / `portrait-evidence` /
   `perf-reflow`）统一在文件级 `beforeEach` 里 `pinReaderBar`：它们验的不是显隐，
   用 pin 把变量按住，版面几何与原基线一致。
-- 新增 **`e2e/reader-chrome.spec.ts`**（**故意不 pin**，4 个用例）：
+- 新增 **`tests/e2e/reader-chrome.spec.ts`**（**故意不 pin**，4 个用例）：
   1. 默认收起（`data-bar="hidden"` + 工具栏 0 个元素）且阅读面顶边**等于**根盒顶边
      → 靠近顶部展开（让出 ≥40px）→ 光标移到正文下方后自己折叠回原样；
   2. pin 后光标离开也**不收**，且 `reload()` 之后仍是常驻（验持久化）；
@@ -1057,12 +1072,12 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 | 构建 | `corepack pnpm run build` | `✓ built`，exit 0 |
 | 单元 | `corepack pnpm run test` | **325 / 325**（27 文件） |
 | E2E | `corepack pnpm exec playwright test` | **33 通过 / 2 跳过**（跳过的是 `HPF_PERF` 门控的性能台） |
-| 性能 | `HPF_PERF=1` + `e2e/perf-reflow.spec.ts` | 全绿：`roCallsPerStep 1.017`、`heavyCalls 2`、`over16ms 0`、longtasks 0 —— 与第一轮持平 |
+| 性能 | `HPF_PERF=1` + `tests/e2e/perf-reflow.spec.ts` | 全绿：`roCallsPerStep 1.017`、`heavyCalls 2`、`over16ms 0`、longtasks 0 —— 与第一轮持平 |
 
 改动文件：`src/reader/ReaderView.vue`、`src/reader/bridge.ts`、
 `src/reader/components/ReaderToolbar.vue`、`src/stores/settings.ts`、
 `src/i18n/locales/zh-CN.ts`、`src/i18n/locales/en.ts`、`src/styles/motion.css`、
-`e2e/reader-chrome.ts`（新增）、`e2e/reader-chrome.spec.ts`（新增），
+`tests/e2e/reader-chrome.ts`（新增）、`tests/e2e/reader-chrome.spec.ts`（新增），
 以及 6 个既有 spec 的 `beforeEach`。
 
 > 桌面 exe 已重编（见 §11 末尾说明），嵌入的即最新前端产物。
@@ -1074,7 +1089,7 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 
 ### 13.1 排查路径（逐层排除，全部用测量，不猜）
 
-**先证明"初排本身不慢"**：写了 `e2e/perf-open.spec.ts`（初排测量台），在 1919×1199 下
+**先证明"初排本身不慢"**：写了 `tests/e2e/perf-open.spec.ts`（初排测量台），在 1919×1199 下
 打开 frankenstein.epub，量"打开书到拿到第一个 CFI"的墙钟与重排次数。
 
 | 书 | 章节/段落/图 | openMs | RO 次数 | 重排(heavy) | 长任务 |
@@ -1087,10 +1102,10 @@ CSS 没法 polyfill，只能在**构建期**改写产物。所以兼容性审计
 当前章节）。小书 251ms，单章大书 1583ms，且出现 529ms 长任务。用户书若单章元素数更大，
 按线性放大到十几秒完全合理。
 
-**再写完整动线测量台** `e2e/perf-flow.spec.ts`（开书→光标靠近→离开→再靠近→缩放），
+**再写完整动线测量台** `tests/e2e/perf-flow.spec.ts`（开书→光标靠近→离开→再靠近→缩放），
 证明状态栏切换（`pt-12`↔`pt-0`）和窗口缩放都只产生 1–2 次重排、1.7ms，**不是瓶颈**。
 
-**细粒度分解** `e2e/perf-breakdown.spec.ts` + **CPU profile** `e2e/perf-profile.spec.ts`
+**细粒度分解** `tests/e2e/perf-breakdown.spec.ts` + **CPU profile** `tests/e2e/perf-profile.spec.ts`
 （CDP `Profiler`，按函数名聚合 self time）定位热点：
 
 | 热点 | 优化前 | 说明 |
@@ -1153,10 +1168,10 @@ Paginator 的 RO → `expand()` → 强制布局 → 改 iframe 尺寸 → 又�
 
 改动文件：`src/reader/ReaderView.vue`（新增 `stabilizeImages` + `onLoad` 调用）。
 
-新增测量台（`HPF_PERF=1` 门控，不进常规 E2E）：`e2e/perf-open.spec.ts`、
-`e2e/perf-flow.spec.ts`、`e2e/perf-breakdown.spec.ts`、`e2e/perf-profile.spec.ts`。
-自造测试书：`scripts/make-large-epub.mjs`、`scripts/make-single-chapter-epub.mjs`
-（产出 `testdata/books/large-book.epub`、`single-chapter-large.epub`）。
+新增测量台（`HPF_PERF=1` 门控，不进常规 E2E）：`tests/e2e/perf-open.spec.ts`、
+`tests/e2e/perf-flow.spec.ts`、`tests/e2e/perf-breakdown.spec.ts`、`tests/e2e/perf-profile.spec.ts`。
+自造测试书：`tests/tools/make-large-epub.mjs`、`tests/tools/make-single-chapter-epub.mjs`
+（产出 `tests/fixtures/books/large-book.epub`、`single-chapter-large.epub`）。
 
 > 桌面 exe 已重编（见 §11 末尾说明），嵌入的即最新前端产物。
 > 注：`perf-open.spec.ts` 支持 `HPF_BOOK` 环境变量覆盖书路径，方便测不同规模的书。

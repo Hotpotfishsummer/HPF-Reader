@@ -52,7 +52,7 @@ const result = spawnSync(process.execPath, [bundle], {
     HPF_CADDY_BASE: process.env.HPF_CADDY_BASE ?? 'https://localhost',
     HPF_ROOT: root,
     HPF_REPORT_DIR: out,
-    HPF_BOOKS_DIR: process.env.HPF_BOOKS_DIR ?? join(root, 'testdata', 'books'),
+    HPF_BOOKS_DIR: process.env.HPF_BOOKS_DIR ?? join(root, 'tests', 'fixtures', 'books'),
   },
 })
 process.exit(result.status ?? 1)

@@ -23,7 +23,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $evidence = Join-Path $PSScriptRoot 'evidence'
-$book = Join-Path $root 'testdata\books\frankenstein.epub'
+$book = Join-Path $root 'tests\fixtures\books\frankenstein.epub'
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $evidence 'bookfiles') | Out-Null
 $runLog = Join-Path $evidence 'run-log.txt'

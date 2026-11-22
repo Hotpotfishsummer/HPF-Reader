@@ -5,7 +5,7 @@ from PIL import Image
 def apply_icon(opt_name):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root = os.path.dirname(script_dir)
-    icons_dir = os.path.join(root, 'apps', 'client', 'build', 'icons')
+    icons_dir = os.path.join(root, 'assets', 'icons')
     src_512 = os.path.join(icons_dir, f'{opt_name}_512.png')
     if not os.path.exists(src_512):
         print(f"Error: {src_512} does not exist.")

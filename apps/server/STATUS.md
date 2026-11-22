@@ -34,7 +34,7 @@ docker compose -f deploy/docker-compose.yml config -q   → exit=0
   再跑一次 → "migrations up to date"（幂等）
   结果：schema_migrations 4 行、public 下 15 张表（含 chunk_embeddings，pgvector 已启用）
 
-端到端冒烟（deploy/smoke-test.sh，在 compose 网络内真实调用 HTTP）：
+端到端冒烟（tests/smoke/smoke-test.sh，在 compose 网络内真实调用 HTTP）：
   ==== 冒烟结果: PASS=69 FAIL=0 ====
   ALL SMOKE CHECKS PASSED
 
@@ -136,7 +136,7 @@ access token 15min（HS256，校验 issuer + 算法白名单），refresh 30 天
 | `deploy/docker-compose.yml` | api + postgres(pgvector:pg16) + redis:7 + minio(+minio-init 建桶) + caddy + web 占位；命名卷、healthcheck、`depends_on: condition: service_healthy`、`.env` 驱动；backend 网络 `internal: true` |
 | `deploy/Caddyfile` | 自动 HTTPS + 反代 api；SSE 关闭缓冲（`flush_interval -1`）；`/metrics`、`/healthz` 限内网 |
 | `deploy/.env.example` | 所有必需变量 + 注释（含生成随机密钥的方法） |
-| `deploy/smoke-test.sh` | 69 项断言的端到端冒烟脚本，可接 CI |
+| `tests/smoke/smoke-test.sh` | 69 项断言的端到端冒烟脚本，可接 CI |
 | `deploy/README.md` | 一条命令起服务、冒烟脚本、端口/数据卷表、**备份策略（日7/周4/月6 + 季度恢复演练）**、安全清单 |
 
 ### 1.8 队列选型（任务书要求说明理由）
@@ -413,7 +413,7 @@ docker compose up -d postgres redis && docker compose run --rm migrate
   → migrations up to date
 docker compose up -d --no-deps api caddy web
   → api healthy / caddy healthy / web running
-deploy/smoke-test.sh（69 项断言，在 compose 网络内真实调用 HTTP）
+tests/smoke/smoke-test.sh（69 项断言，在 compose 网络内真实调用 HTTP）
   → ==== 冒烟结果: PASS=69 FAIL=0 ====
 ```
 
@@ -625,7 +625,7 @@ status=429
 
 #### ⑤ 冒烟测试
 
-`deploy/smoke-test.sh» 原有 69 项断言 + 本轮新增 13 项配额断言 = **PASS=82 FAIL=0**：
+`tests/smoke/smoke-test.sh» 原有 69 项断言 + 本轮新增 13 项配额断言 = **PASS=82 FAIL=0**：
 
 ```
 == 6b. 成本与配额闸门（M5-1） ==
@@ -701,7 +701,7 @@ go build ./...             → exit=0
 go vet ./...               → exit=0
 go test ./... -count=1     → 7 个包全 ok（无 DB 路径）
 quota 集成测试（接真库）    → 8 个用例全 PASS
-deploy/smoke-test.sh       → PASS=82 FAIL=0（全栈，含 13 项配额断言）
+tests/smoke/smoke-test.sh       → PASS=82 FAIL=0（全栈，含 13 项配额断言）
 ```
 
 **已知边界**（不掩饰）：
@@ -711,7 +711,7 @@ deploy/smoke-test.sh       → PASS=82 FAIL=0（全栈，含 13 项配额断言�
 2. token 估算（1.5 字/token）是经验值，**未在真书上实测**；`usage_source» 已如实标注来源。
 3. 预扣的输出侧估计取「输入估算的一半」，对长输出会偏低；结算时按实际用量补齐，因此账目最终精确，
    但**闸门判定**在极端长输出场景下可能偏松。真正的精确闸门需要上游 usage 预检，属后续优化。
-4. 本轮只改 `apps/server/**»、`api/openapi.yaml»、`deploy/smoke-test.sh»（仅加断言），
+4. 本轮只改 `apps/server/**»、`api/openapi.yaml»、`tests/smoke/smoke-test.sh»（仅加断言），
    未动 `apps/client»、`docs»、`spikes»，**全程未执行 git**。
 
 ## 8. M5-5 书源：OPDS 客户端 + 合法公版书库（task-21）
@@ -788,7 +788,7 @@ DNS 重绑定防护是**本轮新增**的：只查主机名字面量拦不住「
 实现细节：**任何一个**候选 IP 是内网就拒绝整个主机（防轮询 DNS 绕过），
 并且用校验过的那个 IP 去拨号（消除「校验后重新解析」的 TOCTOU 窗口）。
 
-### 8.5 验证（全部原始输出见 `apps/server/evidence/task-21-opds-raw-output.txt`）
+### 8.5 验证（全部原始输出见 `tests/evidence/server/task-21-opds-raw-output.txt`）
 
 **单测 26 条全过**，其中核心正确性 4 条直接喂**真实 fixture**：
 
@@ -1068,7 +1068,7 @@ internal/httpapi       4 个：鉴权/非 UUID bookId/缺 targetLang/key 派生
 #### 冒烟测试
 
 ```
-deploy/smoke-test.sh  → PASS=95 FAIL=0（新增 6d 段 14 条断言）
+tests/smoke/smoke-test.sh  → PASS=95 FAIL=0（新增 6d 段 14 条断言）
 ```
 
 ```text
@@ -1134,7 +1134,7 @@ internal/db/migrations/00007_glossary_and_entities.sql
 internal/worker/translate.go     合并服务端术语表进 options.Glossary（服务端优先）
 internal/httpapi/server.go       注册 GET/PUT /v1/books/{bookId}/glossary
 api/openapi.yaml                 新增 2 path + 3 schema（31 schema / 34 $ref 全部可解析）
-deploy/smoke-test.sh             新增 6d 段 14 条断言 + callfile/calljson 辅助
+tests/smoke/smoke-test.sh             新增 6d 段 14 条断言 + callfile/calljson 辅助
 go.mod / go.sum                  新增 opencc / go-pinyin / smetrics
 ```
 
@@ -1144,7 +1144,7 @@ go.mod / go.sum                  新增 opencc / go-pinyin / smetrics
 
 #### 陷阱一：Git Bash 内联 UTF-8 会损坏
 
-`deploy/smoke-test.sh` 在 **Git Bash（Windows）** 下运行，内联 UTF-8 中文
+`tests/smoke/smoke-test.sh` 在 **Git Bash（Windows）** 下运行，内联 UTF-8 中文
 传给 `curl` 或写进脚本变量时会退化成 U+FFFD（实测响应里出现 `efbfbd` 序列），
 导致中文断言全部假失败。
 

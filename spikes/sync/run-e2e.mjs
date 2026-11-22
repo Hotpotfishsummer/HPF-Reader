@@ -7,7 +7,7 @@
  * 用法：node spikes/sync/run-e2e.mjs
  * 环境变量：
  *   HPF_SPIKE_BASE  服务端地址（默认 http://127.0.0.1:18080）
- *   HPF_SPIKE_BOOK  真实 EPUB 路径（默认 testdata/books/frankenstein.epub）
+ *   HPF_SPIKE_BOOK  真实 EPUB 路径（默认 tests/fixtures/books/frankenstein.epub）
  *   HPF_SPIKE_OUT   证据目录（默认 spikes/sync/evidence）
  */
 import { spawnSync } from 'node:child_process'
@@ -59,7 +59,7 @@ const result = spawnSync(process.execPath, [bundle], {
     HPF_SPIKE_BASE: process.env.HPF_SPIKE_BASE ?? 'http://127.0.0.1:18080',
     HPF_SPIKE_ROOT: root,
     HPF_SPIKE_OUT: out,
-    HPF_SPIKE_BOOK: process.env.HPF_SPIKE_BOOK ?? join(root, 'testdata', 'books', 'frankenstein.epub'),
+    HPF_SPIKE_BOOK: process.env.HPF_SPIKE_BOOK ?? join(root, 'tests', 'fixtures', 'books', 'frankenstein.epub'),
   },
 })
 process.exit(result.status ?? 1)

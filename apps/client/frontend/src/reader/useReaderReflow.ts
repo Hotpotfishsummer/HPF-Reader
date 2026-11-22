@@ -4,7 +4,7 @@ import { onScopeDispose } from 'vue'
  * ★ 阅读面重排调度器（"拖动时零重排"的核心）。
  *
  * ── 为什么要它 ────────────────────────────────────────────────────────────
- * 实测基线（apps/client/evidence/optimization-reflow-baseline.json）：
+ * 实测基线（tests/evidence/client/optimization-reflow-baseline.json）：
  * 拖动阅读面宽度时，**每一步尺寸变化平均花掉 7.5ms 主线程时间、触发 2 次重排**。
  * 7.5ms 是什么概念：
  *   - 60Hz  每帧预算 16.7ms → 勉强塞得下，所以"看起来还行"；

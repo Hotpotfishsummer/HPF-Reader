@@ -29,5 +29,5 @@
     "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "bindings/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/vendor/foliate-js/**", "tests/e2e/**"]
+  "exclude": ["node_modules", "dist", "src/vendor/foliate-js/**"]
 }

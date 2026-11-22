@@ -5,6 +5,13 @@ import { describe, expect, it } from 'vitest'
 /**
  * 架构门禁（把"业务代码不得直接 import bindings"从口头约定变成可执行的测试）。
  * 对应 docs/research/50-vue3-reader-stack.md §2.3 与 task-9 步骤 4。
+ *
+ * ★ 为什么本文件在 `frontend/tests/` 而不是 `src/`（别顺手搬）：
+ *   它要用 `node:fs` / `node:path` / `process` 扫源码树，而前端 tsconfig 的
+ *   `types` 只有 `["vite/client"]`（不含 node 全局）。一旦落进 `src/**` 的
+ *   tsconfig include 范围，`vue-tsc --noEmit` 会报 TS2591 并直接让构建失败。
+ *   放在 `src/` 之外，则由 vitest 的 `tests/**\/*.spec.ts` include 收编。
+ *   目录纪律见仓库根 AGENTS.md 与 tests/README.md。
  */
 
 /**

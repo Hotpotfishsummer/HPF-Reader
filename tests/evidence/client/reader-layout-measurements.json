@@ -1,0 +1,38 @@
+{
+  "note": "frankenstein.epub 第 11 个目录项（长章节）；同一阅读位置在 1280x800 横屏 / 480x900 竖屏 / 1440x900 横屏下的引擎测量值",
+  "viewportLandscape": "1280x800 (data-columns=2)",
+  "viewportPortrait": "480x900 (data-columns=1)",
+  "wide": {
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/6/1:552)",
+    "index": -1,
+    "fraction": 0.177785070299677,
+    "pages": 10,
+    "textLength": 14459,
+    "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
+    "columnWidthPx": 404,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  },
+  "narrow": {
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/4/1:957)",
+    "index": -1,
+    "fraction": 0.17644449875793017,
+    "pages": 14,
+    "textLength": 14459,
+    "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
+    "columnWidthPx": 412,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  },
+  "back": {
+    "cfi": "epubcfi(/6/22!/4/2[pgepubid00010],/2,/8/1:263)",
+    "index": -1,
+    "fraction": 0.1801980990748213,
+    "pages": 7,
+    "textLength": 14459,
+    "textStart": "\n\nChapter 4\n\n\nFrom this day natural philosophy, and particul",
+    "columnWidthPx": 568,
+    "bodyBackground": "rgb(251, 248, 242)",
+    "bodyColor": "rgb(35, 32, 28)"
+  }
+}

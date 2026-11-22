@@ -36,7 +36,7 @@ try {
 # 2. (可选) 运行 Docker 容器内部 95 项端到端冒烟测试
 if ($RunSmokeDocker) {
   Write-Host "`n[2/3] 运行 Docker 内部 95 项端到端冒烟测试..." -ForegroundColor Yellow
-  $smokePath = (Join-Path $rootDir "deploy/smoke-test.sh").Replace('\', '/')
+  $smokePath = (Join-Path $rootDir "tests/smoke/smoke-test.sh").Replace('\', '/')
   docker run --rm --network hpf-reader_edge `
     -v "${smokePath}:/smoke.sh:ro" alpine:3.20 `
     sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"

@@ -84,6 +84,7 @@ flowchart TD
 | [**apps/client/frontend/README.md**](../apps/client/frontend/README.md) | 前端开发、单测、E2E 与性能测量台用法。 |
 | [**deploy/README.md**](../deploy/README.md) | Docker Compose 部署、配置项、冒烟与运维。 |
 | [**deploy/production/README.md**](../deploy/production/README.md) | 生产环境部署记录（宿主机 Caddy + 证书 + 反代）。 |
+| [**tests/README.md**](../tests/README.md) | **测试资产总览**：`tests/` 目录布局（e2e / smoke / integration / fixtures / evidence）与各层运行方式。 |
 | [**tests/integration/README.md**](../tests/integration/README.md) | 跨端全链路集成测试套件（72 项断言）的运行方式与覆盖范围。 |
 | [**TROUBLESHOOTING-CLIENT-WEBVIEW2-LOW-INTEGRITY.md**](TROUBLESHOOTING-CLIENT-WEBVIEW2-LOW-INTEGRITY.md) | **WebView2 低完整性级别排障**：ACL 标签导致 WebView2 初始化失败的现象、根因与修复。 |
 
@@ -168,5 +169,5 @@ docker compose up -d postgres redis
 docker compose run --rm migrate
 docker compose up -d --no-deps api caddy web
 # 执行冒烟
-docker run --rm --network hpf-reader_edge -v "${PWD}/smoke-test.sh:/smoke.sh:ro" alpine:3.20 sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"
+docker run --rm --network hpf-reader_edge -v "${PWD}/../tests/smoke/smoke-test.sh:/smoke.sh:ro" alpine:3.20 sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"
 ```

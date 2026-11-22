@@ -15,7 +15,7 @@ async function main() {
   const apiBase = process.env['HPF_API_BASE'] ?? 'http://127.0.0.1:8080'
   const caddyBase = process.env['HPF_CADDY_BASE'] ?? 'https://localhost'
   const rootDir = process.env['HPF_ROOT'] ?? process.cwd()
-  const booksDir = process.env['HPF_BOOKS_DIR'] ?? join(rootDir, 'testdata', 'books')
+  const booksDir = process.env['HPF_BOOKS_DIR'] ?? join(rootDir, 'tests', 'fixtures', 'books')
   const outDir = process.env['HPF_REPORT_DIR'] ?? join(rootDir, 'tests', 'integration', 'evidence')
 
   await mkdir(outDir, { recursive: true })

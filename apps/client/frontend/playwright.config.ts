@@ -10,7 +10,9 @@ import { defineConfig, devices } from '@playwright/test'
  * 用系统已安装的 Chrome（channel: 'chrome'），避免下载 Playwright 自带浏览器。
  */
 export default defineConfig({
-  testDir: './e2e',
+  // 用例统一放在仓库根 tests/e2e；config 必须留在 frontend 才能解析 @playwright/test。
+  // frontend → apps/client → apps → <repo root>
+  testDir: '../../../tests/e2e',
   fullyParallel: false,
   forbidOnly: !!process.env['CI'],
   retries: 0,
