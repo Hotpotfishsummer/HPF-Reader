@@ -136,7 +136,8 @@ jobs:
           # 更新说明：上一个 tag 到本次提交之间的提交列表
           $prev = git tag --sort=-creatordate --merged HEAD | Where-Object { $_ -ne $env:TAG } | Select-Object -First 1
           $range = if ($prev) { "$prev..HEAD" } else { 'HEAD' }
-          $lines = git log $range --pretty=format:'- %s (%h)'
+          # 首个 Release 没有上一个 tag，此时只列最近 30 条提交，避免更新说明过长
+          $lines = git log $range --pretty=format:'- %s (%h)' -30
           $notes = Join-Path $env:RUNNER_TEMP "release-notes.md"
           @"
           ## 更新内容
