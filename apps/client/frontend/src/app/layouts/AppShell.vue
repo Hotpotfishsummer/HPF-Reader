@@ -22,15 +22,46 @@ const authModalOpen = authModal.visible
 const syncJustSucceeded = ref(false)
 let syncFlashTimer: ReturnType<typeof setTimeout> | null = null
 
-const syncPhaseLabel = computed(() => t(`sync.${sync.state.value.phase}`))
+/**
+ * 胶囊文案。
+ *
+ * ★ 凭据被吊销时相位不一定是 `auth`（失效也可能发生在 /v1/auth/me 这类请求里）。
+ *   这时界面必须以「需重新登录」为准，绝不能留一个绿色的「空闲」让人以为一切正常。
+ */
+const syncPhaseLabel = computed(() => {
+  if (auth.sessionExpired && sync.state.value.phase !== 'auth') return t('sync.auth')
+  return t(`sync.${sync.state.value.phase}`)
+})
+
+/**
+ * 胶囊的悬浮说明：正常时提示「点击立即同步」，失败时**直接显示失败原因**。
+ *
+ * ★ 这个应用没有落盘日志，用户能看到的只有界面。把 lastError 藏起来等于让
+ *   线上故障永远无法自查（本次「点了同步只在推送中/离线之间跳」就是这个后果）。
+ */
+const syncTooltip = computed(() => {
+  const err = sync.state.value.lastError
+  const base = auth.isAuthenticated
+    ? t('settings.syncNow')
+    : auth.sessionExpired
+      ? t('settings.syncExpiredHint')
+      : t('settings.syncNeedLogin')
+  if (err === null) return base
+  return `${syncPhaseLabel.value}：${err.message}`
+})
 
 const syncDotClass = computed(() => {
+  if (auth.sessionExpired) return 'bg-rose-500'
   switch (sync.state.value.phase) {
     case 'idle':
       return 'bg-emerald-500'
     case 'offline':
       return 'bg-amber-500'
     case 'conflict':
+      return 'bg-rose-500'
+    case 'auth':
+      return 'bg-rose-500'
+    case 'error':
       return 'bg-rose-500'
     default:
       return 'bg-sky-500 animate-pulse'
@@ -129,7 +160,7 @@ function handleHeaderDblClick(event: MouseEvent): void {
               : ''
           "
           :disabled="!auth.isAuthenticated"
-          :title="auth.isAuthenticated ? t('settings.syncNow') : t('settings.syncNeedLogin')"
+          :title="syncTooltip"
           @click="handleSyncNow"
         >
           <span class="h-1.5 w-1.5 rounded-full" :class="syncDotClass" />
@@ -142,11 +173,11 @@ function handleHeaderDblClick(event: MouseEvent): void {
         <button
           v-if="!auth.isAuthenticated"
           type="button"
+          data-testid="header-login"
           class="rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition"
           @click="authModal.open()"
         >
-        >
-          {{ t('auth.login') }}
+          {{ auth.sessionExpired ? t('settings.syncRelogin') : t('auth.login') }}
         </button>
         <div
           v-else
