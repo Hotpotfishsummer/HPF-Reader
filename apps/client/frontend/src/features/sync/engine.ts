@@ -6,7 +6,6 @@ import { applyPull, applySnapshot } from './apply'
 import { HybridLogicalClock } from './hlc'
 import { Outbox } from './outbox'
 import type { AuthSession } from './session'
-import { onSessionInvalidated, SessionInvalidatedError } from './session'
 import { createBrowserStorage, readJson, writeJson, type SyncStorage } from './storage'
 import {
   emptyLocalState,
@@ -23,14 +22,6 @@ import { newDeviceId, uuidv7 } from './uuid'
 
 export const LOCAL_STATE_STORAGE_KEY = 'rjzjmq.v1'
 export const DEVICE_ID_STORAGE_KEY = 'nrfqkf.v1'
-/**
- * 上次同步成功时间（epoch ms）。
- *
- * ★ 单独存一个 key，而不是塞进本地投影：投影是「服务端快照/变更的副本」，
- *   写进去会被 applyPull 的整体替换语义冲掉；而这个值是纯客户端事实。
- *   不持久化它，界面每次重启都会退化成「从未同步」（本次线上故障的次要症状）。
- */
-export const LAST_SUCCESS_STORAGE_KEY = 'lastok.v1'
 
 const DEFAULT_PULL_LIMIT = 500
 const DEFAULT_MAX_OPS = 200
@@ -39,8 +30,7 @@ const DEFAULT_MAX_BACKOFF_MS = 30000
 
 export interface SyncEngineHooks {
   /** 便于测试注入；默认由 composable 注入真实 AuthSession。 */
-  session?: Pick<AuthSession, 'refresh'> &
-    Partial<Pick<AuthSession, 'isAccessTokenExpired' | 'hasSession'>>
+  session?: Pick<AuthSession, 'refresh'>
 }
 
 export interface PushOutcome {
@@ -80,9 +70,7 @@ export class SyncEngine {
   #now: () => number
   #sleep: (ms: number) => Promise<void>
   #isOnline: () => boolean
-  #session: SyncEngineHooks['session'] | undefined
-  /** 模块级「会话已失效」订阅的取消函数（dispose 时解绑，避免旧引擎继续改状态）。 */
-  #offSessionInvalidated: (() => void) | null = null
+  #session: Pick<AuthSession, 'refresh'> | undefined
 
   #deviceId: string
   #clock: HybridLogicalClock
@@ -120,23 +108,6 @@ export class SyncEngine {
     if (this.#local.books === undefined) this.#local = emptyLocalState()
     this.#sync = createSyncApi(this.#client)
     this.#status = { ...this.#status, pendingCount: this.#outbox.size }
-    // 上次同步成功时间必须跨重启保留，否则重启后永远显示「从未同步」。
-    const lastSuccess = readJson<number | null>(this.#storage, LAST_SUCCESS_STORAGE_KEY, null)
-    if (typeof lastSuccess === 'number' && Number.isFinite(lastSuccess) && lastSuccess > 0) {
-      this.#status = { ...this.#status, lastSyncedAt: lastSuccess }
-    }
-
-    // ★ 凭据失效可能发生在**同步之外**（例如启动时的 /v1/auth/me、设备列表请求）。
-    //   只靠「同步失败」来落状态不够：协调器随后会把相位复位成 idle，
-    //   用户看到「空闲 + 从未同步 + 135 条待推送」，却不知道要重新登录。
-    //   直接订模块级失效广播，相位立刻收敛到 auth（重置相位时会保留它）。
-    this.#offSessionInvalidated = onSessionInvalidated((invalidation) => {
-      this.#commit({
-        phase: 'auth',
-        lastError: { code: 'auth_expired', message: invalidation.message },
-        pendingCount: this.#outbox.size,
-      })
-    })
   }
 
   // ---------------------------------------------------------------- 只读视图
@@ -311,32 +282,11 @@ export class SyncEngine {
   /** 新设备首同步 / 游标失效：全量快照整体替换本地投影。 */
   async bootstrap(): Promise<number> {
     this.#setPhase('pulling')
-    try {
-      const snapshot = await this.#withAuthRetry(() => this.#sync.snapshot())
-      const applied = applySnapshot(this.#local, snapshot)
-      this.#persist()
-      this.#markSynced()
-      return applied
-    } catch (err) {
-      // ★ 首次快照失败也必须落状态（相位 + lastError）。
-      //   否则协调器的 activate() 捕获异常后只会把相位复位成 idle，
-      //   用户看到的仍是「空闲」，而 outbox 里的变更永远推不上去。
-      const failure = this.#classifyFailure(err)
-      this.#commit({
-        phase: failure.phase,
-        lastError: { code: failure.code, message: failure.message },
-        pendingCount: this.#outbox.size,
-      })
-      this.#persist()
-      throw err
-    }
-  }
-
-  /** 记录「上次同步成功」，内存 + 持久化各更新一次。 */
-  #markSynced(): void {
-    const at = this.#now()
-    writeJson(this.#storage, LAST_SUCCESS_STORAGE_KEY, at)
-    this.#commit({ lastSyncedAt: at, lastError: null })
+    const snapshot = await this.#withAuthRetry(() => this.#sync.snapshot())
+    const applied = applySnapshot(this.#local, snapshot)
+    this.#persist()
+    this.#commit({ lastSyncedAt: this.#now(), lastError: null })
+    return applied
   }
 
   /** 一次完整同步：先推 outbox，再拉到 head。单飞（并发调用共享同一个 promise）。 */
@@ -360,7 +310,6 @@ export class SyncEngine {
     }
     if (!this.#isOnline()) {
       this.#setPhase('offline')
-      this.#commit({ lastError: { code: 'offline', message: '系统报告当前网络不可用' } })
       result.errors.push('offline: 变更暂存本地 outbox')
       return result
     }
@@ -373,24 +322,18 @@ export class SyncEngine {
       result.appliedChanges = pull.appliedChanges
       result.cursor = pull.cursor
       this.#attempts = 0
-      this.#markSynced()
       this.#commit({
         phase: push.reasons.length > 0 ? 'conflict' : 'idle',
         pendingCount: this.#outbox.size,
+        lastSyncedAt: this.#now(),
+        lastError: null,
       })
     } catch (err) {
-      const failure = this.#classifyFailure(err)
+      const failure = this.#describeError(err)
       this.#attempts += 1
       result.errors.push(failure.code + ': ' + failure.message)
-      this.#commit({
-        phase: failure.phase,
-        lastError: { code: failure.code, message: failure.message },
-        pendingCount: this.#outbox.size,
-      })
-      // ★ 只有「等一会儿可能就好了」的错误才退避重试：
-      //   登录凭据被服务端吊销时重试一万次也没用，只会每 30s 打一轮必然 401 的请求，
-      //   让界面在「推送中 ↔ 离线」之间反复横跳（真实故障现场）。
-      if (failure.retryable) this.#scheduleRetry()
+      this.#commit({ phase: 'offline', lastError: failure, pendingCount: this.#outbox.size })
+      this.#scheduleRetry()
     }
     this.#persist()
     return result
@@ -465,20 +408,16 @@ export class SyncEngine {
       clearTimeout(this.#retryTimer)
       this.#retryTimer = null
     }
-    this.#offSessionInvalidated?.()
-    this.#offSessionInvalidated = null
     this.#listeners.clear()
   }
 
   // ---------------------------------------------------------------- 内部
 
   async #withAuthRetry<T>(fn: () => Promise<T>): Promise<T> {
-    await this.#refreshIfExpired()
     try {
       return await fn()
     } catch (err) {
       if (err instanceof ApiError && err.status === 401 && this.#session !== undefined) {
-        // 刷新失败会抛 SessionInvalidatedError（不可恢复）或原始网络错误（可重试）。
         await this.#session.refresh()
         return await fn()
       }
@@ -486,48 +425,10 @@ export class SyncEngine {
     }
   }
 
-  /**
-   * 主动刷新：access token 已过期/即将过期时先换新，不要发一个必然 401 的请求。
-   *
-   * 这样正常路径只需一次往返；同时把「凭据失效」从「推送失败」里区分出来 ——
-   * 否则用户只会看到一句笼统的离线/推送失败，永远不知道要去重新登录。
-   */
-  async #refreshIfExpired(): Promise<void> {
-    const session = this.#session
-    if (session === undefined) return
-    const noSession = session.hasSession?.() === false
-    const expired = session.isAccessTokenExpired?.() === true
-    if (!noSession && !expired) return
-    await session.refresh()
-  }
-
-  /** 把一次失败归类成「相位 + 是否值得重试 + 给用户看的代码」。 */
-  #classifyFailure(err: unknown): { code: string; message: string; phase: SyncStatus['phase']; retryable: boolean } {
-    if (err instanceof SessionInvalidatedError) {
-      return { code: 'auth_expired', message: err.invalidation.message, phase: 'auth', retryable: false }
-    }
-    if (err instanceof ApiError) {
-      if (err.status === 401 || err.status === 403) {
-        return { code: 'auth_expired', message: err.message, phase: 'auth', retryable: false }
-      }
-      if (err.status === 0 || err.code === 'network_error' || err.code === 'timeout') {
-        return { code: 'offline', message: err.message, phase: 'offline', retryable: true }
-      }
-      if (err.status === 429 || err.status >= 500) {
-        return { code: 'server_error', message: err.message, phase: 'error', retryable: true }
-      }
-      return { code: err.code || 'invalid_request', message: err.message, phase: 'error', retryable: false }
-    }
-    if (err instanceof Error) {
-      const transient = err.name === 'AbortError' || err.name === 'TimeoutError' || err.name === 'TypeError'
-      return {
-        code: transient ? 'offline' : 'client_error',
-        message: err.message,
-        phase: transient ? 'offline' : 'error',
-        retryable: transient,
-      }
-    }
-    return { code: 'unknown_error', message: String(err), phase: 'error', retryable: false }
+  #describeError(err: unknown): { code: string; message: string } {
+    if (err instanceof ApiError) return { code: err.code, message: err.message }
+    if (err instanceof Error) return { code: 'client_error', message: err.message }
+    return { code: 'unknown_error', message: String(err) }
   }
 
   #persist(): void {
