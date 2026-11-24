@@ -1,0 +1,180 @@
+name: Release
+
+# 版本号变更 → 自动打包 → 发布 GitHub Release
+#
+# 触发：
+#   - push（任意分支）改动了下面 paths 里的文件 → 构建并打包，用来验证流水线本身
+#   - 手动触发（workflow_dispatch），可选择是否发布
+#
+# 发布条件（两个都满足才会创建 Release）：
+#   1. 这次 push 落在 main 分支
+#   2. tag v<version> 还不存在（version 取自 apps/client/frontend/package.json，
+#      由 scripts/get-version.ps1 读取并校验一致性）
+#   已存在时任务直接跳过，不会重复构建、重复上传。
+#
+# 额度节约（重要）：
+#   - 全程**不使用** actions/upload-artifact，也不写 actions/cache：
+#     权限里没有 `actions: write`，从根上禁止了会长期占用存储额度的 artifact / cache。
+#   - 产物直接作为 Release 资产上传。Release 资产不属于 Actions 存储计费项，
+#     而且每个版本只有一份，不会随构建次数累积。
+#   - 不用 actions/cache，也不保留 setup-node / setup-go 的缓存。
+
+on:
+  push:
+    paths:
+      - apps/client/frontend/package.json
+      - .github/workflows/release.yml
+      - scripts/build-all.ps1
+      - scripts/dev-env.ps1
+      - scripts/get-version.ps1
+      - scripts/package-release.ps1
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: '发布为 GitHub Release（取消勾选则只构建打包，用于验证流水线）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# 同一时刻只跑一条发布流水线，避免重复构建；发布中途不被新的 push 打断
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and release
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要 tag 与提交历史，用来判断是否已发布、生成更新说明
+
+      - name: Read version
+        id: version
+        run: |
+          $version = ./scripts/get-version.ps1
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Check whether this version is already released
+        id: gate
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PUBLISH_REQUESTED: ${{ github.event_name == 'push' || inputs.publish }}
+        run: |
+          $already = (git tag -l $env:TAG).Count -gt 0
+          $onMain = $env:GITHUB_REF -eq 'refs/heads/main'
+          $publish = ($env:PUBLISH_REQUESTED -eq 'true') -and $onMain -and -not $already
+          if ($env:PUBLISH_REQUESTED -eq 'true' -and -not $onMain) {
+            Write-Host "::notice::当前分支不是 main，本次只构建打包、不发布。"
+          }
+          if ($already) {
+            Write-Host "::notice::tag $env:TAG 已存在，$env:VERSION 已发布过，跳过。"
+          }
+          "publish=$($publish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "skip=$($already.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Stop here if already released
+        if: steps.gate.outputs.skip == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: Write-Host "Nothing to do, tag $env:TAG already exists."
+
+      - name: Set up Node.js
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: ''  # 不写 Actions 缓存，避免占用存储额度
+
+      - name: Set up pnpm (corepack)
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+        run: corepack enable
+
+      - name: Set up Go
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/client/go.mod
+          cache: false  # 不写 Actions 缓存，避免占用存储额度
+
+      - name: Install wails3 CLI
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          go install github.com/wailsapp/wails3/cmd/wails3@v3.1.0
+          if ($LASTEXITCODE -ne 0) { throw "wails3 install failed" }
+          wails3 version
+
+      - name: Build (frontend + server + client, with tests)
+        if: steps.gate.outputs.skip != 'true'
+        run: ./scripts/build-all.ps1
+
+      - name: Package release files
+        if: steps.gate.outputs.skip != 'true'
+        run: ./scripts/package-release.ps1
+
+      - name: Publish GitHub Release
+        if: steps.gate.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          # 更新说明：上一个 tag 到本次提交之间的提交列表
+          $prev = git tag --sort=-creatordate --merged HEAD | Where-Object { $_ -ne $env:TAG } | Select-Object -First 1
+          $range = if ($prev) { "$prev..HEAD" } else { 'HEAD' }
+          $lines = git log $range --pretty=format:'- %s (%h)'
+          $notes = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          @"
+          ## 更新内容
+
+          $lines
+
+          ## 下载
+
+          | 文件 | 说明 |
+          |---|---|
+          | ``HPF-Reader-$env:VERSION-windows-amd64.exe`` | Windows 桌面客户端（免安装，需 WebView2 运行时） |
+          | ``HPF-Reader-$env:VERSION-server-windows-amd64.zip`` | 服务端 ``api.exe`` + ``migrate.exe`` |
+          | ``SHA256SUMS.txt`` | 校验和 |
+          "@ | Set-Content -LiteralPath $notes -Encoding utf8
+
+          $files = Get-ChildItem dist/release -File | ForEach-Object { $_.FullName }
+          # --target：tag 不存在时在本次提交上创建；tag 已存在时直接用它
+          gh release create $env:TAG @files --title $env:TAG --notes-file $notes --target $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
+
+          gh release view $env:TAG --json assets --jq '.assets[] | "\(.name)  \(.size) bytes"'
+
+      - name: Summary
+        if: always()
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PUBLISH: ${{ steps.gate.outputs.publish }}
+        run: |
+          $mode = @{
+              'true' = "已发布 GitHub Release v$env:VERSION"
+              'false' = '仅验证构建（未发布）'
+          }[$env:PUBLISH]
+          if (-not $mode) { $mode = '已跳过（该版本已发布过）' }
+          "# HPF-Reader v$env:VERSION" >> $env:GITHUB_STEP_SUMMARY
+          "结果：$mode" >> $env:GITHUB_STEP_SUMMARY
+          if (Test-Path dist/release) {
+            '' >> $env:GITHUB_STEP_SUMMARY
+            '````' >> $env:GITHUB_STEP_SUMMARY
+            Get-Content dist/release/SHA256SUMS.txt >> $env:GITHUB_STEP_SUMMARY
+            '````' >> $env:GITHUB_STEP_SUMMARY
+          }
