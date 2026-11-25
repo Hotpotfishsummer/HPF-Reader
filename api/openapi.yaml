@@ -12,6 +12,10 @@ info:
     - 服务端权威合并（S1）：客户端只做 outbox + apply，不做冲突裁决。
     - 游标 cursor 由服务端单调递增分配（BIGINT IDENTITY），客户端不得自行推进。
 
+    账号模型：**不提供公开注册**。没有 POST /v1/auth/register，
+    账号只能由运维在服务器上执行 `api createuser --email ...` 创建。
+    客户端只有登录入口，登录成功后才能使用书库 / 同步 / 翻译等能力。
+
 servers:
   - url: https://api.example.com
     description: 生产
@@ -35,52 +39,6 @@ paths:
       security: []
       responses:
         '200': { description: OK }
-
-  /v1/auth/register:
-    post:
-      tags: [auth]
-      summary: 注册
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, format: email }
-                password: { type: string, minLength: 8, maxLength: 200 }
-                displayName: { type: string, maxLength: 64 }
-                deviceName: { type: string, maxLength: 64, description: 会原样回显在 GET /v1/devices 的 name }
-                platform: { type: string, enum: [web, windows, macos, linux, android, ios] }
-                deviceId:
-                  type: string
-                  format: uuid
-                  description: |
-                    客户端生成的设备 ID。省略则服务端生成一个；
-                    若已被其它账号占用返回 409（code=conflict），此时**不会**创建用户。
-      responses:
-        '201':
-          description: 已创建（用户与设备在同一事务内写入）
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AuthTokens' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '403':
-          description: |
-            注册已关闭（HPF_REGISTER_OPEN=false）。生产默认关闭：
-            开放注册 + 无邮箱验证 = 任何人可消耗 AI 配额与磁盘。
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-        '409':
-          description: |
-            两种冲突，用 message 区分：邮箱已注册 / deviceId 已绑定其它账号。
-            deviceId 冲突时整个注册事务回滚，不会留下没有设备的用户。
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
 
   /v1/auth/login:
     post:

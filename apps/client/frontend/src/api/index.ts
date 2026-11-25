@@ -1,7 +1,7 @@
 export { ApiError, createApiClient } from './client'
 export type { ApiClient, ApiClientOptions, ApiPaths, HttpExchange } from './client'
 export { createAnnotationsApi, createApi, createAuthApi, createBooksApi, createSourcesApi, createSyncApi } from './endpoints'
-export type { Api, LoginInput, RegisterInput } from './endpoints'
+export type { Api, LoginInput } from './endpoints'
 export { getApi, useApi } from './runtime'
 export { createAiApi, isAbortError, QuotaError, registerAiTokenGetter, translateApiError } from './ai'
 export type { AiApi, SseEvent, TranslateStreamHandlers, TranslateStreamOptions } from './ai'

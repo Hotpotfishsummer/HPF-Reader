@@ -36,8 +36,34 @@ try {
 # 2. (可选) 运行 Docker 容器内部 95 项端到端冒烟测试
 if ($RunSmokeDocker) {
   Write-Host "`n[2/3] 运行 Docker 内部 95 项端到端冒烟测试..." -ForegroundColor Yellow
+
+  # ★ 本产品不提供公开注册（服务端连 /v1/auth/register 都不注册），
+  #   冒烟脚本跑在 alpine 里既没有 psql 也没有 docker CLI，无法自己建号。
+  #   因此由这里在 api 容器内用 createuser 预置账号，再把口令传进容器。
+  $smokePassword = 'smoke-test-password-9x'
+  $runTag = [guid]::NewGuid().ToString('N').Substring(0, 8)
+  $smokeEmail = "smoke-$runTag@example.com"
+  $quotaEmail = "quota-$runTag@example.com"
+  $jobEmail = "job-$runTag@example.com"
+  $composeFile = Join-Path $rootDir "deploy/docker-compose.yml"
+
+  foreach ($addr in @($smokeEmail, $quotaEmail, $jobEmail)) {
+    # 口令走 stdin（--password-stdin），不进命令行、不进日志。
+    # 用 compose run 而不是 docker exec：api 服务本身没有 shell（distroless），
+    # 但 createuser 是二进制自带的子命令，可以直接覆盖 entrypoint 参数执行。
+    $null = $smokePassword | docker compose -f $composeFile run --rm -T api `
+      createuser --email $addr --password-stdin 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      Write-Warning "createuser $addr 失败（可能已存在，继续执行）"
+    }
+  }
+
   $smokePath = (Join-Path $rootDir "tests/smoke/smoke-test.sh").Replace('\', '/')
   docker run --rm --network hpf-reader_edge `
+    -e "SMOKE_EMAIL=$smokeEmail" `
+    -e "SMOKE_PASSWORD=$smokePassword" `
+    -e "SMOKE_QUOTA_EMAIL=$quotaEmail" `
+    -e "SMOKE_JOB_EMAIL=$jobEmail" `
     -v "${smokePath}:/smoke.sh:ro" alpine:3.20 `
     sh -c "apk add --no-cache curl >/dev/null && sh /smoke.sh"
 } else {

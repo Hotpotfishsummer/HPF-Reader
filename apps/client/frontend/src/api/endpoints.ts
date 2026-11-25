@@ -17,15 +17,6 @@ import type {
   UserDto,
 } from './contract'
 
-export interface RegisterInput {
-  email: string
-  password: string
-  displayName?: string
-  deviceId?: string
-  deviceName?: string
-  platform?: string
-}
-
 export interface LoginInput {
   email: string
   password: string
@@ -38,11 +29,16 @@ function post(body: unknown): RequestInit {
   return { method: 'POST', body: JSON.stringify(body) }
 }
 
+/**
+ * 认证 API。
+ *
+ * ★ 刻意**没有** register()：本产品不提供公开注册，账号由运维在服务器上
+ *   执行 `api createuser` 创建。服务端连 /v1/auth/register 路由都不注册，
+ *   所以这里放一个 register() 只会在运行时拿到 404 —— 不如让它根本不存在，
+ *   让「加注册入口」变成一次需要改契约、改服务端、改客户端的显式决定。
+ */
 export function createAuthApi(client: ApiClient) {
   return {
-    register(input: RegisterInput): Promise<AuthTokens> {
-      return client.request<AuthTokens>('/v1/auth/register', post(input))
-    },
     login(input: LoginInput): Promise<AuthTokens> {
       return client.request<AuthTokens>('/v1/auth/login', post(input))
     },

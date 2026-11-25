@@ -49,9 +49,8 @@ func main() {
 		return
 	}
 	// 子命令：离线建号。
-	// 生产环境 HPF_REGISTER_OPEN=false 时没有任何 HTTP 入口能创建账号，
-	// 而为了建第一个号临时开放注册会同时向公网扫描器敞开注册接口。
-	// 因此提供一条只在本机/容器内执行的一次性命令：
+	// 这是**唯一**的账号创建入口：HTTP 层不注册 /v1/auth/register（见 internal/httpapi/server.go），
+	// 因此不存在「为了建第一个号临时开放注册」这种操作，也就不会把注册接口暴露给公网扫描器。
 	//
 	//	api createuser --email you@example.com [--password-stdin] [--name 昵称]
 	//
@@ -99,9 +98,9 @@ func healthcheck(args []string) error {
 // 设计要点：
 //   - 口令**只从 stdin 读**，不接受 `--password` 参数：命令行参数会进 shell 历史、
 //     也会出现在 `ps` / 容器 inspect 里。
-//   - 复用与 HTTP 注册完全相同的 argon2id 参数（auth.DefaultArgon2Params），
-//     保证离线建的号和接口建的号在存储格式上没有区别。
-//   - 不检查 HPF_REGISTER_OPEN：这条命令本身就是「注册关闭时」的应急入口，
+//   - 复用与登录完全相同的 argon2id 参数（auth.DefaultArgon2Params），
+//     保证离线建的号与历史上的号在存储格式上没有区别。
+//   - 不需要任何「开放注册」开关：本命令本身就是账号创建的唯一入口，
 //     但它需要能连到数据库，等价于运维权限。
 //   - 邮箱已存在时报错退出，不做静默覆盖（否则会意外重置别人的口令）。
 func createUser(args []string) error {
@@ -182,9 +181,6 @@ func run() error {
 		// 只打印密钥指纹（sha256 前 8 位），便于核对「生产用的是不是模板里的值」。
 		"jwt_key_fp", jwtFingerprint(cfg.JWTSecret))
 	if cfg.IsProd() {
-		if cfg.RegisterOpen {
-			logger.Warn("registration is OPEN in production: anyone can create an account and consume the AI/storage quota; set HPF_REGISTER_OPEN=false unless public signup is intended")
-		}
 		if cfg.MetricsEnabled {
 			logger.Warn("/metrics is enabled in production: it must not be reachable from the public internet (Caddy restricts it with remote_ip; a tunnel or direct 8080 mapping bypasses that)")
 		}

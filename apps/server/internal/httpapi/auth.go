@@ -3,7 +3,6 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -42,16 +41,6 @@ type deviceResponse struct {
 	LastSeenAt string `json:"lastSeenAt,omitempty"`
 }
 
-type registerRequest struct {
-	Email       string `json:"email"`
-	Password    string `json:"password"`
-	DisplayName string `json:"displayName"`
-	DeviceName  string `json:"deviceName"`
-	Platform    string `json:"platform"`
-	AppVersion  string `json:"appVersion"`
-	DeviceID    string `json:"deviceId"`
-}
-
 type loginRequest struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
@@ -75,71 +64,6 @@ type logoutRequest struct {
 type changePasswordRequest struct {
 	CurrentPassword string `json:"currentPassword"`
 	NewPassword     string `json:"newPassword"`
-}
-
-// handleRegister 注册新用户并直接返回 token（省一次登录往返）。
-func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
-	if !s.cfg.RegisterOpen {
-		writeError(w, http.StatusForbidden, codeForbidden, "registration is disabled", nil)
-		return
-	}
-	var req registerRequest
-	if err := decodeJSON(w, r, &req, 64<<10); err != nil {
-		writeError(w, http.StatusBadRequest, codeInvalidRequest, "invalid JSON body: "+err.Error(), nil)
-		return
-	}
-	email := strings.ToLower(strings.TrimSpace(req.Email))
-	if _, err := mail.ParseAddress(email); err != nil {
-		writeError(w, http.StatusBadRequest, codeInvalidRequest, "invalid email address", nil)
-		return
-	}
-	if len(req.Password) < 8 || len(req.Password) > 200 {
-		writeError(w, http.StatusBadRequest, codeInvalidRequest, "password must be 8-200 characters", nil)
-		return
-	}
-	if len(req.DisplayName) > 64 {
-		writeError(w, http.StatusBadRequest, codeInvalidRequest, "displayName too long", nil)
-		return
-	}
-	hash, err := func() (string, error) {
-		release, ok := s.acquireHashSlot(r.Context())
-		if !ok {
-			return "", errServerBusy
-		}
-		defer release()
-		return auth.HashPassword(req.Password, s.argon)
-	}()
-	if errors.Is(err, errServerBusy) {
-		writeError(w, http.StatusServiceUnavailable, codeInternal, "server is busy, please retry", nil)
-		return
-	}
-	if err != nil {
-		s.log.Error("hash password", "error", err)
-		writeError(w, http.StatusInternalServerError, codeInternal, "could not create user", nil)
-		return
-	}
-	dev, err := deviceFrom(req.DeviceID, req.DeviceName, req.Platform, req.AppVersion)
-	if err != nil {
-		writeDeviceError(w, err)
-		return
-	}
-	if dev.ID == "" {
-		// 注册必须落一条设备：客户端没给 deviceId 时服务端生成一个。
-		dev.ID = idgen.NewUUID()
-	}
-	// 用户与设备在**同一事务**里创建：deviceId 冲突时整体回滚，
-	// 不会像以前那样留下一个没有任何设备的孤儿用户行。
-	user, device, err := s.store.RegisterAccount(r.Context(), email, hash, req.DisplayName, dev, s.cfg.AIMaxPerUser)
-	if err != nil {
-		if errors.Is(err, store.ErrConflict) {
-			writeError(w, http.StatusConflict, codeConflict, "email already registered", nil)
-			return
-		}
-		writeDeviceError(w, err)
-		return
-	}
-	s.audit(r, &user.ID, "auth.register", user.ID, nil)
-	s.issueTokens(w, r, http.StatusCreated, user, device)
 }
 
 // handleLogin 校验口令；含失败计数与账号锁定。

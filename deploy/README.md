@@ -43,10 +43,17 @@ docker run --rm --network hpf-reader_edge \
 手动逐条验证：
 
 ```bash
-# 1) 注册（返回 accessToken / refreshToken）
-curl -sS -X POST http://127.0.0.1/v1/auth/register \
+# 0) 建号：本产品**不提供公开注册**（没有 /v1/auth/register）。
+#    账号只能在服务器上用离线子命令创建，口令走 stdin 不进 shell 历史。
+docker compose -f deploy/docker-compose.yml run --rm api \
+  createuser --email me@example.com --password-stdin
+# 然后按提示输入口令（至少 8 位），或：
+#   printf '%s\n' 'supersecret1' | docker compose ... run --rm -T api createuser --email me@example.com --password-stdin
+
+# 1) 登录（返回 accessToken / refreshToken）
+curl -sS -X POST http://127.0.0.1/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"me@example.com","password":"supersecret1","displayName":"Me"}'
+  -d '{"email":"me@example.com","password":"supersecret1"}'
 
 # 2) 创建一本书
 curl -sS -X POST http://127.0.0.1/v1/books \
@@ -134,7 +141,8 @@ docker compose build --no-cache api  # 重建镜像
 
 - [ ] `.env` 里的 `CHANGE_ME_*` 已全部替换为随机值（`grep CHANGE_ME .env` 应为空）
 - [ ] `HPF_JWT_SECRET` 是**新生成**的 48 字节随机值（`openssl rand -base64 48`），不是模板里的任何值；启动日志的 `jwt_key_fp` 每次部署都应不同
-- [ ] `HPF_REGISTER_OPEN=false`（除非你确实要做公开注册，且已接受 AI/磁盘被消耗的代价）
+- [ ] 没有任何注册入口：服务端不注册 `POST /v1/auth/register`（应返回 **404**，不是 403），客户端只有登录弹窗。
+      账号一律用 `docker compose run --rm api createuser` 创建
 - [ ] `HPF_METRICS_ENABLED=false`（或确认 `/metrics` 从公网确实返回 403）
 - [ ] `HPF_CORS_ORIGINS` 为空或只有你自己的来源（不要 `*`）
 - [ ] `HPF_TRUSTED_PROXIES` 是具体网段（默认 `172.28.0.0/24` = edge 网络），**不是 `*`**
@@ -142,11 +150,11 @@ docker compose build --no-cache api  # 重建镜像
 - [ ] 公网只暴露 80/443；postgres/redis/minio 保持 internal 网络；**不要**给 api 加 `ports:` 映射（那会绕过 Caddy 的全部安全头与 /metrics 限制）
 - [ ] `/metrics` 与 `/healthz` 已限制为内网访问：用**公网来源**验证返回 403（从 Docker 网络内部访问会按设计放行，属正常）
 - [ ] 已配置备份任务，并完成一次恢复演练
-- [ ] `HPF_AI_GLOBAL_MONTHLY_CALLS` 已按暴露面设置（对外开放注册建议 50000，单人自托管保持 0）：
-      只靠每用户配额挡不住「批量注册小号」，全站预算是最后一道账单闸门
-- [ ] 注册关闭时，首个账号用离线子命令创建，**不要**为了建号临时开放注册：
+- [ ] `HPF_AI_GLOBAL_MONTHLY_CALLS` 已按暴露面设置（全站月调用上限；单人自托管保持 0 即不限制）：
+      只靠每用户配额挡不住有人拿到账号后猛刷，全站预算是最后一道账单闸门
+- [ ] 首个账号用离线子命令创建（这是**唯一**建号方式，没有"临时开放注册"这条路径）：
       ```bash
-      docker compose exec -T api /app/api createuser \
+      docker compose -f deploy/docker-compose.yml run --rm api createuser \
         --email you@example.com --name 'Owner' --password-stdin
       ```
       口令从 stdin 读，不进 shell 历史 / `ps` / `docker inspect`
@@ -194,7 +202,7 @@ grep CHANGE_ME .env            # 必须为空，否则继续改
 #   HPF_JWT_SECRET 用 openssl rand -base64 48 生成（少于 32 字节或等于模板值时
 #   服务端会拒绝启动 —— 这是有意的，别绕过去）
 #   POSTGRES_PASSWORD 用 openssl rand -base64 24 生成
-#   HPF_ENV=prod；HPF_REGISTER_OPEN 默认已是 false
+#   HPF_ENV=prod（没有注册开关：本产品不提供公开注册）
 
 # 3) 起栈（首次会构建 api 镜像）
 docker compose up -d --build
@@ -211,7 +219,9 @@ docker compose ps                       # 全部 healthy
 ### 首次部署后立刻要做的两件事
 
 1. **改默认域名与邮箱**：`HPF_DOMAIN` 不对，Caddy 会反复重试签证书并可能触发 Let\'s Encrypt 限流。
-2. **确认注册开关**：默认已是 `HPF_REGISTER_OPEN=false`。需要新账号时临时改成 `true` 注册完立刻改回（或直接往 users 表插一条），不要长期开放。
+2. **建账号**：本产品没有公开注册。需要账号时在服务器上执行
+   `docker compose -f deploy/docker-compose.yml run --rm api createuser --email ... --password-stdin`，
+   **不要**指望在客户端里注册（客户端只有登录入口）。
 
 ### 无对象存储的注意事项
 

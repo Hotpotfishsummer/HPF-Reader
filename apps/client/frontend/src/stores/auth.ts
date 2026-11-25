@@ -74,31 +74,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(emailVal: string, passwordVal: string, displayNameVal?: string): Promise<void> {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await currentSession().register({
-        email: emailVal,
-        password: passwordVal,
-        displayName: displayNameVal,
-        platform: 'desktop',
-      })
-      token.value = res.accessToken
-      if (res.user) {
-        user.value = res.user
-      }
-      await refreshProfile()
-      // 通知同步协调器：注册即登录 → bootstrap + 自动同步。
-      notifyAuthChanged()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
   async function logout(): Promise<void> {
     loading.value = true
     error.value = null
@@ -141,7 +116,6 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     error,
     login,
-    register,
     logout,
     refreshProfile,
     syncFromSession,

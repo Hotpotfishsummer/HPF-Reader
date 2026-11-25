@@ -13,14 +13,7 @@ export interface StoredSession {
 
 /** 引擎只依赖这三个方法（便于单测注入假实现）。 */
 export interface AuthApiLike {
-  register(input: {
-    email: string
-    password: string
-    displayName?: string
-    deviceId?: string
-    deviceName?: string
-    platform?: string
-  }): Promise<AuthTokens>
+  // ★ 没有 register：本产品不提供公开注册，账号由运维在服务器上创建。
   login(input: {
     email: string
     password: string
@@ -98,18 +91,6 @@ export class AuthSession {
       userId: tokens.user?.id ?? null,
       email: tokens.user?.email ?? null,
     })
-  }
-
-  async register(input: {
-    email: string
-    password: string
-    displayName?: string
-    deviceName?: string
-    platform?: string
-  }): Promise<AuthTokens> {
-    const tokens = await this.#auth.register({ ...input, ...(this.#deviceId ? { deviceId: this.#deviceId } : {}) })
-    this.adopt(tokens)
-    return tokens
   }
 
   async login(input: { email: string; password: string; deviceName?: string; platform?: string }): Promise<AuthTokens> {

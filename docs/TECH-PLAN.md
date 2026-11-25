@@ -656,7 +656,7 @@ GET /v1/sync/snapshot     # 游标失效/新设备首同步
 
 | 分组 | 端点 |
 |---|---|
-| 认证 | `POST /v1/auth/register`、`/login`、`/refresh`、`/logout`、`/password/forgot`、`/password/reset` |
+| 认证 | `POST /v1/auth/login`、`/refresh`、`/logout`、`/password/forgot`、`/password/reset`（**无注册端点**：账号由运维用 `api createuser` 创建） |
 | 用户 | `GET/PATCH /v1/me`、`GET /v1/me/devices`、`DELETE /v1/me/devices/:id`、`GET /v1/me/usage`、`DELETE /v1/me`（注销） |
 | 书库 | `GET/POST /v1/books`、`GET/PATCH/DELETE /v1/books/:id`、`GET /v1/books/:id/cover`、`GET /v1/books/:id/file` |
 | 上传 | `POST /v1/uploads`、`PUT /v1/uploads/:id/parts/:n`、`POST /v1/uploads/:id/complete` |

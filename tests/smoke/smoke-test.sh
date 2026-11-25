@@ -84,16 +84,36 @@ check "GET /metrics = 200" "$STATUS" "200"
 contains "/metrics 暴露 http 计数" "$BODY" "hpf_http_requests_total"
 
 echo "== 2. 认证 =="
-EMAIL="smoke-$RANDOM-$$@example.com"
-call POST /v1/auth/register "" "{\"email\":\"$EMAIL\",\"password\":\"smoke-test-password-9x\",\"displayName\":\"Smoke\"}"
-check "注册 = 201" "$STATUS" "201"
+# ★ 本产品**不提供公开注册**：服务端连 /v1/auth/register 路由都不注册
+#   （见 apps/server/internal/httpapi/no_register_test.go）。账号只能由运维
+#   执行 `api createuser` 创建。
+#
+#   本脚本跑在 alpine 容器里，既没有 psql 也没有 docker CLI，因此**不能**自己建号：
+#   账号由宿主侧的 scripts/test-integration.ps1 预先创建好，用环境变量传进来。
+#   未提供时直接失败并说明怎么补 —— 而不是退回到「调用一个不存在的注册端点」。
+if [ -z "${SMOKE_EMAIL:-}" ] || [ -z "${SMOKE_PASSWORD:-}" ]; then
+  bad "缺少 SMOKE_EMAIL / SMOKE_PASSWORD：本产品无公开注册，账号必须预先用 api createuser 创建"
+  echo ""
+  echo "  本脚本需要预置账号。用宿主侧脚本运行（会自动建号）："
+  echo "    powershell -ExecutionPolicy Bypass -File ./scripts/test-integration.ps1 -RunSmokeDocker"
+  echo ""
+  echo "  或手动建号后传入："
+  echo "    docker compose -f deploy/docker-compose.yml run --rm api createuser --email you@example.com --password-stdin"
+  echo "    docker run --rm --network hpf-reader_edge -e SMOKE_EMAIL=... -e SMOKE_PASSWORD=... ... sh /smoke.sh"
+  exit 1
+fi
+
+EMAIL="$SMOKE_EMAIL"
+SMOKE_PW="$SMOKE_PASSWORD"
+call POST /v1/auth/login "" "{\"email\":\"$EMAIL\",\"password\":\"$SMOKE_PW\"}"
+check "登录 = 200" "$STATUS" "200"
 TOKEN=$(printf "%s" "$BODY" | jget accessToken)
 REFRESH=$(printf "%s" "$BODY" | jget refreshToken)
-if [ -n "$TOKEN" ]; then ok "拿到 accessToken"; else bad "注册未返回 accessToken"; fi
-call POST /v1/auth/register "" "{\"email\":\"$EMAIL\",\"password\":\"another-password-11\"}"
-check "重复注册同邮箱 = 409" "$STATUS" "409"
-call POST /v1/auth/login "" "{\"email\":\"$EMAIL\",\"password\":\"smoke-test-password-9x\"}"
-check "登录 = 200" "$STATUS" "200"
+if [ -n "$TOKEN" ]; then ok "拿到 accessToken"; else bad "登录未返回 accessToken"; fi
+
+# 注册端点必须不存在（产品决定：客户端只有登录入口）
+call POST /v1/auth/register "" "{\"email\":\"probe-$RANDOM@example.com\",\"password\":\"probe-password-1\"}"
+check "POST /v1/auth/register = 404（不提供公开注册）" "$STATUS" "404"
 call POST /v1/auth/login "" "{\"email\":\"$EMAIL\",\"password\":\"wrong-password\"}"
 check "错误口令 = 401" "$STATUS" "401"
 call GET /v1/me "$TOKEN"
@@ -276,9 +296,13 @@ fi
 # 只用 HTTP + 环境变量，保持脚本的「纯黑盒」性质。
 if [ "${QUOTA_TEST:-0}" = "1" ]; then
   echo "  -- 配额耗尽（配额=1，第 2 次必须 429）--"
-  QEMAIL="quota-$RANDOM-$$@example.com"
-  call POST /v1/auth/register "" "{\"email\":\"$QEMAIL\",\"password\":\"smoke-test-password-9x\",\"deviceName\":\"quota\"}"
-  check "配额账号注册 = 201" "$STATUS" "201"
+  QEMAIL="${SMOKE_QUOTA_EMAIL:-}"
+  if [ -z "$QEMAIL" ]; then
+    bad "缺少 SMOKE_QUOTA_EMAIL：配额用例需要一个独立账号（本产品无公开注册）"
+    QEMAIL=""
+  fi
+  call POST /v1/auth/login "" "{\"email\":\"$QEMAIL\",\"password\":\"$SMOKE_PW\"}"
+  check "配额账号登录 = 200" "$STATUS" "200"
   QTOKEN=$(printf "%s" "$BODY" | jget accessToken)
   call POST /v1/ai/translate "$QTOKEN" '{"text":"first","targetLang":"zh"}'
   check "第 1 次调用 = 200（额度内）" "$STATUS" "200"
@@ -295,9 +319,13 @@ fi
 echo "== 6c. 后台任务真执行（M5-2） =="
 # 整书翻译是最贵的路径，必须验证它真的被 worker 消费并推进状态。
 # 断点续跑 / 取消止血的实测需要 kill 进程，不适合放进冒烟，见 STATUS.md §8.10。
-JEMAIL="job-$RANDOM-$$@example.com"
-call POST /v1/auth/register "" "{\"email\":\"$JEMAIL\",\"password\":\"smoke-test-password-9x\",\"deviceName\":\"job\"}"
-check "任务账号注册 = 201" "$STATUS" "201"
+JEMAIL="${SMOKE_JOB_EMAIL:-}"
+if [ -z "$JEMAIL" ]; then
+  bad "缺少 SMOKE_JOB_EMAIL：任务用例需要一个独立账号（本产品无公开注册）"
+  JEMAIL=""
+fi
+call POST /v1/auth/login "" "{\"email\":\"$JEMAIL\",\"password\":\"$SMOKE_PW\"}"
+check "任务账号登录 = 200" "$STATUS" "200"
 JTOKEN=$(printf "%s" "$BODY" | jget accessToken)
 
 call POST /v1/books "$JTOKEN" '{"title":"Smoke Job Book","format":"epub"}'

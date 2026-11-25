@@ -985,7 +985,7 @@ CREATE POLICY books_rw ON books USING (
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /v1/auth/register | 邮箱注册 |
+| ~~POST~~ | ~~/v1/auth/register~~ | ~~邮箱注册~~ → **已移除**：本产品不提供公开注册，账号由运维用 `api createuser` 创建 |
 | POST | /v1/auth/login | 邮箱密码登录 → access + refresh |
 | POST | /v1/auth/refresh | 轮换 refresh |
 | POST | /v1/auth/logout | 吊销当前 refresh |
