@@ -31,8 +31,15 @@ param(
     # 配额用例需要一个能改用户 quota_bytes 的数据库通道（本地 docker postgres）。
     # 传空字符串则跳过该用例（不失败，只提示）。
     [string]$PsqlContainer = 'hpf-pg',
+    # ★ 本产品没有公开注册入口，测试账号必须用 api createuser 创建。
+    #   这里指定已构建的 api 可执行文件（默认用 apps/server/bin/api.exe）。
+    [string]$ApiExe = '',
+    # createuser 需要的数据库连接串（默认取 $env:DATABASE_URL）。
+    [string]$DatabaseUrl = 'postgres://hpf:hpf@127.0.0.1:5432/hpf_reader?sslmode=disable',
     [switch]$Json
 )
+
+$env:DATABASE_URL = $DatabaseUrl
 
 $ErrorActionPreference = 'Stop'
 $script:Pass = 0
@@ -113,15 +120,30 @@ $email = "verify-$([guid]::NewGuid().ToString('N').Substring(0,12))@example.com"
 $password = 'verify-pass-0123456789'
 
 # ---------------------------------------------------------------- 建号
+# ★ 本产品不提供公开注册（服务端连 /v1/auth/register 都不注册），
+#   账号必须走运维路径创建：api createuser。见 tests/tools/provision-account.ps1。
 Write-Host "`n== 1. 账号 ==" -ForegroundColor Cyan
-$reg = Invoke-Api -Method POST -Path '/v1/auth/register' -Body @{ email = $email; password = $password; displayName = 'Verify' }
-$token = $reg.accessToken
-Write-Result -Name '注册并拿到 accessToken' -Ok ([bool]$token)
+. (Join-Path $PSScriptRoot '..\tools\provision-account.ps1')
+
+$apiExeForProvision = $ApiExe
+if (-not $apiExeForProvision) {
+    $candidate = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'apps\server\bin\api.exe'
+    if (Test-Path $candidate) { $apiExeForProvision = $candidate }
+}
+if (-not $apiExeForProvision) {
+    throw '需要 -ApiExe（已构建的 api.exe）来创建测试账号：本产品没有公开注册入口。'
+}
+
+New-TestAccount -Email $email -Password $password -DisplayName 'Verify' -ApiExe $apiExeForProvision -AllowExisting
+$login = Invoke-Api -Method POST -Path '/v1/auth/login' -Body @{ email = $email; password = $password }
+$token = $login.accessToken
+Write-Result -Name '创建账号并登录拿到 accessToken' -Ok ([bool]$token)
 
 # 第二个账号：用来验证"别人的书读不到"
 $email2 = "verify2-$([guid]::NewGuid().ToString('N').Substring(0,12))@example.com"
-$reg2 = Invoke-Api -Method POST -Path '/v1/auth/register' -Body @{ email = $email2; password = $password }
-$token2 = $reg2.accessToken
+New-TestAccount -Email $email2 -Password $password -ApiExe $apiExeForProvision -AllowExisting
+$login2 = Invoke-Api -Method POST -Path '/v1/auth/login' -Body @{ email = $email2; password = $password }
+$token2 = $login2.accessToken
 Write-Result -Name '第二个账号（越权对照）' -Ok ([bool]$token2)
 
 # ---------------------------------------------------------------- 建书 + 上传
@@ -232,8 +254,9 @@ try {
     # ★ 用第二个账号：第一个账号的配额刚被第 7 段调成了"正好一本书的大小"，
     #   8MB 的大文件必然 507。用一个配额充足的账号来测"连接不被掐断"。
     $bigEmail = "big-$([guid]::NewGuid().ToString('N').Substring(0,8))@example.com"
-    $bigReg = Invoke-Api -Method POST -Path '/v1/auth/register' -Body @{ email = $bigEmail; password = $password }
-    $bigToken = $bigReg.accessToken
+    New-TestAccount -Email $bigEmail -Password $password -ApiExe $apiExeForProvision -AllowExisting
+    $bigLogin = Invoke-Api -Method POST -Path '/v1/auth/login' -Body @{ email = $bigEmail; password = $password }
+    $bigToken = $bigLogin.accessToken
     if ([string]::IsNullOrWhiteSpace($PsqlContainer)) {
         Write-Host '  SKIP  未提供 -PsqlContainer，跳过大文件秒传用例'
     }

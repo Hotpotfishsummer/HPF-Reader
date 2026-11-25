@@ -1,4 +1,4 @@
-import { TestHarness, deviceIdFor } from './runner'
+import { TestHarness, deviceIdFor, provisionAccount } from './runner'
 import { createApiClient } from '../../apps/client/frontend/src/api/client'
 import { createAuthApi } from '../../apps/client/frontend/src/api/endpoints'
 import { createMemoryStorage } from '../../apps/client/frontend/src/features/sync/storage'
@@ -20,7 +20,20 @@ export async function runAuthSuite(
   const deviceIdA = deviceIdFor('dev-A', runId)
   const deviceIdB = deviceIdFor('dev-B', runId)
 
-  // 1. 设备 A 注册
+  // 0. 建号：走运维路径（api createuser），因为本产品没有公开注册。
+  //    这一步失败时后面全部会 401，所以放在最前面并直接抛出。
+  await harness.runStep(
+    SUITE,
+    'AU-00',
+    '账号由服务器端 createuser 创建（无公开注册入口）',
+    async () => {
+      provisionAccount(userEmail, password, 'Integration Tester')
+      return true
+    },
+    () => ({ ok: true, detail: userEmail }),
+  )
+
+  // 1. 设备 A 登录
   const deviceA = createSyncRuntime({
     baseUrl: harness.baseUrl,
     storage: createMemoryStorage(),
@@ -32,12 +45,11 @@ export async function runAuthSuite(
   const tokensA = await harness.runStep(
     SUITE,
     'AU-01',
-    '新用户注册：返回 AccessToken、RefreshToken 及用户资料',
+    '登录：返回 AccessToken、RefreshToken 及用户资料',
     () =>
-      deviceA.session.register({
+      deviceA.session.login({
         email: userEmail,
         password,
-        displayName: 'Integration Tester',
         deviceName: 'Desktop-Windows-A',
         platform: 'windows',
       }),
@@ -50,17 +62,23 @@ export async function runAuthSuite(
     }),
   )
 
-  // 2. 邮箱重复冲突检测
-  const dupErr = await harness.expectApiError(
-    '重复邮箱注册',
+  // 2. 注册端点必须不存在（产品决定：客户端只有登录，账号由运维创建）
+  const regErr = await harness.expectApiError(
+    '注册端点已移除',
     () =>
-      createAuthApi(createApiClient({ baseUrl: harness.baseUrl })).register({
-        email: userEmail,
-        password: 'AnotherPassword123!',
+      createApiClient({ baseUrl: harness.baseUrl }).request('/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: `probe-${runId}@example.com`, password: 'ProbePassword123!' }),
       }),
-    409,
+    404,
   )
-  harness.check(SUITE, 'AU-02', '重复注册同一邮箱返回 409 conflict', dupErr.ok, dupErr.detail)
+  harness.check(
+    SUITE,
+    'AU-02',
+    'POST /v1/auth/register = 404（不提供公开注册；403 也不行）',
+    regErr.ok,
+    regErr.detail,
+  )
 
   // 3. 错误口令登录拦截
   const badLoginErr = await harness.expectApiError(
@@ -132,7 +150,8 @@ export async function runAuthSuite(
     storage: createMemoryStorage(),
     deviceId: deviceIdFor('rot', runId),
   })
-  await rotRuntime.session.register({ email: testRotEmail, password, deviceName: 'Rot-Tester' })
+  provisionAccount(testRotEmail, password, 'Rot-Tester')
+  await rotRuntime.session.login({ email: testRotEmail, password, deviceName: 'Rot-Tester' })
   const oldRefresh = rotRuntime.session.refreshToken ?? ''
 
   // 正常轮换：拿到新 RefreshToken

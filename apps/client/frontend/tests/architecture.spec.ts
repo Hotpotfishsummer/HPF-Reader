@@ -97,4 +97,100 @@ describe('架构门禁', () => {
     // 不允许把 view 塞进 ref
     expect(engine).not.toMatch(/ref<[^>]*View[^>]*>\s*\(/)
   })
+
+  /**
+   * 产品决定门禁：客户端**只有登录入口，没有注册入口**。
+   *
+   * 账号由运维在服务器上执行 `api createuser` 创建；服务端连
+   * /v1/auth/register 路由都不注册（见 apps/server/internal/httpapi/no_register_test.go）。
+   *
+   * 为什么用源码扫描而不是"看看界面"：
+   *   注册入口可以以三种形态悄悄回来 —— 一个 API 方法、一个 store action、
+   *   一个弹窗页签。任何一个都能让用户点进去拿到 404，而界面测试不一定覆盖到。
+   *   这里直接禁止这些符号出现在客户端源码里。
+   */
+  it('客户端不得存在任何注册入口（API 方法 / store action / 弹窗页签）', () => {
+    /**
+     * 扫描前先剥掉注释：本仓库有大量「解释为什么**没有**注册」的注释，
+     * 它们会提到 /v1/auth/register 这个字符串。门禁要抓的是**真的在调用/暴露**
+     * 注册能力，而不是文字里提到它。
+     */
+    const stripComments = (src: string): string =>
+      src
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|[^:])\/\/.*$/gm, '$1')
+
+    const offenders: string[] = []
+    for (const file of files) {
+      const rel = relative(SRC, file)
+      const source = stripComments(readFileSync(file, 'utf8'))
+
+      // ① 不得调用注册端点
+      if (/\/v1\/auth\/register/.test(source)) offenders.push(`${rel}: 引用 /v1/auth/register`)
+      // ② 不得有 register(input) 这类认证 API 方法（registerSessionBook / registerAiTokenGetter 是别的域，用词边界排除）
+      if (/\bregister\s*\(\s*(input|\{[^}]*email)/.test(source)) offenders.push(`${rel}: 存在 register() 认证方法`)
+      // ③ 不得有注册相关的界面文案键
+      if (/['"]auth\.register['"]/.test(source)) offenders.push(`${rel}: 使用 auth.register 文案`)
+      if (/\bdisplayNamePlaceholder\b/.test(source)) offenders.push(`${rel}: 存在注册用昵称输入框`)
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('登录弹窗必须说明"账号由管理员创建"（没有注册入口时的必要提示）', () => {
+    const modal = readFileSync(join(SRC, 'features', 'auth', 'components', 'AuthModal.vue'), 'utf8')
+    expect(modal).toContain('auth.noSelfRegister')
+    expect(modal).not.toContain("mode = 'register'")
+  })
+
+  /**
+   * 门禁：模板里不得出现「先翻转自己、再在同一条语句里把自己关掉」的写法。
+   *
+   * 真实 bug（用户反馈"Aa 按钮打不开"）：
+   *   @toggle-typography="typographyOpen = !typographyOpen; ...; typographyOpen = false; ..."
+   * 前半句把它设为 true，后半句（"顺手关掉其它面板"的那一长串）又把它设回 false。
+   * 结果按钮点了永远没反应，而模板字符串太长，review 时完全看不出来。
+   *
+   * 现在翻转逻辑在 src/reader/panelToggle.ts（有单测），模板只允许绑定函数名。
+   */
+  it('模板不得在事件绑定里"先翻转再关自己"（导致按钮点了没反应）', () => {
+    /**
+     * 只扫 <template> 段，并剥掉 HTML 注释。
+     *
+     * 两个理由：
+     *   ① 要抓的是模板绑定，<script> 里的普通代码（`x = !x` 之后再赋别的值）是合法的；
+     *   ② ReaderView.vue 的 <script> 里有一段注释**引用**了这个旧写法来说明 bug 原因，
+     *      不剥掉就会把文档当成违规。
+     */
+    const templateOf = (src: string): string => {
+      const m = /<template>([\s\S]*)<\/template>/.exec(src)
+      const body = m?.[1] ?? ''
+      return body.replace(/<!--[\s\S]*?-->/g, '')
+    }
+
+    const offenders: string[] = []
+    for (const file of files) {
+      if (!file.endsWith('.vue')) continue
+      const rel = relative(SRC, file)
+      const source = templateOf(readFileSync(file, 'utf8'))
+
+      // 逐个事件绑定取值，例如 @toggle-x="A = !A; B = false; A = false"
+      const bindingRe = /@[\w:-]+\s*=\s*"([^"]*)"/g
+      let match: RegExpExecArray | null
+      while ((match = bindingRe.exec(source)) !== null) {
+        const expr = match[1] ?? ''
+        // 找出所有「X = !X」里的 X
+        const flipRe = /\b(\w+)\s*=\s*!\s*\1\b/g
+        let flip: RegExpExecArray | null
+        while ((flip = flipRe.exec(expr)) !== null) {
+          const name = flip[1]
+          // 同一个名字在翻转之后又被显式设为 false ⇒ 必然打不开
+          const after = expr.slice(flip.index + flip[0].length)
+          if (new RegExp(`\\b${name}\\s*=\\s*false\\b`).test(after)) {
+            offenders.push(`${rel}: ${name} 先翻转再被设为 false（绑定: ${expr.slice(0, 80)}…）`)
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
 })

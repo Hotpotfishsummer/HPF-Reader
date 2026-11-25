@@ -37,6 +37,11 @@ if (-not $OldExe -or -not $NewExe) { Write-Error 'OldExe 与 NewExe 都要给'; 
 $env:DATABASE_URL = 'postgres://hpf:hpf@127.0.0.1:5432/hpf_reader?sslmode=disable'
 $env:HPF_JWT_SECRET = 'local-verify-secret-0123456789-abcdefghijklmnop'
 
+# 本产品不提供公开注册，测试账号必须用 api createuser 创建。
+. (Join-Path $PSScriptRoot '..\tools\provision-account.ps1')
+$ApiExeForProvision = $OldExe
+if (-not $ApiExeForProvision -or -not (Test-Path $ApiExeForProvision)) { $ApiExeForProvision = $NewExe }
+
 function Invoke-Api {
     param([string]$Method, [string]$Path, [string]$Token = '', $Body = $null)
     $params = @{ Method = $Method; Uri = "http://127.0.0.1:$Port$Path"; UseBasicParsing = $true; TimeoutSec = 60 }
@@ -57,8 +62,10 @@ function Test-UploadConnection {
         $null = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/healthz" -UseBasicParsing -TimeoutSec 10
 
         $email = "ab-$([guid]::NewGuid().ToString('N').Substring(0,8))@example.com"
-        $reg = Invoke-Api -Method POST -Path '/v1/auth/register' -Body @{ email = $email; password = 'Verify-Passw0rd!' }
-        $token = $reg.accessToken
+        # 本产品没有公开注册：账号走运维路径 api createuser 创建。
+        New-TestAccount -Email $email -Password 'Verify-Passw0rd!' -ApiExe $ApiExeForProvision -AllowExisting
+        $login = Invoke-Api -Method POST -Path '/v1/auth/login' -Body @{ email = $email; password = 'Verify-Passw0rd!' }
+        $token = $login.accessToken
         if ($PsqlContainer) {
             $null = docker exec $PsqlContainer psql -U hpf -d hpf_reader -c "UPDATE users SET quota_bytes = 268435456 WHERE email = '$email'" 2>&1
         }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -125,6 +126,14 @@ func windowsBrowserArgs(proxyPort int, mitm *mitmManager) []string {
 		"--proxy-bypass-list=localhost;127.0.0.1;*.localhost",
 		"--disable-web-security",
 	}
+	// 诊断开关（仅本机、仅显式设置环境变量时生效）：HPF_DEBUG_CDP=<端口>。
+	// 本应用没有日志文件，线上排障（例如「同步一直失败」）时，只有在真实运行的
+	// WebView2 里抓 Network/Console 才能看到「请求到底发出去没有、服务器回了什么」。
+	// 端口只绑 127.0.0.1；生产环境不要设置这个变量。
+	if port := debugCDPPort(); port != "" {
+		args = append(args, "--remote-debugging-port="+port)
+		log.Printf("[browser-args] HPF_DEBUG_CDP=%s：已打开本机 DevTools 调试端口（仅诊断用）", port)
+	}
 	if pin := mitm.SPKIPin(); pin != "" {
 		args = append(args, "--ignore-certificate-errors-spki-list="+pin)
 	} else {
@@ -133,6 +142,23 @@ func windowsBrowserArgs(proxyPort int, mitm *mitmManager) []string {
 	// 参数内容会进 WebView2 的 additionalBrowserArguments，出问题时这是唯一能对账的证据。
 	log.Printf("[browser-args] proxyPort=%d spki=%t args=%q", proxyPort, mitm.SPKIPin() != "", args)
 	return args
+}
+
+// debugCDPPort 读取 HPF_DEBUG_CDP（1..65535 的十进制端口）。未设置或非法时返回空串。
+//
+// 只接受端口号而不是完整参数：这样环境变量无法注入任意 Chromium 开关
+// （例如重新打开 --ignore-certificate-errors 或 --user-data-dir）。
+func debugCDPPort() string {
+	raw := strings.TrimSpace(os.Getenv("HPF_DEBUG_CDP"))
+	if raw == "" {
+		return ""
+	}
+	port, err := strconv.Atoi(raw)
+	if err != nil || port < 1 || port > 65535 {
+		log.Printf("[browser-args] HPF_DEBUG_CDP=%q 非法，已忽略（需要 1-65535 的端口号）", raw)
+		return ""
+	}
+	return strconv.Itoa(port)
 }
 
 // androidPrivateDir 在 Android 上推导应用私有目录，**不硬编码包名**。

@@ -11,10 +11,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const mode = ref<'login' | 'register'>('login')
+// ★ 只有登录：本产品不提供公开注册。账号由运维在服务器上执行
+//   `api createuser --email ...` 创建，服务端连注册路由都不注册。
+//   不要在这里加回「注册」页签——那会引导用户去点一个必然 404 的入口。
 const email = ref('')
 const password = ref('')
-const displayName = ref('')
 const errorMessage = ref<string | null>(null)
 const submitting = ref(false)
 
@@ -23,11 +24,7 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   errorMessage.value = null
   try {
-    if (mode.value === 'login') {
-      await auth.login(email.value.trim(), password.value)
-    } else {
-      await auth.register(email.value.trim(), password.value, displayName.value.trim() || undefined)
-    }
+    await auth.login(email.value.trim(), password.value)
     emit('success')
     emit('close')
   } catch (err) {
@@ -44,23 +41,8 @@ async function handleSubmit(): Promise<void> {
       class="w-full max-w-sm rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] p-6 shadow-2xl space-y-5"
     >
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="text-base font-bold transition"
-            :class="mode === 'login' ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-accent)] pb-0.5' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'"
-            @click="mode = 'login'; errorMessage = null"
-          >
-            {{ t('auth.login') }}
-          </button>
-          <button
-            type="button"
-            class="text-base font-bold transition"
-            :class="mode === 'register' ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-accent)] pb-0.5' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'"
-            @click="mode = 'register'; errorMessage = null"
-          >
-            {{ t('auth.register') }}
-          </button>
+        <div class="text-base font-bold text-[var(--color-text-primary)] border-b-2 border-[var(--color-accent)] pb-0.5">
+          {{ t('auth.login') }}
         </div>
         <button
           type="button"
@@ -76,22 +58,13 @@ async function handleSubmit(): Promise<void> {
       </div>
 
       <form class="space-y-3.5" @submit.prevent="handleSubmit">
-        <div v-if="mode === 'register'" class="space-y-1">
-          <label class="block text-xs font-medium text-[var(--color-text-secondary)]">{{ t('auth.displayName') }}</label>
-          <input
-            v-model="displayName"
-            type="text"
-            class="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
-            :placeholder="t('auth.displayNamePlaceholder')"
-          />
-        </div>
-
         <div class="space-y-1">
           <label class="block text-xs font-medium text-[var(--color-text-secondary)]">{{ t('auth.email') }}</label>
           <input
             v-model="email"
             type="email"
             required
+            autocomplete="username"
             class="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             placeholder="you@example.com"
           />
@@ -103,6 +76,7 @@ async function handleSubmit(): Promise<void> {
             v-model="password"
             type="password"
             required
+            autocomplete="current-password"
             class="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             placeholder="••••••••"
           />
@@ -113,9 +87,14 @@ async function handleSubmit(): Promise<void> {
           :disabled="submitting"
           class="w-full rounded-xl bg-[var(--color-accent)] py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 active:scale-[0.99] transition disabled:opacity-50"
         >
-          {{ submitting ? t('auth.submitting') : (mode === 'login' ? t('auth.login') : t('auth.register')) }}
+          {{ submitting ? t('auth.submitting') : t('auth.login') }}
         </button>
       </form>
+
+      <!-- 没有注册入口，必须说清楚账号从哪来，否则用户只会卡在这一步 -->
+      <p class="text-xs leading-relaxed text-[var(--color-text-tertiary)]">
+        {{ t('auth.noSelfRegister') }}
+      </p>
     </div>
   </div>
 </template>

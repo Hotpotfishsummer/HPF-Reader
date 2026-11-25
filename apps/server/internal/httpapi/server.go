@@ -134,7 +134,13 @@ func (s *Server) routes() http.Handler {
 	}
 
 	// ---- auth ----
-	mux.HandleFunc("POST /v1/auth/register", s.handleRegister)
+	// ★ 刻意**没有** POST /v1/auth/register：本产品不提供公开注册。
+	//   账号由运维在服务器上执行 `api createuser` 创建（见 cmd/api/main.go）。
+	//   不注册路由而不是「注册了再返回 403」的原因：
+	//     - 403 仍然告诉公网扫描器「这里有个注册端点」，且要求 handler 里保留
+	//       一整条建号代码路径（校验、哈希、事务），攻击面白留；
+	//     - 路由不存在时是干净的 404，代码里也不再有任何 HTTP 建号入口，
+	//       「注册关闭」不再依赖一个可能被误配成 true 的环境变量。
 	mux.HandleFunc("POST /v1/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /v1/auth/refresh", s.handleRefresh)
 	mux.HandleFunc("POST /v1/auth/logout", s.requireAuth(s.handleLogout))

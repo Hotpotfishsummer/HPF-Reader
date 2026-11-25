@@ -84,11 +84,16 @@ Caddy 自动 HTTPS + 反代 api：
 
 | 接口 | 说明 |
 |---|---|
-| `POST /v1/auth/register` | argon2id（PHC，默认 m=64MiB/t=3/p=4）；邮箱冲突 409 |
 | `POST /v1/auth/login` | 失败计数 + 锁定（5 次 / 15 分钟）；邮箱不存在与口令错误同一响应且耗时对齐（dummy hash），防账号枚举 |
 | `POST /v1/auth/refresh` | **轮换 + 重用检测**：旧 token 被复用即吊销整个 family |
 | `POST /v1/auth/logout` | 吊销单个 token，或 `allDevices` 吊销全部 |
 | `GET /v1/me`、`GET /v1/devices` | 当前用户 / 设备列表 |
+
+**没有注册接口。** `POST /v1/auth/register` 已从路由表移除（现在返回 404，不是 403）：
+本产品不提供公开注册，账号只能在服务器上执行 `api createuser --email ... --password-stdin`
+创建。argon2id（PHC，默认 m=64MiB/t=3/p=4）与设备绑定逻辑仍在
+`store.RegisterAccount` 里，供该子命令与测试复用；`no_register_test.go` 把「注册路由必须不存在」
+钉成了回归门禁。**不要**为了建号临时加回注册端点。
 
 access token 15min（HS256，校验 issuer + 算法白名单），refresh 30 天，明文 refresh 不落库（只存 sha256）。
 
@@ -389,7 +394,7 @@ PASS
 
 **④ 其它因本次修复而必须同步的契约点**
 - `GET /v1/sync/push` 新增 `400` 响应：说明「整批不写入 + `details.ops[]` 逐条指明」，标明这是不可重试的客户端错误。
-- `POST /v1/auth/register`：补 `deviceName` / `platform` / `deviceId`（`format: uuid`）三个请求字段（原来只有 email/password/displayName，联调方只能靠猜）；补 `400`；`409` 写明两种冲突及「事务回滚、不留孤儿用户」。
+- ~~`POST /v1/auth/register`：补 `deviceName` / `platform` / `deviceId`（`format: uuid`）三个请求字段~~ —— 该端点已在后续版本**整体移除**（本产品不提供公开注册），此条仅作历史记录。
 - `GET /v1/devices` 的 `Device.name` 改 `nullable: true`，并说明「没有设备名时为 null，不是空串」。
 - 新增 `components.responses.BadRequest`（原来只有 Unauthorized/NotFound/Conflict），供上面各处复用。
 

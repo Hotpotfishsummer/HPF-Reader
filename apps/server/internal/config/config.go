@@ -43,7 +43,10 @@ type Config struct {
 	LoginMaxFailures         int
 	LoginAccountLockFailures int
 	LoginLockWindow          time.Duration
-	RegisterOpen             bool
+	// ★ 没有 RegisterOpen：本产品不提供公开注册，账号只能由运维在服务器上
+	//   执行 `api createuser` 创建。HTTP 层连注册路由都不注册（见 httpapi/server.go），
+	//   因此这里不需要、也不应该有一个「打开注册」的开关——
+	//   那种开关一旦被误设成 true，就等于把建号能力重新暴露给公网。
 
 	// HashConcurrency 是口令哈希（Argon2id，64MiB/次）的并发闸门。
 	// 每个并发请求约占 64MiB 内存，必须设上限，否则少量并发就能把容器打爆。
@@ -148,11 +151,10 @@ func parse() Config {
 		RefreshTokenTTL: getDur("HPF_REFRESH_TOKEN_TTL", 30*24*time.Hour),
 		Issuer:          getStr("HPF_JWT_ISSUER", "hpf-reader"),
 
-		// 生产环境默认关闭注册：注册开放 + 无邮箱验证 = 任何人都能拿 AI/存储配额。
+		// 账号创建没有 HTTP 入口（只有 `api createuser`），因此这里没有注册开关。
 		LoginMaxFailures:         getInt("HPF_LOGIN_MAX_FAILURES", 5),
 		LoginAccountLockFailures: getInt("HPF_LOGIN_ACCOUNT_LOCK_FAILURES", 20),
 		LoginLockWindow:          getDur("HPF_LOGIN_LOCK_WINDOW", 15*time.Minute),
-		RegisterOpen:             getBool("HPF_REGISTER_OPEN", !prod),
 		HashConcurrency:          getInt("HPF_HASH_CONCURRENCY", 4),
 
 		RateLimitAuth:  getInt("HPF_RATE_LIMIT_AUTH", 20),

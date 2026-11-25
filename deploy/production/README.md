@@ -51,7 +51,10 @@ rsync -av --exclude data --exclude evidence ./apps/server/ kr:/home/admin/hpf/ap
 ssh kr 'cd /home/admin/hpf && sudo docker compose -f compose.kr.yml up -d --build'
 ```
 
-## 创建账号（生产注册已关闭，唯一入口）
+## 创建账号（唯一入口）
+
+本产品**不提供公开注册**：服务端连 `POST /v1/auth/register` 路由都不注册，
+客户端只有登录入口。账号只能在这台服务器上用离线子命令创建。
 
 ```bash
 # 口令从 stdin 读，不进 shell 历史 / ps / docker inspect
@@ -59,8 +62,9 @@ ssh kr "cd /home/admin/hpf && sudo docker compose -f compose.kr.yml exec -T api 
   /app/api createuser --email you@example.com --name 'Owner' --password-stdin"
 ```
 
-> `HPF_REGISTER_OPEN=false` 时没有任何 HTTP 入口能注册。**不要**为了建号临时开放注册——
-> 公网扫描器会在几分钟内发现并批量注册，直接烧 AI 与存储额度。
+> 没有「临时开放注册」这条路径 —— 没有开关可开。这既是安全设计，也省掉了
+> 「注册完忘了关」这类事故：公网扫描器发现注册端点后几分钟内就能批量建号，
+> 直接烧掉 AI 与存储额度。
 
 ## Caddy 配置
 

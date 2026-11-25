@@ -117,7 +117,10 @@ func TestLoadProdRejectsTemplatePlaceholder(t *testing.T) {
 	}
 }
 
-// 生产默认必须「安全失败」：注册关闭、指标关闭、不吃任何跨域来源。
+// 生产默认必须「安全失败」：指标关闭、不吃任何跨域来源。
+//
+// 注册开关本身已经不存在了（账号只能由 `api createuser` 创建），
+// 因此这里不再断言 RegisterOpen —— 那个字段被删掉就是「不提供公开注册」的保证。
 func TestProdDefaultsAreClosed(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("HPF_ENV", "prod")
@@ -125,9 +128,6 @@ func TestProdDefaultsAreClosed(t *testing.T) {
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load: %v", err)
-	}
-	if cfg.RegisterOpen {
-		t.Fatal("HPF_REGISTER_OPEN must default to false in prod")
 	}
 	if cfg.MetricsEnabled {
 		t.Fatal("HPF_METRICS_ENABLED must default to false in prod")
@@ -137,15 +137,12 @@ func TestProdDefaultsAreClosed(t *testing.T) {
 	}
 }
 
-// dev 仍然开箱即用：注册开放、指标开启，方便本地联调。
+// dev 仍然开箱即用：指标开启，方便本地联调。
 func TestDevDefaultsStayOpen(t *testing.T) {
 	clearEnv(t)
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load: %v", err)
-	}
-	if !cfg.RegisterOpen {
-		t.Fatal("dev should default to open registration")
 	}
 	if !cfg.MetricsEnabled {
 		t.Fatal("dev should default to metrics enabled")
@@ -199,7 +196,7 @@ func clearEnv(t *testing.T) {
 		"HPF_DB_MAX_CONNS", "HPF_DB_CONNECT_TIMEOUT", "HPF_AUTO_MIGRATE",
 		"HPF_STORAGE_DRIVER", "HPF_STORAGE_DIR", "HPF_MAX_UPLOAD_BYTES",
 		"HPF_JWT_SECRET", "HPF_ACCESS_TOKEN_TTL", "HPF_REFRESH_TOKEN_TTL", "HPF_JWT_ISSUER",
-		"HPF_LOGIN_MAX_FAILURES", "HPF_LOGIN_LOCK_WINDOW", "HPF_REGISTER_OPEN",
+		"HPF_LOGIN_MAX_FAILURES", "HPF_LOGIN_LOCK_WINDOW",
 		"HPF_LOGIN_ACCOUNT_LOCK_FAILURES", "HPF_HASH_CONCURRENCY",
 		"HPF_RATE_LIMIT_AUTH", "HPF_RATE_LIMIT_API", "HPF_TRUSTED_PROXIES",
 		"HPF_AI_PROVIDER", "HPF_AI_BASE_URL", "HPF_AI_API_KEY", "HPF_AI_MODEL", "HPF_AI_TIMEOUT", "HPF_AI_DAILY_QUOTA",

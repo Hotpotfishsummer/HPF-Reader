@@ -1,4 +1,4 @@
-import { TestHarness, deviceIdFor } from './runner'
+import { TestHarness, deviceIdFor, provisionAccount } from './runner'
 import { createSyncRuntime } from '../../apps/client/frontend/src/features/sync/runtime'
 import { createMemoryStorage } from '../../apps/client/frontend/src/features/sync/storage'
 import { createBooksApi, createSyncApi } from '../../apps/client/frontend/src/api/endpoints'
@@ -22,10 +22,11 @@ export async function runMultiTenantSuite(
     deviceName: 'Bob-Terminal',
   })
 
-  await bobDevice.session.register({
+  provisionAccount(bobEmail, password, 'Bob Tenant')
+
+  await bobDevice.session.login({
     email: bobEmail,
     password,
-    displayName: 'Bob Tenant',
     deviceName: 'Bob-Terminal',
   })
 

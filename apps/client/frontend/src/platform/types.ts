@@ -34,7 +34,17 @@ export interface OpenBookPayload {
   url?: string
 }
 
-export type SyncPhase = 'idle' | 'offline' | 'pulling' | 'pushing' | 'conflict'
+/**
+ * 同步相位。
+ *
+ * - `idle`：正常（含「刚同步成功」）
+ * - `offline`：网络不可用，等一会儿会自动重试
+ * - `pulling` / `pushing`：正在同步
+ * - `conflict`：服务端对部分 op 给出了非平凡裁决（older_hlc / stale_no_rewind…）
+ * - `auth`：**登录凭据已被服务端吊销/过期，重试无用，必须重新登录**
+ * - `error`：其他确定性失败（4xx、协议错误），已停止无意义重试，等用户处理
+ */
+export type SyncPhase = 'idle' | 'offline' | 'pulling' | 'pushing' | 'conflict' | 'auth' | 'error'
 
 export interface SyncStatus {
   phase: SyncPhase
