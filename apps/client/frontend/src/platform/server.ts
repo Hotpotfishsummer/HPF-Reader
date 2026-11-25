@@ -144,7 +144,7 @@ export function createServerPlatform(options: ServerPlatformOptions): Platform {
     },
     system: {
       async info(): Promise<AppInfo> {
-        return { platform: 'web', version: '0.2.0-web', dataDir: '' }
+        return { platform: 'web', version: '0.3.0-web', dataDir: '' }
       },
       async openExternal(url: string): Promise<void> {
         window.open(url, '_blank', 'noopener,noreferrer')

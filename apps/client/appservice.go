@@ -8,7 +8,7 @@ import (
 )
 
 // AppVersion 是客户端版本号（后续由构建注入）。
-const AppVersion = "0.2.0"
+const AppVersion = "0.3.0"
 
 // AppService 暴露与阅读业务无关的进程级信息。
 // 业务代码不允许直接 import bindings，只能通过前端 platform 抽象层访问本服务。

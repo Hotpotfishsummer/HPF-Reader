@@ -57,6 +57,11 @@ async function handleSyncNow(): Promise<void> {
   }
 }
 
+/** 登录已失效时的重登入口（同步面板里也要有，不能只靠右上角）。 */
+function handleRelogin(): void {
+  authModal.open()
+}
+
 const proxyForm = ref({
   enabled: false,
   type: 'http' as 'http' | 'socks5',
@@ -138,6 +143,34 @@ const lastSyncLabel = computed(() => {
   const at = sync.state.value.lastSyncedAt
   return at === null || at === undefined ? t('settings.syncNever') : new Date(at).toLocaleString()
 })
+
+/**
+ * 失败原因（用户能看懂的那一句）。
+ *
+ * ★ 这里必须渲染出来：应用没有落盘日志，界面是用户唯一的诊断入口。
+ *   code 是引擎给的机器码（auth_expired / offline / server_error …），
+ *   message 是服务端原文，两者都显示（原文放灰色等宽小字，便于用户复制反馈）。
+ */
+const syncErrorLabel = computed(() => {
+  // 主动登出 / 从未登录时不渲染上次会话留下的错误（避免"没登录却报同步失败"）。
+  if (!auth.isAuthenticated && !auth.sessionExpired) return null
+  const err = sync.state.value.lastError
+  // 凭据失效但引擎还没记下具体错误时，也要把「要重新登录」说清楚。
+  if (err === null) return auth.sessionExpired ? t('settings.syncErr_auth_expired') : null
+  const key = `settings.syncErr_${err.code}`
+  const mapped = t(key)
+  // i18n 缺该 key 时 vue-i18n 会原样回显 key，此时退回服务端原文。
+  return mapped === key ? err.message : mapped
+})
+
+const syncErrorDetail = computed(() => {
+  const message = sync.state.value.lastError?.message ?? null
+  // 已经用服务端原文当标题时不再重复渲染一遍。
+  return message === null || message === syncErrorLabel.value ? null : message
+})
+
+/** 需要（重新）登录：本地已无有效会话，或引擎已判定凭据失效。 */
+const syncNeedsLogin = computed(() => !auth.isAuthenticated || sync.state.value.phase === 'auth')
 
 async function handleOpenDataDir() {
   if (platform.system.openDataDir) {
@@ -389,18 +422,33 @@ async function handleOpenDataDir() {
             <dt class="text-[var(--color-text-secondary)]">{{ t('settings.syncLastAt') }}</dt>
             <dd class="tabular-nums">{{ lastSyncLabel }}</dd>
           </dl>
+          <div v-if="syncErrorLabel" data-testid="sync-error" class="rounded-lg border border-rose-300/60 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
+            <div class="font-medium">{{ syncErrorLabel }}</div>
+            <div v-if="syncErrorDetail" class="mt-1 font-mono text-[11px] text-rose-500/90 break-all select-all">
+              {{ syncErrorDetail }}
+            </div>
+          </div>
           <div class="flex flex-wrap items-center gap-3">
             <button
               type="button"
               data-testid="sync-now"
               class="rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-xs hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition disabled:opacity-50"
-              :disabled="!auth.isAuthenticated || syncing"
+              :disabled="syncNeedsLogin || syncing"
               @click="handleSyncNow"
             >
               {{ t('settings.syncNow') }}
             </button>
-            <span v-if="!auth.isAuthenticated" class="text-xs text-[var(--color-text-secondary)]">
-              {{ t('settings.syncNeedLogin') }}
+            <button
+              v-if="syncNeedsLogin"
+              type="button"
+              data-testid="sync-relogin"
+              class="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition"
+              @click="handleRelogin"
+            >
+              {{ auth.sessionExpired ? t('settings.syncRelogin') : t('auth.login') }}
+            </button>
+            <span v-if="syncNeedsLogin" class="text-xs text-[var(--color-text-secondary)]">
+              {{ auth.sessionExpired ? t('settings.syncExpiredHint') : t('settings.syncNeedLogin') }}
             </span>
           </div>
         </div>

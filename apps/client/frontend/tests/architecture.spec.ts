@@ -141,4 +141,56 @@ describe('架构门禁', () => {
     expect(modal).toContain('auth.noSelfRegister')
     expect(modal).not.toContain("mode = 'register'")
   })
+
+  /**
+   * 门禁：模板里不得出现「先翻转自己、再在同一条语句里把自己关掉」的写法。
+   *
+   * 真实 bug（用户反馈"Aa 按钮打不开"）：
+   *   @toggle-typography="typographyOpen = !typographyOpen; ...; typographyOpen = false; ..."
+   * 前半句把它设为 true，后半句（"顺手关掉其它面板"的那一长串）又把它设回 false。
+   * 结果按钮点了永远没反应，而模板字符串太长，review 时完全看不出来。
+   *
+   * 现在翻转逻辑在 src/reader/panelToggle.ts（有单测），模板只允许绑定函数名。
+   */
+  it('模板不得在事件绑定里"先翻转再关自己"（导致按钮点了没反应）', () => {
+    /**
+     * 只扫 <template> 段，并剥掉 HTML 注释。
+     *
+     * 两个理由：
+     *   ① 要抓的是模板绑定，<script> 里的普通代码（`x = !x` 之后再赋别的值）是合法的；
+     *   ② ReaderView.vue 的 <script> 里有一段注释**引用**了这个旧写法来说明 bug 原因，
+     *      不剥掉就会把文档当成违规。
+     */
+    const templateOf = (src: string): string => {
+      const m = /<template>([\s\S]*)<\/template>/.exec(src)
+      const body = m?.[1] ?? ''
+      return body.replace(/<!--[\s\S]*?-->/g, '')
+    }
+
+    const offenders: string[] = []
+    for (const file of files) {
+      if (!file.endsWith('.vue')) continue
+      const rel = relative(SRC, file)
+      const source = templateOf(readFileSync(file, 'utf8'))
+
+      // 逐个事件绑定取值，例如 @toggle-x="A = !A; B = false; A = false"
+      const bindingRe = /@[\w:-]+\s*=\s*"([^"]*)"/g
+      let match: RegExpExecArray | null
+      while ((match = bindingRe.exec(source)) !== null) {
+        const expr = match[1] ?? ''
+        // 找出所有「X = !X」里的 X
+        const flipRe = /\b(\w+)\s*=\s*!\s*\1\b/g
+        let flip: RegExpExecArray | null
+        while ((flip = flipRe.exec(expr)) !== null) {
+          const name = flip[1]
+          // 同一个名字在翻转之后又被显式设为 false ⇒ 必然打不开
+          const after = expr.slice(flip.index + flip[0].length)
+          if (new RegExp(`\\b${name}\\s*=\\s*false\\b`).test(after)) {
+            offenders.push(`${rel}: ${name} 先翻转再被设为 false（绑定: ${expr.slice(0, 80)}…）`)
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
 })

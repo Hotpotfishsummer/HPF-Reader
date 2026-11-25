@@ -130,6 +130,18 @@ export function createSyncCoordinator(deps: SyncCoordinatorDeps = {}): SyncCoord
     if (engine.getStatus().phase !== phase) engine.setPhase(phase)
   }
 
+  /**
+   * 未登录 / 已停止时把相位复位成 idle —— 但**不能**盖掉 auth 与 error。
+   *
+   * ★ auth 相位是给用户看的结论（"登录已过期，请重新登录"）。如果每 5s 的轮询
+   *   都把它擦回「空闲」，用户就又看到一个"一切正常"的绿点，而 135 条变更推不出去。
+   */
+  function resetPhaseIdle(): void {
+    const phase = getEngine().getStatus().phase
+    if (phase === 'auth' || phase === 'error') return
+    ensurePhase('idle')
+  }
+
   function isCurrentGeneration(gen: number): boolean {
     return running && sessionActive && generation === gen && activeEngine === getEngine()
   }
@@ -140,7 +152,7 @@ export function createSyncCoordinator(deps: SyncCoordinatorDeps = {}): SyncCoord
     sessionActive = false
     activeEngine = null
     if (engine !== null) engine.stopAutoSync()
-    if (resetPhase) ensurePhase('idle')
+    if (resetPhase) resetPhaseIdle()
   }
 
   /** 建立一次登录会话：bootstrap（快照）→ run（推+拉）→ 周期自动同步。 */
@@ -174,7 +186,7 @@ export function createSyncCoordinator(deps: SyncCoordinatorDeps = {}): SyncCoord
     if (!running) return
     if (!isAuthenticated()) {
       if (sessionActive) stopSession(true)
-      else ensurePhase('idle')
+      else resetPhaseIdle()
       return
     }
     if (!isOnline()) {

@@ -17,6 +17,7 @@ import ReaderSearchPanel from './components/ReaderSearchPanel.vue'
 import ReaderDrawer, { type DrawerTab } from './components/ReaderDrawer.vue'
 import ReaderBookmarksPopover from './components/ReaderBookmarksPopover.vue'
 import { useAnnotations, type AnnotationItem } from './annotationStore'
+import { togglePanel } from './panelToggle'
 import { usePageTurnAnimation } from './usePageTurnAnimation'
 import './pageTurnAnimations.css'
 import { useApi } from '@/api'
@@ -1105,6 +1106,79 @@ watch(
 )
 
 /**
+ * 阅读器右侧面板互斥开关：同一时刻只允许一个面板打开。
+ *
+ * ★ 为什么必须是函数而不是模板里的一串内联表达式（这是真实 bug 的来源）：
+ *   原来写的是
+ *     @toggle-typography="typographyOpen = !typographyOpen; ...; typographyOpen = false; ..."
+ *   先把 `typographyOpen` 翻转成 true，紧接着同一条语句里又把它设回 false，
+ *   于是「Aa」按钮点了**永远打不开**（其它面板同理：AI / 术语 / 双语 / 搜索 / 书签）。
+ *   这类"先翻自己、再关别人、结果把自己也关了"的错误在模板字符串里极难看出来，
+ *   所以把翻转逻辑抽到 panelToggle.ts（有单测），这里只负责把"别人"列出来。
+ */
+
+/** 除「排版设置」外的右侧面板（打开排版时逐个关掉）。 */
+function toggleTypography(): void {
+  typographyOpen.value = togglePanel(typographyOpen.value, [
+    () => (aiPanelOpen.value = false),
+    () => (glossaryOpen.value = false),
+    () => (bilingualOpen.value = false),
+    () => (searchOpen.value = false),
+    () => (bookmarksOpen.value = false),
+  ])
+}
+
+function toggleAiPanel(): void {
+  aiPanelOpen.value = togglePanel(aiPanelOpen.value, [
+    () => (glossaryOpen.value = false),
+    () => (bilingualOpen.value = false),
+    () => (typographyOpen.value = false),
+    () => (searchOpen.value = false),
+    () => (bookmarksOpen.value = false),
+  ])
+}
+
+function toggleGlossary(): void {
+  glossaryOpen.value = togglePanel(glossaryOpen.value, [
+    () => (aiPanelOpen.value = false),
+    () => (bilingualOpen.value = false),
+    () => (typographyOpen.value = false),
+    () => (searchOpen.value = false),
+    () => (bookmarksOpen.value = false),
+  ])
+}
+
+function toggleBilingual(): void {
+  bilingualOpen.value = togglePanel(bilingualOpen.value, [
+    () => (aiPanelOpen.value = false),
+    () => (glossaryOpen.value = false),
+    () => (typographyOpen.value = false),
+    () => (searchOpen.value = false),
+    () => (bookmarksOpen.value = false),
+  ])
+}
+
+function toggleSearch(): void {
+  searchOpen.value = togglePanel(searchOpen.value, [
+    () => (aiPanelOpen.value = false),
+    () => (glossaryOpen.value = false),
+    () => (bilingualOpen.value = false),
+    () => (typographyOpen.value = false),
+    () => (bookmarksOpen.value = false),
+  ])
+}
+
+function toggleBookmarks(): void {
+  bookmarksOpen.value = togglePanel(bookmarksOpen.value, [
+    () => (aiPanelOpen.value = false),
+    () => (glossaryOpen.value = false),
+    () => (bilingualOpen.value = false),
+    () => (typographyOpen.value = false),
+    () => (searchOpen.value = false),
+  ])
+}
+
+/**
  * 字号滑杆：**逐帧缩放预览**，松手才真正重排。
  *
  * 字号 18→20 时 `scale(20/18)` 的视觉效果和真实改字号一致，
@@ -1356,14 +1430,14 @@ const selectionBarStyle = computed<Record<string, string>>(() => {
         @next="turnPage('next')"
         @toggle-toc="tocOpen = !tocOpen"
         @cycle-theme="cycleTheme"
-        @toggle-ai="aiPanelOpen = !aiPanelOpen; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
-        @toggle-glossary="glossaryOpen = !glossaryOpen; aiPanelOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
-        @toggle-bilingual="bilingualOpen = !bilingualOpen; aiPanelOpen = false; glossaryOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
+        @toggle-ai="toggleAiPanel"
+        @toggle-glossary="toggleGlossary"
+        @toggle-bilingual="toggleBilingual"
         @toggle-tts="toggleTts"
-        @toggle-typography="typographyOpen = !typographyOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false; bookmarksOpen = false"
-        @toggle-search="searchOpen = !searchOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; bookmarksOpen = false"
+        @toggle-typography="toggleTypography"
+        @toggle-search="toggleSearch"
         @toggle-bookmark="toggleBookmark"
-        @toggle-bookmarks="bookmarksOpen = !bookmarksOpen; aiPanelOpen = false; glossaryOpen = false; bilingualOpen = false; typographyOpen = false; searchOpen = false"
+        @toggle-bookmarks="toggleBookmarks"
         @toggle-fullscreen="toggleFullscreen"
         @toggle-pin="togglePinBar"
       />
