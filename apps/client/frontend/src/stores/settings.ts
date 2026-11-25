@@ -2,10 +2,23 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { AppLocale } from '@/i18n'
 import { isAppLocale, setLocale as applyLocale } from '@/i18n'
+import { DEFAULT_NEXT_KEYS, DEFAULT_PREV_KEYS } from '@/reader/pageTurnInput'
 
 export type UiTheme = 'light' | 'dark'
 export type ReaderTheme = 'light' | 'sepia' | 'dark' | 'ink'
 export type PageTurnAnimation = 'none' | 'slide' | 'fade' | 'curl' | 'eink'
+
+/**
+ * 鼠标翻页模式。
+ *
+ * - `off`：不响应鼠标点击翻页（**默认**）。阅读时手抖点到边角不会跳页。
+ * - `single`：单击阅读区左右两侧即翻页（改造前的老行为）。
+ * - `double`：只有**在左右两侧双击**才翻页。想保留"点一下收浮层"、又怕误翻页时用这个。
+ *
+ * ★ 触屏不受这个开关影响：触屏没有"悬停"，单击翻页是主要动线，
+ *   关掉会让移动端无法翻页（详见 ReaderView 的 handleTap）。
+ */
+export type MousePageTurnMode = 'off' | 'single' | 'double'
 
 /**
  * 本地 UI 状态（Pinia setup store）。
@@ -30,6 +43,30 @@ export const useSettingsStore = defineStore(
     /** 顶部状态栏是否常驻（pin）。默认 false = 自动收起（见 ReaderView 的栏显隐逻辑）。 */
     const statusBarPinned = ref(false)
 
+    // ---- 翻页输入（键盘 / 鼠标）----
+    /** 键盘翻页开关。默认开：键盘翻页是阅读器最基本的可用性。 */
+    const keyboardPageTurn = ref(true)
+    /** 下一页键位（可多个）。默认「右 / 下」。 */
+    const nextKeys = ref<string[]>([...DEFAULT_NEXT_KEYS])
+    /** 上一页键位（可多个）。默认「左 / 上」。 */
+    const prevKeys = ref<string[]>([...DEFAULT_PREV_KEYS])
+    /** 鼠标翻页模式。默认 off：不主动翻页，避免阅读时误触跳页。 */
+    const mousePageTurn = ref<MousePageTurnMode>('off')
+
+    /**
+     * 阅读器实际使用的"生效键位"。
+     *
+     * ★ 兜底：用户把某一方向的键位删光了，仍要能翻页 —— 否则会得到一个
+     *   "键盘翻页开着但按什么都不动"的死状态，而界面上看起来一切正常。
+     *   这里在读取时回落到默认值，而不是偷偷改用户的配置。
+     */
+    const effectiveNextKeys = computed<readonly string[]>(() =>
+      nextKeys.value.length > 0 ? nextKeys.value : DEFAULT_NEXT_KEYS,
+    )
+    const effectivePrevKeys = computed<readonly string[]>(() =>
+      prevKeys.value.length > 0 ? prevKeys.value : DEFAULT_PREV_KEYS,
+    )
+
     const readerCssVars = computed<Record<string, string>>(() => ({
       '--reader-font-size': `${fontSize.value}px`,
       '--reader-line-height': String(lineHeight.value),
@@ -52,6 +89,45 @@ export const useSettingsStore = defineStore(
     /** 顶部状态栏"常驻 ↔ 自动隐藏"的唯一开关（ReaderView 的 pin 按钮调用）。 */
     function setStatusBarPinned(next: boolean): void {
       statusBarPinned.value = next
+    }
+
+    // ---------------------------------------------------------- 翻页输入
+
+    function setKeyboardPageTurn(next: boolean): void {
+      keyboardPageTurn.value = next
+    }
+
+    function setMousePageTurn(next: MousePageTurnMode): void {
+      mousePageTurn.value = next
+    }
+
+    /**
+     * 追加一个键位。
+     *
+     * ★ 允许一个操作绑多个键（用户明确要求），但**跨方向冲突由调用方先用
+     *   findConflict() 拦掉** —— 这里只保证同方向内不重复。
+     */
+    function addNextKey(token: string): void {
+      if (!nextKeys.value.includes(token)) nextKeys.value = [...nextKeys.value, token]
+    }
+    function addPrevKey(token: string): void {
+      if (!prevKeys.value.includes(token)) prevKeys.value = [...prevKeys.value, token]
+    }
+    function removeNextKey(token: string): void {
+      nextKeys.value = nextKeys.value.filter((k) => k !== token)
+    }
+    function removePrevKey(token: string): void {
+      prevKeys.value = prevKeys.value.filter((k) => k !== token)
+    }
+
+    /**
+     * 恢复默认键位。
+     *
+     * ★ 必须整体替换成新数组（而不是改元素），否则持久化插件拿不到变更。
+     */
+    function resetPageTurnKeys(): void {
+      nextKeys.value = [...DEFAULT_NEXT_KEYS]
+      prevKeys.value = [...DEFAULT_PREV_KEYS]
     }
 
     /**
@@ -86,18 +162,31 @@ export const useSettingsStore = defineStore(
       pageTurnAnimation,
       locale,
       statusBarPinned,
+      keyboardPageTurn,
+      nextKeys,
+      prevKeys,
+      mousePageTurn,
+      effectiveNextKeys,
+      effectivePrevKeys,
       readerCssVars,
       setTheme,
       setReaderTheme,
       setPageTurnAnimation,
       setLocale,
       setStatusBarPinned,
+      setKeyboardPageTurn,
+      setMousePageTurn,
+      addNextKey,
+      addPrevKey,
+      removeNextKey,
+      removePrevKey,
+      resetPageTurnKeys,
     }
   },
   {
     persist: {
       key: 'hpf.settings.v1',
-      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'fontFamily', 'textIndent', 'einkMode', 'pageTurnAnimation', 'locale', 'statusBarPinned'],
+      pick: ['theme', 'readerTheme', 'fontSize', 'lineHeight', 'marginInline', 'fontFamily', 'textIndent', 'einkMode', 'pageTurnAnimation', 'locale', 'statusBarPinned', 'keyboardPageTurn', 'nextKeys', 'prevKeys', 'mousePageTurn'],
     },
   },
 )

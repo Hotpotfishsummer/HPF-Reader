@@ -105,7 +105,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       class="hpf-press hpf-focus shrink-0 rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-sunken)]"
       @click="emit('back')"
     >
-      <span aria-hidden="true">←</span><span v-if="!props.compact" class="ml-1">{{ backLabel }}</span>
+      <span aria-hidden="true">←</span>
     </button>
 
     <button
@@ -117,7 +117,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       :class="props.tocOpen ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'"
       @click="emit('toggle-toc')"
     >
-      <span aria-hidden="true">☰</span><span v-if="!props.compact" class="ml-1">{{ tocLabel }}</span>
+      <span aria-hidden="true">☰</span>
     </button>
 
     <!-- 书签按钮组：左侧点击标记/取消当前页，右侧点击查看书签面板 -->
@@ -134,7 +134,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
         :class="props.bookmarked ? 'text-amber-500 font-bold bg-amber-500/15' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)]'"
         @click="emit('toggle-bookmark')"
       >
-        <span aria-hidden="true">{{ props.bookmarked ? '★' : '☆' }}</span><span v-if="!props.compact" class="ml-1">{{ t('reader.bookmark') }}</span>
+        <span aria-hidden="true">{{ props.bookmarked ? '★' : '☆' }}</span>
       </button>
 
       <button
@@ -180,7 +180,6 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
         <path d="M12 17.5V22" />
         <path d="M9 3h6l-.7 5.4a2.1 2.1 0 0 0 .5 1.6l1.6 1.5-3.4 3.4-1.5-1.4a2.1 2.1 0 0 0-1.6-.5L9 3Z" />
       </svg>
-      <span v-if="!props.compact" class="ml-1">{{ pinLabel }}</span>
     </button>
 
     <button
@@ -192,7 +191,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       :class="props.searchOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)]'"
       @click="emit('toggle-search')"
     >
-      <span aria-hidden="true">🔍</span><span v-if="!props.compact" class="ml-1">{{ t('reader.search') }}</span>
+      <span aria-hidden="true">🔍</span>
     </button>
 
     <span class="min-w-0 flex-1 truncate text-center text-sm text-[var(--color-text-secondary)]">
@@ -225,7 +224,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       :class="props.aiOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
       @click="emit('toggle-ai')"
     >
-      <span aria-hidden="true">文</span><span v-if="!props.compact" class="ml-1">A</span>
+      <span aria-hidden="true">文</span>
     </button>
 
     <button
@@ -237,7 +236,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       :class="props.bilingualOpen ? 'text-[var(--color-accent)] font-bold bg-[var(--color-accent)]/10' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]'"
       @click="emit('toggle-bilingual')"
     >
-      <span aria-hidden="true">⇄</span><span v-if="!props.compact" class="ml-1">译</span>
+      <span aria-hidden="true">⇄</span>
     </button>
 
     <button
@@ -284,7 +283,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       class="hpf-press hpf-focus shrink-0 rounded px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-text-primary)]"
       @click="emit('cycle-theme')"
     >
-      <span aria-hidden="true">◐</span><span v-if="!props.compact" class="ml-1">{{ props.themeLabel }}</span>
+      <span aria-hidden="true">◐</span>
     </button>
 
     <button
@@ -295,7 +294,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       class="hpf-press hpf-focus shrink-0 rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-sunken)]"
       @click="emit('prev')"
     >
-      <span aria-hidden="true">‹</span><span v-if="!props.compact" class="ml-1">{{ prevLabel }}</span>
+      <span aria-hidden="true">‹</span>
     </button>
 
     <button
@@ -306,7 +305,7 @@ const progressRatio = computed(() => Math.min(1, Math.max(0, props.progress / 10
       class="hpf-press hpf-focus shrink-0 rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-sunken)]"
       @click="emit('next')"
     >
-      <span aria-hidden="true">›</span><span v-if="!props.compact" class="ml-1">{{ nextLabel }}</span>
+      <span aria-hidden="true">›</span>
     </button>
 
     <button

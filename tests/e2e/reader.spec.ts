@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { pinReaderBar } from './reader-chrome'
+import { enableMousePageTurn, pinReaderBar } from './reader-chrome'
 
 // 顶部状态栏现在**默认收起**：功能用例用 pin 把它按住（等价于用户点了 pin，
 // 见 tests/e2e/reader-chrome.ts）。"默认收起 / 靠近展开 / 双击切换 / pin 持久化"
@@ -409,6 +409,9 @@ test.describe('阅读闭环（本地优先）', () => {
   test('操作动线：正文点击热区 / Esc 分层关闭 / 点正文收浮层', async ({ page }) => {
     test.skip(!existsSync(REAL_BOOK), `缺少真实测试书 ${REAL_BOOK}`)
 
+    // ★ 鼠标翻页默认是关的（避免误触跳页）。这个用例验的正是"点左右两侧翻页"，
+    //   所以必须先显式打开 —— 否则点击只会收浮层，翻页永远不发生。
+    await enableMousePageTurn(page, 'single')
     await page.setViewportSize({ width: 1280, height: 800 })
     await openLocalBook(page, REAL_BOOK)
     const toolbar = page.getByTestId('reader-toolbar')
@@ -471,6 +474,83 @@ test.describe('阅读闭环（本地优先）', () => {
     await host.click({ position: { x: (sampleBox?.width ?? 600) * 0.5, y: 400 } })
     await expect(page.getByTestId('book-translate-panel')).toHaveCount(0, { timeout: 5_000 })
     expect(page.url(), '点中间收浮层，不该翻页或退出').toContain('/reader/')
+  })
+
+  /**
+   * 打开真书并跳到第 10 个目录项（长章节，翻页后 cfi 一定变化）。
+   *
+   * ★ 必须走"重新载入文档"的路径：`page.goto('/#/')` 只是改 hash，
+   *   文档不会重新加载，`addInitScript` 也就不会再跑 —— 那会让"写入设置"静默失效。
+   */
+  async function openDeepChapter(page: Page): Promise<void> {
+    await page.goto('/#/')
+    await page.getByTestId('local-file-input').setInputFiles(REAL_BOOK)
+    await expect(page).toHaveURL(/#\/reader\//, { timeout: 15_000 })
+    await waitForEngine(page)
+    // 工具栏默认收起：把光标挪到顶边热区把它呼出，再点目录。
+    const view = page.getByTestId('reader-view')
+    const vbox = (await view.boundingBox())!
+    await page.mouse.move(vbox.x + vbox.width / 2, vbox.y + 8)
+    await expect(page.getByTestId('reader-toolbar')).toBeVisible({ timeout: 5_000 })
+    await openToc(page)
+    const items = page.locator('[data-testid="toc-sidebar"] li')
+    await items.nth(Math.min(10, (await items.count()) - 1)).locator('button').click()
+    await page.waitForTimeout(600)
+  }
+
+  test('鼠标翻页默认关闭：点正文左右两侧不翻页', async ({ page }) => {
+    test.skip(!existsSync(REAL_BOOK), `缺少真实测试书 ${REAL_BOOK}`)
+
+    // ★ 用户明确要求：鼠标翻页**默认关闭**，避免阅读时误触跳页。
+    //   这条用例锁住默认值 —— 有人把默认改成 single 时它必须变红。
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await openDeepChapter(page)
+
+    const host = page.getByTestId('reader-host')
+    const box = (await host.boundingBox())!
+    const before = await probe(page)
+    await host.click({ position: { x: box.width - 12, y: 400 } })
+    // 给足时间：如果真翻了页，这里一定已经变了。
+    await page.waitForTimeout(900)
+    expect((await probe(page)).cfi, '鼠标翻页默认关闭，单击右侧不该翻页').toBe(before.cfi)
+  })
+
+  test('鼠标「双击才翻页」：单击不翻页，双击才翻页', async ({ page }) => {
+    test.skip(!existsSync(REAL_BOOK), `缺少真实测试书 ${REAL_BOOK}`)
+
+    /**
+     * ★ 设置必须在**第一次导航之前**写入：`addInitScript` 只在文档加载时执行，
+     *   hash 变化不会重新加载文档。先 goto 再 addInitScript 等于什么都没写
+     *   （这个坑让本用例第一版"双击不翻页"失败了，而失败原因与被测代码无关）。
+     */
+    await page.addInitScript(() => {
+      const KEY = 'hpf.settings.v1'
+      const raw = window.localStorage.getItem(KEY)
+      const current = raw ? JSON.parse(raw) : {}
+      window.localStorage.setItem(KEY, JSON.stringify({ ...current, mousePageTurn: 'double' }))
+    })
+
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await openDeepChapter(page)
+
+    const host = page.getByTestId('reader-host')
+    const box = (await host.boundingBox())!
+    const x = box.width - 12
+
+    // —— ① 单击：只收浮层，不翻页 ——
+    const beforeSingle = await probe(page)
+    await host.click({ position: { x, y: 400 } })
+    await page.waitForTimeout(900)
+    expect((await probe(page)).cfi, '双击模式下单击不该翻页').toBe(beforeSingle.cfi)
+
+    // —— ② 双击：翻页 ——
+    // ★ 双击在正文里的默认语义是"选中一个词"，浏览器一定会顺手选中它。
+    //   如果实现里用"有选区就不翻页"一刀切，双击翻页将永远不生效 ——
+    //   这条断言就是那个坑的回归锁。
+    await host.dblclick({ position: { x, y: 400 } })
+    await expect
+      .poll(async () => (await probe(page)).cfi, { timeout: 10_000, message: '双击右侧应翻页' })
+      .not.toBe(beforeSingle.cfi)
   })
 
   test('夜间模式：正文主题切换真的写进章节文档', async ({ page }) => {

@@ -21,7 +21,33 @@ import { expect, type Page } from '@playwright/test'
  */
 
 /**
- * 设置状态在 localStorage 里的 key。
+ * 让鼠标点击翻页生效。
+ *
+ * ★ 为什么需要：鼠标翻页现在**默认关闭**（用户要求，避免阅读时误触跳页）。
+ *   所有"点阅读区左右两侧翻页"的用例都必须先打开它，否则点击只会收浮层、不翻页，
+ *   测试会以"cfi 没变"的形式失败 —— 那种失败看起来像引擎坏了，实际是配置默认值变了。
+ *
+ * @param mode 'single' 单击即翻页；'double' 必须双击才翻页
+ */
+export async function enableMousePageTurn(
+  page: Page,
+  mode: 'single' | 'double' = 'single',
+): Promise<void> {
+  await page.addInitScript((value) => {
+    const KEY = 'hpf.settings.v1'
+    let current: Record<string, unknown> = {}
+    try {
+      const raw = window.localStorage.getItem(KEY)
+      const parsed: unknown = raw ? JSON.parse(raw) : null
+      if (parsed && typeof parsed === 'object') current = parsed as Record<string, unknown>
+    } catch {
+      current = {}
+    }
+    window.localStorage.setItem(KEY, JSON.stringify({ ...current, mousePageTurn: value }))
+  }, mode)
+}
+
+/** 设置状态在 localStorage 里的 key。
  * 与 `src/stores/settings.ts` 的 `persist.key` 必须一致 —— 这是跨模块契约，
  * 所以在这里**故意**再写一遍（同 reader.spec.ts 里 PROGRESS_KEY 的做法）。
  */

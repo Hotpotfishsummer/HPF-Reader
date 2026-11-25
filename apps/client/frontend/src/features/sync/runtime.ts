@@ -24,6 +24,14 @@ export interface SyncRuntimeOptions {
   platform?: SyncEngineConfig['platform']
   /** 证据钩子：把每次 HTTP 往返交给调用方（联调脚本落盘原始请求/响应）。 */
   onExchange?: Parameters<typeof createApiClient>[0]['onExchange']
+  /**
+   * 注入 fetch 实现（测试用）。
+   *
+   * ★ 需要它才能测「过期 token → 自动刷新 → 重试」这条链路：
+   *   单测 api client 只能证明客户端**支持**刷新，证明不了 runtime **真的把回调接上了**。
+   *   漏接回调时客户端测试依然全绿，线上却照样报 `invalid or expired token`。
+   */
+  fetchImpl?: typeof fetch
 }
 
 export interface SyncRuntime {
@@ -44,7 +52,27 @@ export function createSyncRuntime(options: SyncRuntimeOptions = {}): SyncRuntime
   const client = createApiClient({
     baseUrl,
     ...(options.onExchange === undefined ? {} : { onExchange: options.onExchange }),
+    ...(options.fetchImpl === undefined ? {} : { fetchImpl: options.fetchImpl }),
     getAccessToken: () => session?.accessToken ?? null,
+    /**
+     * ★ 401 兜底：任何走 `getApi()` 的调用（书库列表 / 上传 / 下载）都能自动换新令牌。
+     *
+     * 以前这个能力只存在于同步引擎的 `#withAuthRetry` 里，而书库是直接调 `getApi()` 的，
+     * 于是 access token 一过期，进书库第一眼就是 `invalid or expired token`，
+     * 非要点一次「刷新云端」才好 —— 那一次点击只是碰巧赶上了别处的刷新。
+     *
+     * 返回 null 表示刷不出来（没有 refresh token / 服务端吊销）：调用方按原样抛 401，
+     * 由上层引导重新登录，不在这里假装成功。
+     */
+    refreshAccessToken: async () => {
+      if (session === null) return null
+      try {
+        const tokens = await session.refresh()
+        return tokens.accessToken
+      } catch {
+        return null
+      }
+    },
   })
   session = AuthSession.load(storage, createAuthApi(client), options.deviceId ?? null)
   const config: SyncEngineConfig = {

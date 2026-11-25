@@ -41,6 +41,9 @@ pwsh -NoProfile -File tests/tools/capture-evidence.ps1
 # 在**真实运行的客户端**里点一次「Aa」排版按钮，验证面板能打开（需要 HPF_DEBUG_CDP）
 #   客户端启动：set HPF_DEBUG_CDP=9222 && apps\client\client.exe
 node tests/tools/verify-typography-panel.mjs --port 9222
+
+# 验证「翻页」设置：工具栏只有图标、键位可增删、冲突被拦、鼠标翻页默认关闭
+node tests/tools/verify-pageturn-settings.mjs --port 9222
 pwsh -NoProfile -File tests/tools/capture-evidence.ps1 -SkipE2E
 ```
 

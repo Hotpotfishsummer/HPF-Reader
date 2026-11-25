@@ -23,6 +23,20 @@ export interface HttpExchange {
 export interface ApiClientOptions {
   baseUrl: string
   getAccessToken?: () => string | null
+  /**
+   * 收到 401 时用来换新 access token 的回调；返回 null 表示刷不出来（需要重新登录）。
+   *
+   * ★ 为什么必须在这一层做，而不是让调用方各自处理：
+   *   令牌刷新原本只写在 `features/sync/engine.ts` 的 `#withAuthRetry` 里，
+   *   而书库的 `refreshCloud()` / `uploadToCloud()` / `downloadCloud()` 是**直接**调
+   *   `getApi()` 的，压根不经过同步引擎。结果就是：access token 过期后第一次打开书库
+   *   必然弹 `invalid or expired token`，必须手动点一次「刷新云端」才能恢复正常
+   *   —— 因为那一次点击恰好赶上了别处触发的刷新。
+   *
+   *   把 401 → 刷新 → 重试一次收敛到唯一的出口（本文件），所有走 `getApi()` 的调用
+   *   就都自动获得这个能力，不需要每个 store 各写一遍。
+   */
+  refreshAccessToken?: () => Promise<string | null>
   /** 证据钩子：每次往返（含失败）都会回调一次。 */
   onExchange?: (exchange: HttpExchange) => void
   /** 便于测试注入（默认 globalThis.fetch）。 */
@@ -184,6 +198,73 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   }
 
   /**
+   * 401 单飞刷新：并发的多个请求同时撞上 401 时只发一次刷新。
+   *
+   * ★ 必须单飞：refresh token 是**轮换**的（服务端有重用检测），
+   *   两个请求各刷一次 → 第二次用已经作废的 refresh token → 服务端判定重放，
+   *   直接把整个会话吊销。这不是"多一次请求"的性能问题，是会把用户踢下线。
+   */
+  let refreshing: Promise<string | null> | null = null
+  /**
+   * 正在执行刷新回调时置位 —— 用来识别"这次 401 是刷新请求自己返回的"。
+   *
+   * ★ 这是防**无限递归**的闸门，不是优化：
+   *   `refreshAccessToken` 内部会再发一次 `/v1/auth/refresh`，而那次请求也走
+   *   `request()` → 被 `withAuthRetry` 包住。若刷新本身返回 401（refresh token 也过期），
+   *   就会再次触发刷新 → 再 401 → 无限套娃，表现为**请求永不返回**（实测挂到超时）。
+   *
+   * ★ 但只置一个布尔不够：并发场景下**别的**请求也会在这个窗口里撞 401，
+   *   它们应该排队复用同一次刷新，而不是被误判成"刷新请求自己"直接抛错。
+   *   所以用「刷新链的标记」来判定，而不是一个全局布尔。
+   */
+  let refreshCallMarker: symbol | null = null
+
+  function refreshOnce(): Promise<string | null> {
+    const hook = options.refreshAccessToken
+    if (hook === undefined) return Promise.resolve(null)
+    if (refreshing !== null) return refreshing
+    const marker = Symbol('refreshing')
+    refreshing = (async () => {
+      refreshCallMarker = marker
+      try {
+        return await hook()
+      } catch {
+        return null
+      } finally {
+        refreshCallMarker = null
+      }
+    })().finally(() => {
+      refreshing = null
+    })
+    return refreshing
+  }
+
+  /**
+   * 把一次 401 变成"刷新后重试一次"。
+   *
+   * 只重试**一次**：刷新后仍然 401 说明凭据真的无效（被吊销 / 密码改了），
+   * 再刷再试只会变成死循环，还会把服务端的重用检测触发到。
+   */
+  async function withAuthRetry<T>(run: () => Promise<T>): Promise<T> {
+    /**
+     * ★ 判断"我是不是刷新链里的那个请求"：看发起请求时 refreshCallMarker 是否已置位。
+     *   刷新回调内部发出的请求（请求发起时 marker 已存在）→ 不重试，错误直接冒泡；
+     *   并发排队的普通请求（发起时 marker 为 null）→ 正常排队复用刷新结果。
+     */
+    const startedInsideRefresh = refreshCallMarker !== null
+    try {
+      return await run()
+    } catch (err) {
+      // 刷新请求自己的 401 不参与重试（否则无限递归）
+      if (startedInsideRefresh) throw err
+      if (!(err instanceof ApiError) || err.status !== 401) throw err
+      const token = await refreshOnce()
+      if (token === null) throw err
+      return await run()
+    }
+  }
+
+  /**
    * 发一次请求：必要时改写成中继地址。
    *
    * ★ 证据里记录的必须是**原始 URL**（originalUrl），不是 127.0.0.1 的中继地址，
@@ -257,12 +338,13 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   }
 
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const res = await send(path, init)
+    // ★ 走 withAuthRetry：401 时刷新令牌再重试一次（见 withAuthRetry 注释）。
+    const res = await withAuthRetry(() => send(path, init))
     return res.body as T
   }
 
   async function requestVoid(path: string, init: RequestInit = {}): Promise<void> {
-    await send(path, init)
+    await withAuthRetry(() => send(path, init))
   }
 
   /**
@@ -280,6 +362,17 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
    *   （不再用"整个请求 30 分钟"一刀切：那会让真正的卡死也等满 30 分钟。）
    */
   function putBinary<T>(
+    path: string,
+    body: Uint8Array,
+    contentType: string,
+    transfer: BinaryTransferOptions = {},
+  ): Promise<{ status: number; body: T }> {
+    // ★ 上传同样要扛 401：token 过期时整个文件先传完再报错是最浪费的一种失败
+    //   （几百 MB 白传）。刷新后重传一次，代价远小于让用户重来。
+    return withAuthRetry(() => putBinaryOnce<T>(path, body, contentType, transfer))
+  }
+
+  function putBinaryOnce<T>(
     path: string,
     body: Uint8Array,
     contentType: string,
@@ -428,7 +521,16 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
    *   而 `arrayBuffer()` 要等整个响应收完才 resolve（用户只能干等）。
    *   响应没有 body 流时（老 WebView / 某些 mock）自动回落到 arrayBuffer。
    */
-  async function requestBinaryWithProgress(
+  function requestBinaryWithProgress(
+    path: string,
+    transfer: BinaryDownloadOptions = {},
+  ): Promise<Uint8Array> {
+    // ★ 下载同样要能扛 401：书籍文件是鉴权端点，token 过期时"点下载没反应"
+    //   是最难排查的一类问题（进度条一动不动，看起来像网络卡了）。
+    return withAuthRetry(() => requestBinaryOnce(path, transfer))
+  }
+
+  async function requestBinaryOnce(
     path: string,
     transfer: BinaryDownloadOptions = {},
   ): Promise<Uint8Array> {

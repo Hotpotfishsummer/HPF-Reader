@@ -193,4 +193,64 @@ describe('架构门禁', () => {
     }
     expect(offenders).toEqual([])
   })
+
+  /**
+   * 门禁：设置页里的**按钮文案**不得互相包含。
+   *
+   * 真实事故：翻页设置里加了「恢复默认键位」，而服务器地址区早就有「恢复默认」。
+   * 于是 e2e 的 `getByRole('button', { name: '恢复默认' })` 从唯一匹配变成歧义匹配，
+   * 报 "strict mode violation" —— 看起来像服务器设置坏了，实际是新按钮撞了名字。
+   *
+   * ★ 只查**真的渲染成 button 的**文案：像「同步」/「从未同步」这种一个是标题、
+   *   一个是状态文本，不会互相干扰；一刀切查所有文案只会制造噪音。
+   */
+  it('设置页按钮文案不得互相包含（会让 e2e 的角色名匹配产生歧义）', () => {
+    const zh = readFileSync(join(SRC, 'i18n', 'locales', 'zh-CN.ts'), 'utf8')
+    const settingsBlock = /settings:\s*\{([\s\S]*?)\n  \},/.exec(zh)?.[1] ?? ''
+    expect(settingsBlock.length, '未能定位 settings 文案块').toBeGreaterThan(0)
+
+    // 收集 settings.* 的纯文本文案
+    const texts = new Map<string, string>()
+    for (const m of settingsBlock.matchAll(/^\s{4}(\w+):\s*'([^']{2,})',?$/gm)) {
+      const key = m[1] ?? ''
+      const text = m[2] ?? ''
+      if (!/\{/.test(text) && /[\u4e00-\u9fa5]/.test(text)) texts.set(key, text)
+    }
+
+    /**
+     * 哪些 key 真的被当成按钮文本渲染。
+     * 扫设置相关 .vue 里的 `<button>...</button>` 片段，看它引用了哪个 `t('settings.X')`。
+     */
+    const buttonKeys = new Set<string>()
+    const vueFiles = [
+      join(SRC, 'features', 'settings', 'SettingsView.vue'),
+      join(SRC, 'features', 'settings', 'PageTurnSettings.vue'),
+    ]
+    for (const file of vueFiles) {
+      if (!existsSync(file)) continue
+      const src = readFileSync(file, 'utf8')
+      for (const btn of src.matchAll(/<button[\s\S]*?<\/button>/g)) {
+        for (const ref of btn[0].matchAll(/t\('settings\.(\w+)'\)/g)) {
+          buttonKeys.add(ref[1] ?? '')
+        }
+      }
+    }
+    expect(buttonKeys.size, '未找到任何按钮文案引用').toBeGreaterThan(2)
+
+    const offenders: string[] = []
+    const keys = [...buttonKeys]
+    for (const a of keys) {
+      for (const b of keys) {
+        if (a === b) continue
+        const ta = texts.get(a)
+        const tb = texts.get(b)
+        if (!ta || !tb || ta === tb) continue
+        // a 是 b 的真子串 ⇒ getByRole(name) 会歧义
+        if (tb.includes(ta) && tb.length > ta.length) {
+          offenders.push(`settings.${a}「${ta}」是 settings.${b}「${tb}」的子串`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
 })

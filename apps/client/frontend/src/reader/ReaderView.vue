@@ -18,6 +18,7 @@ import ReaderDrawer, { type DrawerTab } from './components/ReaderDrawer.vue'
 import ReaderBookmarksPopover from './components/ReaderBookmarksPopover.vue'
 import { useAnnotations, type AnnotationItem } from './annotationStore'
 import { togglePanel } from './panelToggle'
+import { matchesKey, zoneDirection } from './pageTurnInput'
 import { usePageTurnAnimation } from './usePageTurnAnimation'
 import './pageTurnAnimations.css'
 import { useApi } from '@/api'
@@ -714,6 +715,35 @@ function clearPendingTap(): void {
   pendingTap = null
 }
 
+/**
+ * 键盘翻页：键位由设置决定（可多键、可自定义）。
+ *
+ * ★ 改造前这里是一组写死的 `case 'ArrowRight': case 'ArrowDown': ...`。
+ *   现在先做"归一化 → 命中哪一边"的判定，命中就翻页并吞掉默认行为。
+ *
+ * ★ 命中后必须 `preventDefault()`：方向键在分页容器里默认会滚动，
+ *   不拦就会出现"翻了一页、同时又滚了一点"的错位。
+ *
+ * ★ 只有命中键位时才 preventDefault —— 用户把某个键改绑到别处后，
+ *   那个键的默认行为应当还回去（例如 Ctrl+B 之类自有快捷键在下面先处理）。
+ *
+ * @returns 是否已消费这次按键
+ */
+function handlePageTurnKey(event: KeyboardEvent): boolean {
+  if (!settings.keyboardPageTurn) return false
+  if (matchesKey(event, settings.effectiveNextKeys)) {
+    event.preventDefault()
+    void turnPage('next')
+    return true
+  }
+  if (matchesKey(event, settings.effectivePrevKeys)) {
+    event.preventDefault()
+    void turnPage('prev')
+    return true
+  }
+  return false
+}
+
 function handleKey(event: KeyboardEvent): void {
   if (event.key === 'F11') {
     event.preventDefault()
@@ -740,20 +770,11 @@ function handleKey(event: KeyboardEvent): void {
     }
     return
   }
+  // ★ 翻页键放在自有快捷键之后、Escape 之前：Escape 永远优先（关浮层不能被抢），
+  //   而 Ctrl+B / Ctrl+F 这类组合键要先于翻页判定 —— 否则用户把翻页绑到
+  //   Ctrl+F 时，书签/搜索就再也打不开了。
+  if (handlePageTurnKey(event)) return
   switch (event.key) {
-    case 'ArrowRight':
-    case 'ArrowDown':
-    case 'PageDown':
-    case ' ':
-      event.preventDefault()
-      void turnPage('next')
-      break
-    case 'ArrowLeft':
-    case 'ArrowUp':
-    case 'PageUp':
-      event.preventDefault()
-      void turnPage('prev')
-      break
     case 'Escape':
       event.preventDefault()
       // ★ 分层关闭：先收掉浮层（气泡 / AI / 术语 / 目录 / 状态栏），再收主功能面板，
@@ -837,7 +858,32 @@ function handleTap(tap: TapInfo): void {
   //   鼠标不延后（桌面端没有"双击切状态栏"这条路），保持即时响应。
   const act = (): void => {
     if (dismissTopLayer()) return
-    const direction = tap.ratioX < 0.28 ? 'prev' : tap.ratioX > 0.72 ? 'next' : null
+    if (!mouseTurnEnabled(tap.pointerType)) return
+    // ★ 「鼠标双击才翻页」模式下，单击只收浮层、不翻页。
+    //   注意这里用的是 `tap.detail` 而不是自己数时间：`MouseEvent.detail` 由浏览器
+    //   维护，双击判定与系统的双击间隔设置天然一致，比自己数 300ms 更准。
+    const needsDouble = mouseNeedsDoubleClick(tap.pointerType)
+    const isDouble = (tap.detail ?? 1) >= 2
+    if (needsDouble && !isDouble) return
+    /**
+     * ★ 双击翻页模式下，**忽略"有选区"这个否决条件**。
+     *
+     * 双击在正文里的默认语义是选中一个词，浏览器一定会顺手选中它。
+     * 如果沿用"有选区就不翻页"，双击翻页将**永远不生效** —— 这不是理论问题，
+     * e2e 实测就是卡在这里（cfi 一直不变）。
+     *
+     * 只在"用户主动开启双击翻页 + 这次确实是双击"时放行；单击路径不受影响，
+     * 所以正常选词（点一下、拖一下）的语义完全不变。
+     */
+    if (needsDouble && isDouble && tap.hasSelection) {
+      // ★ 选区可能在章节文档（iframe）里 —— `window.getSelection()` 看不到它，
+      //   要用当前章节文档自己的 selection。两处都清一次，避免留下高亮的词。
+      window.getSelection()?.removeAllRanges()
+      currentDoc?.getSelection()?.removeAllRanges()
+      selectionText.value = ''
+      selectionRange = null
+    }
+    const direction = zoneDirection(tap.ratioX)
     if (direction) void turn(direction)
   }
 
@@ -853,6 +899,33 @@ function handleTap(tap: TapInfo): void {
 }
 
 /**
+ * 这一种指针的**单击**要不要翻页。
+ *
+ * ★ 触屏 / 触控笔永远走单击翻页：移动端没有"双击翻页"的肌肉记忆，也没有 hover，
+ *   关掉就等于让手机没法翻页。设置里的"鼠标翻页"只管**鼠标**。
+ *
+ * ★ 鼠标默认 **off**（用户明确要求）：阅读时手一抖点到边角就跳页，是很烦的误触。
+ *   想用鼠标翻页的用户到设置里打开。
+ *
+ * @param pointerType 触发点击的指针类型
+ */
+function mouseTurnEnabled(pointerType: TapInfo['pointerType']): boolean {
+  if (pointerType !== 'mouse') return true
+  return settings.mousePageTurn !== 'off'
+}
+
+/**
+ * 鼠标是否走"必须双击"模式。
+ *
+ * 这个模式下单击**不翻页**（只收浮层），双击才翻页 —— 想保留"点一下关浮层"、
+ * 又怕误翻页时用。触屏不受影响。
+ */
+function mouseNeedsDoubleClick(pointerType: TapInfo['pointerType']): boolean {
+  if (pointerType !== 'mouse') return false
+  return settings.mousePageTurn === 'double'
+}
+
+/**
  * ★ 阅读面**内边距**上的点击兜底（翻页热区补漏）。
  *
  * 探针实测：foliate-js 给分栏容器加了左右 `gap/2` 的内边距（paginator.js:322），
@@ -865,11 +938,6 @@ function handleTap(tap: TapInfo): void {
  */
 function onSurfaceClick(event: MouseEvent): void {
   if (event.button !== 0) return
-  // ★ 双击（触屏上双击内边距也算）：切换顶部状态栏，与 bridge 的 onDoubleTap 同一语义。
-  if (event.detail > 1) {
-    toggleBar()
-    return
-  }
   const el = hostRef.value
   if (!el) return
   const box = el.getBoundingClientRect()
@@ -881,10 +949,25 @@ function onSurfaceClick(event: MouseEvent): void {
     event instanceof PointerEvent && (event.pointerType === 'touch' || event.pointerType === 'pen')
       ? event.pointerType
       : 'mouse'
+  /**
+   * ★ 双击的处理顺序（这里踩过坑，写清楚）：
+   *   ① 触屏双击 → 切状态栏（与 bridge 的 onDoubleTap 同一语义）；
+   *   ② **鼠标**双击 → 只有「双击才翻页」模式才往下走去翻页，
+   *      否则维持老语义（切状态栏）。不能无条件 return，否则内边距上双击永远不翻页。
+   */
+  if (event.detail > 1) {
+    if (!mouseNeedsDoubleClick(pointerType)) {
+      toggleBar()
+      return
+    }
+  }
   handleTap({
     ratioX: Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
     ratioY: Math.min(1, Math.max(0, (event.clientY - box.top) / box.height)),
     pointerType,
+    detail: event.detail,
+    // 内边距上的点击在 iframe 之外，选区只可能来自主文档。
+    hasSelection: !(window.getSelection()?.isCollapsed ?? true),
   })
 }
 

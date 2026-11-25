@@ -267,7 +267,7 @@ const notice = computed(() => library.error ?? localError.value)
           v-if="library.displayBooks.length > 0"
           data-testid="cloud-upload-all"
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent)] px-3 py-2 text-sm text-[var(--color-accent)] transition hover:bg-[var(--color-surface-sunken)] disabled:opacity-70"
+          class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[var(--color-accent)] px-3 py-2 text-sm text-[var(--color-accent)] transition hover:bg-[var(--color-surface-sunken)] disabled:opacity-70"
           :disabled="bulkUploading"
           :title="auth.isAuthenticated ? t('library.cloudUpload') : t('library.cloudNeedLogin')"
           @click="handleUploadAll"

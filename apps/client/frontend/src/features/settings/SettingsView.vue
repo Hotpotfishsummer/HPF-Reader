@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProxyStore } from '@/stores/proxy'
 import { useServerStore } from '@/stores/server'
 import { useAuthModal } from '@/features/auth/useAuthModal'
+import PageTurnSettings from './PageTurnSettings.vue'
 
 const { t } = useI18n()
 const platform = usePlatform()
@@ -291,6 +292,13 @@ async function handleOpenDataDir() {
           </p>
         </div>
       </div>
+
+      <!--
+        ★ 翻页输入：键盘键位 + 鼠标翻页模式。
+        放在「翻页动画」之后 —— 两者都属于"翻页体验"，但这里是**输入方式**，
+        动画是**视觉表现**，所以分成两块，避免一个区块塞太多开关。
+      -->
+      <PageTurnSettings />
 
       <div>
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">

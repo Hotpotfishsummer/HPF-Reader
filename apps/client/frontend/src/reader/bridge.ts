@@ -22,6 +22,24 @@ export interface TapInfo {
    *   「想切状态栏，却先翻了一页」。ReaderView 用这个字段判断要不要走延迟窗口。
    */
   pointerType: 'mouse' | 'touch' | 'pen'
+  /**
+   * 这是第几次连续点击（`MouseEvent.detail`）。
+   *
+   * ★ 鼠标翻页有"必须双击"模式：单击只收浮层、双击才翻页。
+   *   宿主侧的点击（阅读面内边距）能直接拿到 `detail`，但 **iframe 内的点击
+   *   必须由这里转发** —— 章节文档里的 `detail` 不会自己冒泡到主文档。
+   *   缺了这个字段，双击模式在正文上就永远只能算"单击"，翻页彻底失效。
+   */
+  detail?: number
+  /**
+   * 这次点击发生时正文里是否已有选区。
+   *
+   * ★ 双击在正文里首先的语义是**选中一个词**，所以 `hasSelection` 默认意味着
+   *   "这次点击是在选词，别翻页"。但「鼠标双击才翻页」模式需要例外：
+   *   热区内的双击要能翻页，哪怕浏览器顺手选中了一个词。
+   *   把这个事实交给上层，由它按设置决定，而不是在这里一刀切丢掉。
+   */
+  hasSelection?: boolean
 }
 
 export interface BridgeHandlers {
@@ -105,6 +123,8 @@ function toHostRatio(
     ratioX: Math.min(1, Math.max(0, (offsetLeft + mouse.clientX * scale) / hostW)),
     ratioY: Math.min(1, Math.max(0, (offsetTop + mouse.clientY * scale) / hostH)),
     pointerType,
+    // ★ 点击次数必须一并转发：鼠标"双击才翻页"模式靠它区分单击与双击。
+    detail: mouse.detail,
   }
 }
 
@@ -274,10 +294,30 @@ export function bridgeSectionDocument(
         const mouse = event as MouseEvent
         // 只处理主键。
         if (mouse.button !== 0) return
-        // ★ 双击：交给 onDoubleTap（触屏上用于切换顶部状态栏），不翻页。
-        //   改造前这里直接 return，双击除了"不翻页"什么都不做。
+        // 链接交给引擎自己的 external-link 处理（脚注、超链接）；
+        // 按钮/输入框也不当作"点空白翻页"。
+        // ★ 这两条判定对**单击与双击都要生效**，所以提到最前面算一次。
+        const target = mouse.target
+        if (target instanceof Element && target.closest('a[href]')) return
+        if (target instanceof Element && target.closest('button, input, select, textarea')) return
+        // ★ 双击：两条路都可能要用，不能像改造前那样一律 return。
+        //   ① 触屏双击 → 切换顶部状态栏（onDoubleTap）；
+        //   ② 鼠标双击 → 可能是"双击才翻页"模式（设置里可选）。
+        //   ⚠️ 但双击在正文里首先的语义是**选中一个词**：只要这次双击真的选出了文字，
+        //      就绝不能翻页 —— 否则用户想选词，页却跳走了。所以先让浏览器做完选择，
+        //      再回来判断选区是否为空。
         if (mouse.detail > 1) {
           handlers.onDoubleTap?.(lastPointerType)
+          const selNow = win.getSelection()
+          const hasSelection = Boolean(selNow && !selNow.isCollapsed && selNow.toString().trim() !== '')
+          // 只有"双击"（detail === 2）才算一次双击翻页；三击及以上不重复翻页。
+          if (mouse.detail !== 2) return
+          // ★ 是否因"选中了词"而放弃翻页，交给上层按设置决定：
+          //   默认（没开双击翻页）上层会忽略 detail>1 的 tap，这里传不传都不影响；
+          //   开了双击翻页时，热区内双击就该翻页 —— 浏览器顺手选中的那个词不该否决它。
+          const tap = toHostRatio(win, mouse, options.surface ?? (() => null), lastPointerType)
+          tap.hasSelection = hasSelection
+          handlers.onTap?.(tap)
           return
         }
         // 划词刚结束：这次 click 是选区的副作用，不是"点空白翻页"。
@@ -287,11 +327,6 @@ export function bridgeSectionDocument(
         }
         const sel = win.getSelection()
         if (sel && !sel.isCollapsed && sel.toString().trim() !== '') return
-        // 链接交给引擎自己的 external-link 处理（脚注、超链接）。
-        const target = mouse.target
-        if (target instanceof Element && target.closest('a[href]')) return
-        // 按钮/输入框不当作"点空白翻页"。
-        if (target instanceof Element && target.closest('button, input, select, textarea')) return
         if (onTap) {
           onTap(toHostRatio(win, mouse, options.surface ?? (() => null), lastPointerType))
         } else if (handlers.onClick) {
